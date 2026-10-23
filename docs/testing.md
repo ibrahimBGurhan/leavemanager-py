@@ -23,8 +23,15 @@
   tarihli olduğu için gerçek saate bağlı bir test zamanla kendiliğinden kırılır.
 - **Profil:** test seti bugün hızlı olduğu için tüm adımlar `[fast]`; fast = full. Bir adım bir
   dakikayı geçerse ya da e2e eklenirse, marker ile bölünür (`-m "not slow"` / `-m slow`), liste ile değil.
-- **Geçici tolerans:** henüz test olmadığı için `check.conf` pytest'in "test bulunamadı" çıkışını
-  (kod 5) bir notla yeşil sayar. **İlk test spec'i bu toleransı kaldırır**; sonrasında 0 test kırmızıdır.
+- **Hiç test toplanmaması kırmızıdır** (pytest çıkış kodu 5). Bootstrap'teki geçici tolerans
+  spec 0001 ile kaldırıldı.
+- **Baseline testleri** (spec 0001): `tests/test_baseline_service.py` ve
+  `tests/test_baseline_screens.py`, bugünkü davranışı hatalarıyla birlikte sabitler. Hedef kurala
+  uymayan davranışı sabitleyen testin adı `_current` ile biter, docstring'i "MEVCUT DAVRANIŞ —
+  hedef değil (BR-n / OD-n)" ile başlar. Kuralı düzelten `/change` veya `/fix-bug` bu testleri
+  kendi spec'inde açıkça günceller; bu, testi zayıflatmak sayılmaz.
+- **Sıra bağımsızlığı:** `ANEW_REVERSE_ORDER=1` verilince test seti ters sırayla çalışır
+  (`tests/conftest.py`). Check'in parçası değildir, gerektiğinde elle çalıştırılır.
 
 ## What must be tested
 - Her iş kuralı (`docs/domain.md`, BR-n) en az bir testle eşleşir. Sınır değerler zorunlu: kıdem
