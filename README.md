@@ -13,6 +13,10 @@ Kurulum (Python 3.13):
 
 Adres: http://localhost:5000
 
+Yalnızca yerel geliştirmede debug modu (asla paylaşılan bir sunucuda değil):
+
+    FLASK_DEBUG=1 .venv/Scripts/python app.py
+
 Doğrulama (lint + testler):
 
     ./scripts/check          # full — tek kanıt

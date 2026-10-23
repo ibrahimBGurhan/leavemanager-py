@@ -180,4 +180,5 @@ def new_request():
     return render_template_string(PAGE, body=body)
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)  # debug acik kalsin, kolay oluyor
+    # Debug only locally and on purpose: FLASK_DEBUG=1 python app.py (docs/security.md)
+    app.run(port=5000)
