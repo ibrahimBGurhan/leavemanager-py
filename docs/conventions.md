@@ -49,5 +49,10 @@
 - **ruff** (`ruff.toml`, kurallar sabit: `E4, E7, E9, F`): sözdizimi hataları, tanımsız isimler,
   kullanılmayan import ve değişkenler. Kural seti yalnızca bir spec/plan ile genişletilir.
 - **pytest**: tüm test seti `./scripts/check` içinde çalışır.
+- **exec-bits** (`tools/check_exec_bits.py`, spec 0002): git'te izlenen ve `#!` ile başlayan her dosya
+  `100755` olmalı (`adapters/` şablonları hariç). Windows'ta yeni bir script eklerken
+  `git add --chmod=+x <dosya>` kullanın.
+- **Proje araçları** `tools/` altında durur. `scripts/` ANEW core'a aittir ve yerelde değiştirilmez;
+  ANEW yükseltmelerinde çakışma olmasın diye proje adımları `scripts/check.conf` üzerinden bağlanır.
 - Henüz araçla zorlanmayan, review'da kontrol edilen kurallar: hata yönetimi, enjekte edilen
   saat, mimari yasaklar (mimari testi katmanlar ayrılınca eklenir), mypy (refactor sonrası).
