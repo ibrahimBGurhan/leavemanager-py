@@ -74,6 +74,11 @@ def test_ignores_symlink_and_submodule_entries(repo):
     sha = git(repo, "hash-object", "-w", "--stdin", stdin="scripts/ok")
     git(repo, "update-index", "--add", "--cacheinfo", f"120000,{sha},link-to-script")
     git(repo, "update-index", "--add", "--cacheinfo", f"160000,{sha},vendor/sub")
+    # Shebang content at both paths: only the mode filter keeps them out of the report
+    # (e.g. a symlink checked out as a plain file with core.symlinks=false).
+    (repo / "link-to-script").write_text(SHEBANG, newline="\n")
+    (repo / "vendor").mkdir()
+    (repo / "vendor" / "sub").write_text(SHEBANG, newline="\n")
 
     result = run_tool(repo)
 
