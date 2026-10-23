@@ -41,7 +41,9 @@ def starts_with_shebang(file):
 
 def main(argv):
     # UTF-8 everywhere: a Windows pipe would otherwise use the ANSI code page and garble paths.
-    sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+    # surrogateescape: a non-UTF-8 file name (POSIX) is written back byte for byte, so the
+    # printed fix command still works when copied.
+    sys.stdout.reconfigure(encoding="utf-8", errors="surrogateescape")
     start = pathlib.Path(argv[1]) if len(argv) > 1 else pathlib.Path.cwd()
     try:
         # paths, the adapters/ exclusion and the fix command are all relative to the repo root

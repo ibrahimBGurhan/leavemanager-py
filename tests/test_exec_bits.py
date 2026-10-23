@@ -68,6 +68,21 @@ def test_report_is_utf8_and_keeps_non_ascii_paths(repo):
     assert "araçlar/çalıştır.sh starts with '#!' but is 100644" in out
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="NTFS cannot hold a non-UTF-8 file name")
+def test_report_keeps_non_utf8_path_bytes(repo):
+    """CB-1: a non-UTF-8 file name (possible on POSIX) is printed byte for byte."""
+    name = b"bad\xff.sh"
+    with open(os.path.join(os.fsencode(repo), name), "wb") as f:
+        f.write(SHEBANG.encode())
+    subprocess.run([b"git", b"add", b"--", name], cwd=repo, check=True)
+    subprocess.run([b"git", b"update-index", b"--chmod=-x", b"--", name], cwd=repo, check=True)
+
+    result = subprocess.run([sys.executable, str(TOOL)], cwd=repo, capture_output=True)
+
+    assert result.returncode == 1
+    assert b"exec-bits: bad\xff.sh starts with" in result.stdout
+
+
 def test_ignores_symlink_and_submodule_entries(repo):
     """CB-1: symlink (120000) and submodule (160000) entries are not judged."""
     add(repo, "scripts/ok", SHEBANG, executable=True)
