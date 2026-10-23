@@ -182,6 +182,15 @@ def test_skips_outside_a_git_work_tree(tmp_path):
     assert "skipped - not a git work tree (" in result.stdout  # git's own reason is named
 
 
+def test_missing_directory_argument_is_a_usage_error(tmp_path):
+    """CB-5 boundary: a non-existent [dir] is a usage error (exit 2), never a silent skip."""
+    result = run_tool(tmp_path, ENV, str(tmp_path / "does-not-exist"))
+
+    assert result.returncode == 2
+    assert "not a directory" in result.stderr
+    assert "skipped" not in result.stdout
+
+
 def test_skips_when_git_is_not_installed(repo):
     """CB-5: without a git executable the check is skipped with a note, not failed."""
     add(repo, "scripts/build", SHEBANG)

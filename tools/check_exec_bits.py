@@ -6,7 +6,8 @@ file system: Windows has no exec bit, and the index is what CI checks out.
 
     python tools/check_exec_bits.py [dir]    # any directory inside the repo; default: cwd
 
-Exit 0 = clean (or skipped outside a git work tree), 1 = violations found.
+Exit 0 = clean (or skipped outside a git work tree), 1 = violations found, 2 = [dir] is not a
+directory.
 """
 import pathlib
 import shlex
@@ -45,6 +46,10 @@ def main(argv):
     # printed fix command still works when copied.
     sys.stdout.reconfigure(encoding="utf-8", errors="surrogateescape")
     start = pathlib.Path(argv[1]) if len(argv) > 1 else pathlib.Path.cwd()
+    if not start.is_dir():
+        # a usage error, not a skip: otherwise it would surface as "git is not installed"
+        print(f"exec-bits: not a directory: {start}", file=sys.stderr)
+        return 2
     try:
         # paths, the adapters/ exclusion and the fix command are all relative to the repo root
         repo = pathlib.Path(git(start, "rev-parse", "--show-toplevel").decode().strip())
