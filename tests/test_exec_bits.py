@@ -35,9 +35,9 @@ def add(repo, path, content, executable=False):
     git(repo, "update-index", "--chmod=+x" if executable else "--chmod=-x", "--", path)
 
 
-def run_tool(cwd, env=None):
+def run_tool(cwd, env=None, *args):
     return subprocess.run(
-        [sys.executable, str(TOOL)], cwd=cwd, env=env, capture_output=True, text=True,
+        [sys.executable, str(TOOL), *args], cwd=cwd, env=env, capture_output=True, text=True,
     )
 
 
@@ -117,6 +117,18 @@ def test_ignores_templates_under_adapters(repo):
 
     assert result.returncode == 0
     assert "adapters/" not in result.stdout
+
+
+def test_subdirectory_argument_is_judged_from_the_repo_root(repo):
+    """CB-1/CB-3: started from a subdirectory, paths and the adapters/ exclusion stay root-based."""
+    add(repo, "adapters/claude-code/hook.sh", SHEBANG)
+    add(repo, "scripts/build", SHEBANG)
+
+    result = run_tool(repo, None, str(repo / "adapters"))
+
+    assert result.returncode == 1
+    assert "exec-bits: scripts/build " in result.stdout
+    assert "hook.sh" not in result.stdout
 
 
 # --- CB-4 -----------------------------------------------------------------------------------

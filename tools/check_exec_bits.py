@@ -4,7 +4,7 @@ Reports every tracked file that starts with '#!' but is committed as 100644, bec
 cannot execute it (PR #1: "Permission denied", exit 126). Reads modes from the git index, not the
 file system: Windows has no exec bit, and the index is what CI checks out.
 
-    python tools/check_exec_bits.py [repo_dir]
+    python tools/check_exec_bits.py [dir]    # any directory inside the repo; default: cwd
 
 Exit 0 = clean (or skipped outside a git work tree), 1 = violations found.
 """
@@ -42,9 +42,10 @@ def starts_with_shebang(file):
 def main(argv):
     # UTF-8 everywhere: a Windows pipe would otherwise use the ANSI code page and garble paths.
     sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
-    repo = pathlib.Path(argv[1]) if len(argv) > 1 else pathlib.Path.cwd()
+    start = pathlib.Path(argv[1]) if len(argv) > 1 else pathlib.Path.cwd()
     try:
-        git(repo, "rev-parse", "--is-inside-work-tree")
+        # paths, the adapters/ exclusion and the fix command are all relative to the repo root
+        repo = pathlib.Path(git(start, "rev-parse", "--show-toplevel").decode().strip())
     except OSError:
         print("NOTE: exec-bit check skipped - git is not installed")
         return 0
