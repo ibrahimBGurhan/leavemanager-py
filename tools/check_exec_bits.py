@@ -52,7 +52,8 @@ def main(argv):
         return 2
     try:
         # paths, the adapters/ exclusion and the fix command are all relative to the repo root
-        repo = pathlib.Path(git(start, "rev-parse", "--show-toplevel").decode().strip())
+        top = git(start, "rev-parse", "--show-toplevel").strip()
+        repo = pathlib.Path(top.decode("utf-8", "surrogateescape"))
     except OSError:
         print("NOTE: exec-bit check skipped - git is not installed")
         return 0

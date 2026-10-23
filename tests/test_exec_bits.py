@@ -91,6 +91,24 @@ def test_report_keeps_non_utf8_path_bytes(repo):
     assert b"exec-bits: bad\xff.sh starts with" in result.stdout
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="NTFS cannot hold a non-UTF-8 file name")
+def test_repository_root_with_non_utf8_bytes_is_handled(tmp_path):
+    """CB-1: a repository whose own root path is not UTF-8 (POSIX) is checked, not crashed."""
+    root = os.path.join(os.fsencode(tmp_path), b"repo\xff")
+    os.mkdir(root)
+    subprocess.run([b"git", b"init", b"-q"], cwd=root, env=ENV, check=True)
+    with open(os.path.join(root, b"build"), "wb") as f:
+        f.write(SHEBANG.encode())
+    subprocess.run([b"git", b"add", b"--", b"build"], cwd=root, env=ENV, check=True)
+    subprocess.run([b"git", b"update-index", b"--chmod=-x", b"--", b"build"], cwd=root, env=ENV,
+                   check=True)
+
+    result = subprocess.run([sys.executable, str(TOOL)], cwd=root, env=ENV, capture_output=True)
+
+    assert result.returncode == 1, result.stderr
+    assert b"exec-bits: build starts with" in result.stdout
+
+
 def test_ignores_symlink_and_submodule_entries(repo):
     """CB-1: symlink (120000) and submodule (160000) entries are not judged."""
     add(repo, "scripts/ok", SHEBANG, executable=True)
