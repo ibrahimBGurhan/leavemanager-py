@@ -15,9 +15,16 @@ TOOL = REPO / "tools" / "check_exec_bits.py"
 SHEBANG = "#!/bin/sh\necho hi\n"
 
 
+# Isolated from the caller's git: no GIT_DIR / GIT_INDEX_FILE leaking in (e.g. check run from a
+# hook would otherwise write the real index) and no global/system config (e.g. core.fsmonitor
+# would start a daemon — docs/testing.md, Resource hygiene).
+ENV = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+ENV.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
+
+
 def git(cwd, *args, stdin=None):
     return subprocess.run(
-        ["git", *args], cwd=cwd, input=stdin, capture_output=True, text=True, check=True,
+        ["git", *args], cwd=cwd, input=stdin, env=ENV, capture_output=True, text=True, check=True,
     ).stdout.strip()
 
 
@@ -35,7 +42,7 @@ def add(repo, path, content, executable=False):
     git(repo, "update-index", "--chmod=+x" if executable else "--chmod=-x", "--", path)
 
 
-def run_tool(cwd, env=None, *args):
+def run_tool(cwd, env=ENV, *args):
     return subprocess.run(
         [sys.executable, str(TOOL), *args], cwd=cwd, env=env, capture_output=True, text=True,
     )
@@ -61,7 +68,7 @@ def test_report_is_utf8_and_keeps_non_ascii_paths(repo):
     """CB-1: the path is printed as it is — also non-ASCII — in UTF-8 on every platform."""
     add(repo, "araçlar/çalıştır.sh", SHEBANG)
 
-    result = subprocess.run([sys.executable, str(TOOL)], cwd=repo, capture_output=True)
+    result = subprocess.run([sys.executable, str(TOOL)], cwd=repo, env=ENV, capture_output=True)
 
     assert result.returncode == 1
     out = result.stdout.decode("utf-8")  # strict: a non-UTF-8 byte raises
@@ -74,10 +81,11 @@ def test_report_keeps_non_utf8_path_bytes(repo):
     name = b"bad\xff.sh"
     with open(os.path.join(os.fsencode(repo), name), "wb") as f:
         f.write(SHEBANG.encode())
-    subprocess.run([b"git", b"add", b"--", name], cwd=repo, check=True)
-    subprocess.run([b"git", b"update-index", b"--chmod=-x", b"--", name], cwd=repo, check=True)
+    subprocess.run([b"git", b"add", b"--", name], cwd=repo, env=ENV, check=True)
+    subprocess.run([b"git", b"update-index", b"--chmod=-x", b"--", name], cwd=repo, env=ENV,
+                   check=True)
 
-    result = subprocess.run([sys.executable, str(TOOL)], cwd=repo, capture_output=True)
+    result = subprocess.run([sys.executable, str(TOOL)], cwd=repo, env=ENV, capture_output=True)
 
     assert result.returncode == 1
     assert b"exec-bits: bad\xff.sh starts with" in result.stdout
@@ -139,7 +147,7 @@ def test_subdirectory_argument_is_judged_from_the_repo_root(repo):
     add(repo, "adapters/claude-code/hook.sh", SHEBANG)
     add(repo, "scripts/build", SHEBANG)
 
-    result = run_tool(repo, None, str(repo / "adapters"))
+    result = run_tool(repo, ENV, str(repo / "adapters"))
 
     assert result.returncode == 1
     assert "exec-bits: scripts/build " in result.stdout
@@ -168,7 +176,7 @@ def test_skips_outside_a_git_work_tree(tmp_path):
     plain.mkdir()
     (plain / "script").write_text(SHEBANG)
 
-    result = run_tool(plain, env={**os.environ, "GIT_CEILING_DIRECTORIES": str(tmp_path)})
+    result = run_tool(plain, env={**ENV, "GIT_CEILING_DIRECTORIES": str(tmp_path)})
 
     assert result.returncode == 0
     assert "skipped - not a git work tree (" in result.stdout  # git's own reason is named
@@ -177,7 +185,7 @@ def test_skips_outside_a_git_work_tree(tmp_path):
 def test_skips_when_git_is_not_installed(repo):
     """CB-5: without a git executable the check is skipped with a note, not failed."""
     add(repo, "scripts/build", SHEBANG)
-    env = {k: v for k, v in os.environ.items() if k.upper() != "PATH"}
+    env = {k: v for k, v in ENV.items() if k.upper() != "PATH"}
     env["PATH"] = ""
 
     result = run_tool(repo, env=env)
