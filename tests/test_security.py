@@ -54,10 +54,13 @@ def test_running_app_py_does_not_force_debug_mode(monkeypatch):
     """Issue #3 (B-2): `python app.py` must not switch the Werkzeug debugger on by itself;
     debug is only ever enabled locally through the environment (docs/security.md)."""
     calls = []
-    monkeypatch.setattr(flask.Flask, "run", lambda self, *a, **kw: calls.append(kw))
+    monkeypatch.setattr(flask.Flask, "run", lambda self, *a, **kw: calls.append((self, kw)))
     monkeypatch.delenv("FLASK_DEBUG", raising=False)
 
     runpy.run_path(str(APP_PY), run_name="__main__")
 
     assert len(calls) == 1
-    assert calls[0].get("debug") is not True
+    flask_app, kwargs = calls[0]
+    assert not kwargs.get("debug")
+    assert not kwargs.get("use_debugger")
+    assert not flask_app.debug
