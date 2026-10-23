@@ -2,6 +2,7 @@
 reported bug (workflows/bug-fix.md) and must never be weakened or removed.
 """
 import datetime as dt
+import inspect
 import pathlib
 import runpy
 
@@ -53,14 +54,20 @@ def test_employee_text_is_shown_as_text_not_html_on_every_screen(client, path):
 def test_running_app_py_does_not_force_debug_mode(monkeypatch):
     """Issue #3 (B-2): `python app.py` must not switch the Werkzeug debugger on by itself;
     debug is only ever enabled locally through the environment (docs/security.md)."""
+    run_signature = inspect.signature(flask.Flask.run)
     calls = []
-    monkeypatch.setattr(flask.Flask, "run", lambda self, *a, **kw: calls.append((self, kw)))
+
+    def fake_run(self, *args, **kwargs):
+        # bind to the real signature so positional and keyword arguments are judged alike
+        calls.append((self, run_signature.bind(self, *args, **kwargs).arguments))
+
+    monkeypatch.setattr(flask.Flask, "run", fake_run)
     monkeypatch.delenv("FLASK_DEBUG", raising=False)
 
     runpy.run_path(str(APP_PY), run_name="__main__")
 
     assert len(calls) == 1
-    flask_app, kwargs = calls[0]
-    assert not kwargs.get("debug")
-    assert not kwargs.get("use_debugger")
+    flask_app, arguments = calls[0]
+    assert not arguments.get("debug")
+    assert not arguments.get("options", {}).get("use_debugger")
     assert not flask_app.debug
