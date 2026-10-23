@@ -104,6 +104,7 @@ def test_current_repository_passes():
     """CB-2: this repository is in the passing state today."""
     result = run_tool(REPO)
     assert result.returncode == 0, result.stdout
+    assert "skipped" not in result.stdout
 
 
 # --- CB-3 -----------------------------------------------------------------------------------
@@ -143,7 +144,7 @@ def test_skips_outside_a_git_work_tree(tmp_path):
     result = run_tool(plain, env={**os.environ, "GIT_CEILING_DIRECTORIES": str(tmp_path)})
 
     assert result.returncode == 0
-    assert "skipped" in result.stdout
+    assert "skipped - not a git work tree (" in result.stdout  # git's own reason is named
 
 
 def test_skips_when_git_is_not_installed(repo):
@@ -155,4 +156,4 @@ def test_skips_when_git_is_not_installed(repo):
     result = run_tool(repo, env=env)
 
     assert result.returncode == 0
-    assert "skipped" in result.stdout
+    assert "skipped - git is not installed" in result.stdout

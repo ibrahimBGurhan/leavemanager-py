@@ -45,8 +45,14 @@ def main(argv):
     repo = pathlib.Path(argv[1]) if len(argv) > 1 else pathlib.Path.cwd()
     try:
         git(repo, "rev-parse", "--is-inside-work-tree")
-    except (OSError, subprocess.CalledProcessError):
-        print("NOTE: exec-bit check skipped - not a git work tree")
+    except OSError:
+        print("NOTE: exec-bit check skipped - git is not installed")
+        return 0
+    except subprocess.CalledProcessError as e:
+        # name git's own reason, so an unexpected skip (e.g. safe.directory) is visible
+        reason = e.stderr.decode("utf-8", "replace").strip().splitlines()
+        print("NOTE: exec-bit check skipped - not a git work tree"
+              + (f" ({reason[0]})" if reason else ""))
         return 0
 
     violations = [
