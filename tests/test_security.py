@@ -1,15 +1,20 @@
 """Security regression guards (docs/security.md). Each test is the permanent reproduction of a
 reported bug (workflows/bug-fix.md) and must never be weakened or removed.
 """
+import datetime as dt
 import pathlib
 import runpy
 
 import flask
+import pytest
 
-from conftest import table_rows
+import app as leave_app
+from conftest import table_rows, visible_text
 
 APP_PY = pathlib.Path(__file__).resolve().parent.parent / "app.py"
 PAYLOAD = "<script>alert(1)</script>"
+NAME = "<b>Ad</b>"
+DEPARTMENT = "<i>Birim</i>"
 
 
 def test_request_reason_is_shown_as_text_not_html(client):
@@ -25,6 +30,24 @@ def test_request_reason_is_shown_as_text_not_html(client):
     assert table_rows(html)[-1] == [
         "Mehmet Demir", "2026-11-16", "2026-11-16", "1", PAYLOAD, "Beklemede",
     ]
+
+
+@pytest.mark.parametrize("path", ["/", "/requests", "/new"])
+def test_employee_text_is_shown_as_text_not_html_on_every_screen(client, path):
+    """Issue #2 (B-1), root cause: every text value placed into page HTML is escaped — employee
+    name and department too, on every screen that shows them."""
+    leave_app.Db.employees.append(
+        {"id": 6, "name": NAME, "department": DEPARTMENT, "hire_date": dt.date(2020, 1, 6)})
+    leave_app.Db.requests.append(
+        {"id": 9, "employee_id": 6, "start": dt.date(2026, 11, 16), "end": dt.date(2026, 11, 16),
+         "reason": "x", "status": "Beklemede"})
+
+    html = client.get(path).get_data(as_text=True)
+    assert NAME not in html
+    assert NAME in visible_text(html)
+    if path == "/":
+        assert DEPARTMENT not in html
+        assert [NAME, DEPARTMENT, "20", "0", "20"] in table_rows(html)
 
 
 def test_running_app_py_does_not_force_debug_mode(monkeypatch):
