@@ -40,11 +40,13 @@ def starts_with_shebang(file):
 
 
 def main(argv):
+    # UTF-8 everywhere: a Windows pipe would otherwise use the ANSI code page and garble paths.
+    sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
     repo = pathlib.Path(argv[1]) if len(argv) > 1 else pathlib.Path.cwd()
     try:
         git(repo, "rev-parse", "--is-inside-work-tree")
     except (OSError, subprocess.CalledProcessError):
-        print("NOTE: exec-bit check skipped — not a git work tree")
+        print("NOTE: exec-bit check skipped - not a git work tree")
         return 0
 
     violations = [
@@ -53,7 +55,7 @@ def main(argv):
     ]
     for path in violations:
         print(f"exec-bits: {path} starts with '#!' but is 100644"
-              f" — fix: git update-index --chmod=+x {shlex.quote(path)}")
+              f" - fix: git update-index --chmod=+x {shlex.quote(path)}")
     return 1 if violations else 0
 
 

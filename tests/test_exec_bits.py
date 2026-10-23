@@ -57,6 +57,17 @@ def test_reports_shebang_file_without_exec_bit(repo):
     assert "git update-index --chmod=+x 'tools/run me.sh'" in result.stdout
 
 
+def test_report_is_utf8_and_keeps_non_ascii_paths(repo):
+    """CB-1: the path is printed as it is — also non-ASCII — in UTF-8 on every platform."""
+    add(repo, "araçlar/çalıştır.sh", SHEBANG)
+
+    result = subprocess.run([sys.executable, str(TOOL)], cwd=repo, capture_output=True)
+
+    assert result.returncode == 1
+    out = result.stdout.decode("utf-8")  # strict: a non-UTF-8 byte raises
+    assert "araçlar/çalıştır.sh starts with '#!' but is 100644" in out
+
+
 def test_ignores_symlink_and_submodule_entries(repo):
     """CB-1: symlink (120000) and submodule (160000) entries are not judged."""
     add(repo, "scripts/ok", SHEBANG, executable=True)
