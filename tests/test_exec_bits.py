@@ -109,6 +109,20 @@ def test_repository_root_with_non_utf8_bytes_is_handled(tmp_path):
     assert b"exec-bits: build starts with" in result.stdout
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows drops trailing spaces from names")
+def test_repository_root_with_surrounding_spaces_is_kept(tmp_path):
+    """CB-1: only git's newline is cut from the root path; its own spaces stay."""
+    root = tmp_path / " repo "
+    root.mkdir()
+    git(root, "init", "-q")
+    add(root, "build", SHEBANG)
+
+    result = run_tool(root)
+
+    assert result.returncode == 1, result.stderr
+    assert "exec-bits: build starts with" in result.stdout
+
+
 def test_ignores_symlink_and_submodule_entries(repo):
     """CB-1: symlink (120000) and submodule (160000) entries are not judged."""
     add(repo, "scripts/ok", SHEBANG, executable=True)
