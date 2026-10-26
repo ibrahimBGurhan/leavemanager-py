@@ -209,6 +209,22 @@ def test_missing_directory_argument_is_a_usage_error(tmp_path):
     assert "skipped" not in result.stdout
 
 
+@pytest.mark.skipif(sys.platform == "win32" or os.geteuid() == 0,
+                    reason="needs POSIX permissions that bind (not root)")
+def test_unenterable_directory_is_not_reported_as_missing_git(repo):
+    """CB-5 boundary: only a missing git is a skip; a directory git cannot enter is red."""
+    locked = repo / "locked"
+    locked.mkdir()
+    locked.chmod(0)
+    try:
+        result = run_tool(repo, ENV, str(locked))
+    finally:
+        locked.chmod(0o755)  # let pytest clean tmp_path up
+
+    assert result.returncode != 0
+    assert "skipped" not in result.stdout
+
+
 def test_skips_when_git_is_not_installed(repo):
     """CB-5: without a git executable the check is skipped with a note, not failed."""
     add(repo, "scripts/build", SHEBANG)

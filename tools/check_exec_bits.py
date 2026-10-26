@@ -54,7 +54,7 @@ def main(argv):
         # paths, the adapters/ exclusion and the fix command are all relative to the repo root
         top = git(start, "rev-parse", "--show-toplevel").strip()
         repo = pathlib.Path(top.decode("utf-8", "surrogateescape"))
-    except OSError:
+    except FileNotFoundError:  # [dir] exists (checked above), so only git itself can be missing
         print("NOTE: exec-bit check skipped - git is not installed")
         return 0
     except subprocess.CalledProcessError as e:
