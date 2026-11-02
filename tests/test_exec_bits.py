@@ -159,9 +159,10 @@ def test_current_repository_passes():
     """CB-2: this repository is in the passing state today.
 
     CB-5: a copy without .git (e.g. a zip) skips with the note instead. Judged by .git, not by
-    git: an unreadable .git (dubious ownership) must stay red, never pass as a skip.
+    git: an unreadable .git (dubious ownership) must stay red, never pass as a skip. The ceiling
+    matches scripts/check.conf: a copy inside another repository never judges the outer one.
     """
-    result = run_tool(REPO)
+    result = run_tool(REPO, {**ENV, "GIT_CEILING_DIRECTORIES": str(REPO.parent)})
     assert result.returncode == 0, result.stdout
     if (REPO / ".git").exists():  # a directory, or a file in a linked worktree
         assert "skipped" not in result.stdout
