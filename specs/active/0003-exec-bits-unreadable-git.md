@@ -1,6 +1,6 @@
 # Spec 0003 — exec-bits-unreadable-git (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0003-plan.md`
 - Source: #7
