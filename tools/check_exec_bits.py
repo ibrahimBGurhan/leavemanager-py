@@ -2,7 +2,8 @@
 
 Reports every tracked file that starts with '#!' but is committed as 100644, because Linux CI
 cannot execute it (PR #1: "Permission denied", exit 126). Reads modes from the git index, not the
-file system: Windows has no exec bit, and the index is what CI checks out.
+file system: Windows has no exec bit, and the index is what CI checks out. The '#!' itself is read
+from the work tree; unstaged edits and sparse paths are not judged.
 
     python tools/check_exec_bits.py [dir]    # any directory inside the repo; default: cwd
 
