@@ -57,6 +57,9 @@ class MemoryStorage:
     def requests(self):
         return Db.requests
 
+    def add_employee(self, record):
+        Db.employees.append(record)
+
     def add_request(self, record):
         Db.requests.append(record)
 
