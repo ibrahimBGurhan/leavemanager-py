@@ -373,9 +373,11 @@ def test_ceiling_given_through_a_symlink_is_honoured(tmp_path):
     try:
         link.symlink_to(outer, target_is_directory=True)
     except OSError as e:
-        if sys.platform != "win32":
-            raise  # POSIX must run this case (CI), never skip it
-        pytest.skip(f"no privilege to create symlinks on Windows ({e.winerror})")
+        # only the missing privilege (ERROR_PRIVILEGE_NOT_HELD) is a skip; POSIX must run this
+        # case (CI), and any other error is red
+        if sys.platform != "win32" or getattr(e, "winerror", None) != 1314:
+            raise
+        pytest.skip("no privilege to create symlinks on Windows (1314)")
 
     result = run_tool(inner, {**ENV, "GIT_CEILING_DIRECTORIES": str(link)})
 
