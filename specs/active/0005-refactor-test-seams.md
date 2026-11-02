@@ -1,6 +1,6 @@
 # Spec 0005 — refactor-test-seams (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0005-plan.md`
 - Source: #11

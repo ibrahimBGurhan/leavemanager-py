@@ -39,6 +39,33 @@ def seed():
 seed()
 
 # ---------------------------------------------------------------
+# Baglanti noktalari (spec 0005): testler yalniz clock, storage, svc ve app'e
+# dokunur; katmanlara ayrilinca da bu adlar burada kalir
+# ---------------------------------------------------------------
+class SystemClock:
+    # "bugun"un tek kaynagi
+    def today(self):
+        return datetime.now().date()
+
+clock = SystemClock()
+
+class MemoryStorage:
+    # Db uzerinde ince sarmalayici; SQL'e gecilince yalniz bu degisir
+    def employees(self):
+        return Db.employees
+
+    def requests(self):
+        return Db.requests
+
+    def add_request(self, record):
+        Db.requests.append(record)
+
+    def reset(self):
+        seed()
+
+storage = MemoryStorage()
+
+# ---------------------------------------------------------------
 # Servis katmani - tum is mantigi burada (ve biraz da HTML :))
 # ---------------------------------------------------------------
 class LeaveService:
@@ -57,7 +84,7 @@ class LeaveService:
 
     def get_seniority_years(self, emp):
         # yil farki yeterli, ay/gun onemli degil dedi IK (2015)
-        today = datetime.now().date()
+        today = clock.today()
         return today.year - emp["hire_date"].year
 
     # def recalculate_year_end(self):
@@ -96,7 +123,7 @@ class LeaveService:
             # bakiye kontrolu (route'ta da var ama burada da dursun, saglamcilik)
             if self.get_remaining(emp) <= days:
                 return False
-            if start < datetime.now().date():
+            if start < clock.today():
                 pass  # gecmis tarih... IK bazen geriye donuk giriyor, dokunma
             Db.requests.append({"id": Db.next_id, "employee_id": emp_id, "start": start,
                                 "end": end, "reason": reason, "status": "Beklemede"})
