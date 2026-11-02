@@ -335,3 +335,52 @@ def test_unreadable_git_above_the_ceiling_is_not_judged(tmp_path):
 
     assert result.returncode == 0
     assert "skipped - not a git work tree" in result.stdout
+
+
+# --- spec 0004: the ceiling is compared by its physical path -----------------------------------
+
+def outer_repo_with_inner_dir(tmp_path):
+    """An outer dir holding a .git, with an inner dir to run in. The long name has a distinct
+    8.3 short name; "outer" would be its own short name and prove nothing."""
+    outer = tmp_path / "outer-with-a-long-name"
+    (outer / ".git").mkdir(parents=True)
+    inner = outer / "inner"
+    inner.mkdir()
+    return outer, inner
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="8.3 short names exist only on Windows")
+def test_ceiling_given_as_a_short_name_is_honoured(tmp_path):
+    """0004 PB-1/PB-2: a short-name ceiling still stops the search above the project root."""
+    import ctypes
+    outer, inner = outer_repo_with_inner_dir(tmp_path)
+    buf = ctypes.create_unicode_buffer(32768)
+    ctypes.windll.kernel32.GetShortPathNameW(str(outer), buf, len(buf))
+    if not buf.value or buf.value.lower() == str(outer).lower():
+        pytest.skip("8.3 short names are disabled on this volume")
+
+    result = run_tool(inner, {**ENV, "GIT_CEILING_DIRECTORIES": buf.value})
+
+    assert result.returncode == 0
+    assert "skipped - not a git work tree" in result.stdout
+    assert "exec-bits:" not in result.stdout
+
+
+def test_ceiling_given_through_a_symlink_is_honoured(tmp_path):
+    """0004 PB-1/PB-2: a ceiling reached through a symlink still stops the search."""
+    outer, inner = outer_repo_with_inner_dir(tmp_path)
+    link = tmp_path / "link"
+    try:
+        link.symlink_to(outer, target_is_directory=True)
+    except OSError as e:
+        # only the missing privilege (ERROR_PRIVILEGE_NOT_HELD) is a skip; POSIX must run this
+        # case (CI), and any other error is red
+        if sys.platform != "win32" or getattr(e, "winerror", None) != 1314:
+            raise
+        pytest.skip("no privilege to create symlinks on Windows (1314)")
+
+    result = run_tool(inner, {**ENV, "GIT_CEILING_DIRECTORIES": str(link)})
+
+    assert result.returncode == 0
+    assert "skipped - not a git work tree" in result.stdout
+    assert "exec-bits:" not in result.stdout
