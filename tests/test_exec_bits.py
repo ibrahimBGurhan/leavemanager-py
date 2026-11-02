@@ -156,10 +156,17 @@ def test_passes_when_every_shebang_file_is_executable(repo):
 
 
 def test_current_repository_passes():
-    """CB-2: this repository is in the passing state today."""
+    """CB-2: this repository is in the passing state today.
+
+    CB-5: a copy without .git (e.g. a zip) skips with the note instead. Judged by .git, not by
+    git: an unreadable .git (dubious ownership) must stay red, never pass as a skip.
+    """
     result = run_tool(REPO)
     assert result.returncode == 0, result.stdout
-    assert "skipped" not in result.stdout
+    if (REPO / ".git").exists():  # a directory, or a file in a linked worktree
+        assert "skipped" not in result.stdout
+    else:
+        assert "skipped - not a git work tree" in result.stdout
 
 
 # --- CB-3 -----------------------------------------------------------------------------------
