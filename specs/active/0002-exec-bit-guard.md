@@ -27,7 +27,11 @@ ANEW core dosyası `scripts/doctor` değişmez (ANALYZE kararı, #5).
 - [ ] CB-4 — Shebang'siz dosyalar (`app.py`, `scripts/check.conf`, `*.md` …) mode'larından
   bağımsız olarak raporlanmaz.
 - [ ] CB-5 — Git çalışma ağacı olmayan bir kopyada (ör. zip) ya da `git` kurulu değilken kontrol
-  kırmızıya düşmez; atlandığını söyleyen tek satırlık bir not yazar.
+  kırmızıya düşmez; atlandığını söyleyen tek satırlık bir not yazar. Bu, `exec-bits` adımıyla
+  sınırlı değildir: depo kökünde `.git` yoksa `./scripts/check`'in tamamı (full ve `--fast`)
+  yeşildir; CB-2'nin gerçek depo kanıtı yalnızca `.git` varken uygulanır. `.git` olduğu hâlde
+  git depoyu okuyamıyorsa (ör. `safe.directory` / dubious ownership) bu bir atlama sayılmaz:
+  `./scripts/check` kırmızıdır. *(R-08, review round 4 F-1 — 2026-11-02.)*
 
 ## Preserved behavior
 - [ ] PB-1 — ANEW core dosyaları değişmez: `git diff main -- scripts/doctor scripts/check scripts/residue scripts/selftest scripts/init` boştur ve `./scripts/selftest` 82/82 geçer.
