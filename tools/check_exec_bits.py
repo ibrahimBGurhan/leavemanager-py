@@ -8,9 +8,10 @@ changes are not, and paths missing from the work tree (sparse checkout) are skip
 
     python tools/check_exec_bits.py [dir]    # any directory inside the repo; default: cwd
 
-Exit 0 = clean (or skipped outside a git work tree), 1 = violations found, 2 = [dir] is not a
-directory.
+Exit 0 = clean (or skipped: no .git up to the ceiling, or git not installed), 1 = violations
+found or a .git that git cannot read (spec 0003), 2 = [dir] is not a directory.
 """
+import os
 import pathlib
 import shlex
 import subprocess
@@ -42,6 +43,19 @@ def starts_with_shebang(file):
         return False
 
 
+def find_dot_git(start):
+    """Directory holding a .git, searched upwards like git: never into GIT_CEILING_DIRECTORIES."""
+    ceilings = {pathlib.Path(p).resolve()
+                for p in os.environ.get("GIT_CEILING_DIRECTORIES", "").split(os.pathsep) if p}
+    here = start.resolve()
+    while True:
+        if (here / ".git").exists():  # a directory, or a file in a linked worktree
+            return here
+        if here.parent == here or here.parent in ceilings:
+            return None
+        here = here.parent
+
+
 def main(argv):
     # UTF-8 everywhere: a Windows pipe would otherwise use the ANSI code page and garble paths.
     # surrogateescape: a non-UTF-8 file name (POSIX) is written back byte for byte, so the
@@ -60,8 +74,14 @@ def main(argv):
         print("NOTE: exec-bit check skipped - git is not installed")
         return 0
     except subprocess.CalledProcessError as e:
-        # name git's own reason, so an unexpected skip (e.g. safe.directory) is visible
         reason = e.stderr.decode("utf-8", "replace").strip().splitlines()
+        # git's message cannot tell "no repository" from "unreadable repository" (a corrupt
+        # HEAD also says "not a git repository"), so a .git on the way up decides: red (0003)
+        found = find_dot_git(start)
+        if found is not None:
+            print(f"exec-bits: cannot read the git repository at {found}"
+                  + (f" - {reason[0]}" if reason else ""))
+            return 1
         print("NOTE: exec-bit check skipped - not a git work tree"
               + (f" ({reason[0]})" if reason else ""))
         return 0

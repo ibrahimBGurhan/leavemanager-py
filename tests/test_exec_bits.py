@@ -257,3 +257,81 @@ def test_skips_when_git_is_not_installed(repo):
 
     assert result.returncode == 0
     assert "skipped - git is not installed" in result.stdout
+
+
+# --- spec 0003: an unreadable .git fails the step -------------------------------------------
+
+def make_unreadable(root, case):
+    """A .git under root that git cannot read; returns the env (with ceiling) to run git in."""
+    env = {**ENV, "GIT_CEILING_DIRECTORIES": str(root.parent)}
+    if case == "dubious":
+        git(root, "init", "-q")
+        env["GIT_TEST_ASSUME_DIFFERENT_OWNER"] = "1"
+    elif case == "corrupt-head":
+        git(root, "init", "-q")
+        (root / ".git" / "HEAD").write_text("garbage\n")
+    elif case == "dangling-gitfile":
+        (root / ".git").write_text(f"gitdir: {root / 'nowhere'}\n")
+    elif case == "empty-git-dir":
+        (root / ".git").mkdir()
+    return env
+
+
+def git_reason(cwd, env):
+    """First line of git's own error for this directory; asserts git really fails there."""
+    result = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=cwd, env=env,
+                            capture_output=True, text=True)
+    assert result.returncode != 0, "setup: git can read this repository"
+    return result.stderr.strip().splitlines()[0]
+
+
+@pytest.mark.parametrize("case", ["dubious", "corrupt-head", "dangling-gitfile", "empty-git-dir"])
+def test_unreadable_git_fails_the_step(tmp_path, case):
+    """0003 CB-1..CB-3: a .git git cannot read is red with git's reason, never a skip."""
+    env = make_unreadable(tmp_path, case)
+    reason = git_reason(tmp_path, env)
+
+    result = run_tool(tmp_path, env)
+
+    assert result.returncode == 1
+    lines = result.stdout.splitlines()
+    assert len(lines) == 1 and lines[0].startswith("exec-bits:")
+    assert reason in lines[0]
+    assert "skipped" not in result.stdout
+
+
+def test_unreadable_git_is_found_from_a_subdirectory(tmp_path):
+    """0003 CB-1: a [dir] below the unreadable .git gets the same red."""
+    env = make_unreadable(tmp_path, "corrupt-head")
+    sub = tmp_path / "sub"
+    sub.mkdir()
+
+    result = run_tool(tmp_path, env, str(sub))
+
+    assert result.returncode == 1
+    assert result.stdout.startswith("exec-bits:")
+
+
+def test_git_missing_wins_over_an_unreadable_git(tmp_path):
+    """0003 PB-2: without git, a .git cannot be judged, so the check is skipped."""
+    env = make_unreadable(tmp_path, "corrupt-head")
+    env = {k: v for k, v in env.items() if k.upper() != "PATH"}
+    env["PATH"] = ""
+
+    result = run_tool(tmp_path, env)
+
+    assert result.returncode == 0
+    assert "skipped - git is not installed" in result.stdout
+
+
+def test_unreadable_git_above_the_ceiling_is_not_judged(tmp_path):
+    """0003 PB-1: a .git above the project root (the ceiling) is never looked at."""
+    outer = tmp_path / "outer"
+    (outer / ".git").mkdir(parents=True)
+    inner = outer / "inner"
+    inner.mkdir()
+
+    result = run_tool(inner, {**ENV, "GIT_CEILING_DIRECTORIES": str(outer)})
+
+    assert result.returncode == 0
+    assert "skipped - not a git work tree" in result.stdout

@@ -51,7 +51,8 @@
 - **pytest**: tüm test seti `./scripts/check` içinde çalışır.
 - **exec-bits** (`tools/check_exec_bits.py`, spec 0002): git'te izlenen ve `#!` ile başlayan her dosya
   `100755` olmalı (`adapters/` şablonları hariç). Windows'ta yeni bir script eklerken
-  `git add --chmod=+x <dosya>` kullanın.
+  `git add --chmod=+x <dosya>` kullanın. Proje kökünde `.git` olduğu hâlde git depoyu okuyamıyorsa
+  (ör. dubious ownership) bu bir atlama değil, `exec-bits` adımında kırmızıdır (spec 0003).
 - **Proje araçları** `tools/` altında durur. `scripts/` altındaki ANEW core dosyaları (`doctor`,
   `check`, `residue`, `selftest`, `init`) yerelde değiştirilmez; `scripts/check.conf` projeye aittir
   ve proje adımları, ANEW yükseltmelerinde çakışma olmasın diye, onun üzerinden bağlanır.
