@@ -40,7 +40,10 @@ none — no observable behavior change.
   modülünün `datetime` adına, `Db` sınıfının alanlarına ve `LeaveService.status_badge`'e
   doğrudan erişim yoktur. "Bugün" testlere tek bir bağlantı noktasından verilir
   (`docs/architecture.md`: "bugün dışarıdan enjekte edilir"). Kanıt: `tests/` altında
-  `leave_app.datetime`, `.Db.` ve `status_badge` için yapılan arama boş döner.
+  `leave_app.datetime`, `.Db.` ve `.status_badge(` için yapılan arama boş döner (arama erişime
+  bakar, test adına değil; `test_status_badge` adı PB-2 gereği kalır). Kapsam `tests/`'in
+  tamamıdır, `tests/test_security.py` dahil: veri o dosyada da `storage` üzerinden eklenir,
+  testin sınadığı şey ve assert'leri değişmez.
 - [ ] PB-4 — Bağlantı noktalarının yeterliliği kanıtlanır: iş kuralları (`LeaveService`) ve veri
   (`Db`, `seed`) repo dışında, geçici bir kopyada `app.py`'den ayrı modüllere taşındığında testler
   **hiç değiştirilmeden** yeşil kalır. Bu kopya commit'lenmez.
@@ -49,6 +52,13 @@ none — no observable behavior change.
   scripts/selftest scripts/init` boş); `./scripts/selftest` 82/82; `./scripts/residue` ve
   `--fast` CLEAN; testler rastgele sırada da aynı sonucu verir (`ANEW_REVERSE_ORDER=1`, spec
   0001/AC-11); PR'da CI (`doctor` ve `check`) yeşil.
+
+## Spec değişikliği (BUILD sırasında, 2026-11-03)
+R-07 (plan sapması) ile bulundu, İbrahim Gürhan onayladı:
+- **D-1:** PB-3 `tests/`'in tamamını kapsar; `tests/test_security.py:40-44` `Db` alanlarına
+  doğrudan ekleme yapıyordu ve plan bu dosyayı listelememişti. Dosya kapsama alındı.
+- **D-2:** PB-3'ün arama ifadesi `status_badge` → `.status_badge(` olarak netleşti; eski ifade
+  PB-2'nin koruduğu `test_status_badge` adıyla çelişiyordu. Kuralın anlamı aynı.
 
 ## Out of scope
 - Katmanlara ayırmanın kendisi (`web`, `domain`, `storage` paketleri) — sonraki iş, ayrı issue.
