@@ -1,6 +1,8 @@
 """Shared fixtures for the baseline (characterization) tests — spec 0001.
 
-- "Today" is frozen at 2026-10-23 without touching app.py (docs/conventions.md, Data rules).
+- Tests touch app.py only through its seams (spec 0005): app.clock, app.storage, app.svc and
+  app.app. The layer refactor keeps these names at the composition root.
+- "Today" is frozen at 2026-10-23 through app.clock (docs/conventions.md, Data rules).
 - Every test starts from the app's opening data (docs/testing.md, Resource hygiene rule 5).
 - HTML helpers return what the user sees, so tests assert values, not markup (spec 0001, R-5).
 """
@@ -15,27 +17,19 @@ import app as leave_app
 TODAY = _dt.date(2026, 10, 23)
 
 
-class FrozenDatetime(_dt.datetime):
-    """datetime whose now() is TODAY; strptime and the rest behave as usual."""
-
-    @classmethod
-    def now(cls, tz=None):
-        return cls(TODAY.year, TODAY.month, TODAY.day, 12, 0, tzinfo=tz)
-
-
 @pytest.fixture(autouse=True)
 def frozen_today(monkeypatch):
-    monkeypatch.setattr(leave_app, "datetime", FrozenDatetime)
+    monkeypatch.setattr(leave_app.clock, "today", lambda: TODAY)
 
 
 @pytest.fixture(autouse=True)
 def opening_data():
-    leave_app.seed()
+    leave_app.storage.reset()
 
 
 @pytest.fixture
 def svc():
-    return leave_app.LeaveService()
+    return leave_app.svc
 
 
 @pytest.fixture
@@ -95,3 +89,10 @@ def table_rows(html):
     p = _TextAndTables()
     p.feed(html)
     return p.rows
+
+
+def status_cell_html(html, marker):
+    """Raw HTML of the last cell (Durum) in the one table row whose text contains marker."""
+    rows = [row for row in html.split("<tr>") if marker in row]
+    assert len(rows) == 1, f"expected one row with {marker!r}, got {len(rows)}"
+    return rows[0].split("<td>")[-1].split("</td>")[0]

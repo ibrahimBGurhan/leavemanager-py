@@ -37,9 +37,9 @@ def test_request_reason_is_shown_as_text_not_html(client):
 def test_employee_text_is_shown_as_text_not_html_on_every_screen(client, path):
     """Issue #2 (B-1), root cause: every text value placed into page HTML is escaped — employee
     name and department too, on every screen that shows them."""
-    leave_app.Db.employees.append(
+    leave_app.storage.add_employee(
         {"id": 6, "name": NAME, "department": DEPARTMENT, "hire_date": dt.date(2020, 1, 6)})
-    leave_app.Db.requests.append(
+    leave_app.storage.add_request(
         {"id": 9, "employee_id": 6, "start": dt.date(2026, 11, 16), "end": dt.date(2026, 11, 16),
          "reason": "x", "status": "Beklemede"})
 

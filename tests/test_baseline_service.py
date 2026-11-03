@@ -8,7 +8,7 @@ import datetime as dt
 import pytest
 
 import app as leave_app
-from conftest import TODAY
+from conftest import TODAY, status_cell_html
 
 
 def employee(hire_date, emp_id=100):
@@ -16,7 +16,7 @@ def employee(hire_date, emp_id=100):
 
 
 def by_name(name):
-    return next(e for e in leave_app.Db.employees if e["name"] == name)
+    return next(e for e in leave_app.storage.employees() if e["name"] == name)
 
 
 # --- AC-1 -----------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ def test_only_approved_requests_count_as_used(svc):
     """AC-4 (BR-4 / BR-5): bekleyen ve reddedilen talepler kullanılanı değiştirmez."""
     ayse = by_name("Ayse Yilmaz")
     for status in ("Beklemede", "Reddedildi"):
-        leave_app.Db.requests.append({
+        leave_app.storage.add_request({
             "id": 99, "employee_id": ayse["id"], "start": dt.date(2026, 11, 16),
             "end": dt.date(2026, 11, 20), "reason": "x", "status": status,
         })
@@ -115,8 +115,8 @@ def test_create_request_saves_pending_request(svc):
     mehmet = by_name("Mehmet Demir")
     ok = svc.create_request(mehmet["id"], dt.date(2026, 11, 16), dt.date(2026, 11, 18), "Tatil")
     assert ok is True
-    assert len(leave_app.Db.requests) == 9
-    saved = leave_app.Db.requests[-1]
+    assert len(leave_app.storage.requests()) == 9
+    saved = leave_app.storage.requests()[-1]
     assert saved == {
         "id": 9, "employee_id": mehmet["id"], "start": dt.date(2026, 11, 16),
         "end": dt.date(2026, 11, 18), "reason": "Tatil", "status": "Beklemede",
@@ -128,8 +128,8 @@ def test_create_request_accepts_past_dates(svc):
     mehmet = by_name("Mehmet Demir")
     ok = svc.create_request(mehmet["id"], dt.date(2026, 1, 5), dt.date(2026, 1, 6), "Geriye donuk")
     assert ok is True
-    assert leave_app.Db.requests[-1]["start"] == dt.date(2026, 1, 5)
-    assert leave_app.Db.requests[-1]["status"] == "Beklemede"
+    assert leave_app.storage.requests()[-1]["start"] == dt.date(2026, 1, 5)
+    assert leave_app.storage.requests()[-1]["status"] == "Beklemede"
 
 
 def test_create_request_rejects_when_remaining_equals_days_current(svc):
@@ -137,7 +137,7 @@ def test_create_request_rejects_when_remaining_equals_days_current(svc):
     zeynep = by_name("Zeynep Kaya")  # kalan 14
     ok = svc.create_request(zeynep["id"], dt.date(2026, 12, 1), dt.date(2026, 12, 14), "Uzun")
     assert ok is False
-    assert len(leave_app.Db.requests) == 8
+    assert len(leave_app.storage.requests()) == 8
 
 
 def test_create_request_unknown_employee_reports_success_current(svc):
@@ -145,7 +145,7 @@ def test_create_request_unknown_employee_reports_success_current(svc):
     başarılı gösterilmez · OD-7) · AC-5: olmayan personel kaydedilmez ama True döner."""
     ok = svc.create_request(99, dt.date(2026, 11, 16), dt.date(2026, 11, 16), "x")
     assert ok is True
-    assert len(leave_app.Db.requests) == 8
+    assert len(leave_app.storage.requests()) == 8
 
 
 # --- AC-6 -----------------------------------------------------------------------------------
@@ -162,8 +162,12 @@ def test_create_request_unknown_employee_reports_success_current(svc):
         ("Iptal", "#999"),        # bilinmeyen durum gri
     ],
 )
-def test_status_badge(svc, status, color):
-    """AC-6: rozet rengi ve metni."""
-    badge = svc.status_badge(status)
+def test_status_badge(client, status, color):
+    """AC-6: rozet rengi ve metni — talepler ekranında, kullanıcının gördüğü yerde (spec 0005)."""
+    leave_app.storage.add_request({
+        "id": 99, "employee_id": 1, "start": dt.date(2026, 11, 16),
+        "end": dt.date(2026, 11, 16), "reason": "rozet-testi", "status": status,
+    })
+    badge = status_cell_html(client.get("/requests").get_data(as_text=True), "rozet-testi")
     assert f"color:{color}" in badge
     assert status in badge
