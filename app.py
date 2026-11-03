@@ -4,39 +4,11 @@
 # NOT: Bu dosyaya dokunmadan once Ahmet'e sor. (Ahmet 2019'da ayrildi)
 from flask import Flask, request, redirect, render_template_string
 from markupsafe import escape
-from datetime import datetime, date
+from datetime import datetime
+
+from storage.memory import MemoryStorage
 
 app = Flask(__name__)
-
-# ---------------------------------------------------------------
-# "Veritabani" - simdilik memory'de, sonra SQL'e gecilecek (2016)
-# ---------------------------------------------------------------
-class Db:
-    employees = []
-    requests = []
-    next_id = 1
-
-def seed():
-    Db.employees = [
-        {"id": 1, "name": "Ayse Yilmaz",  "department": "IT",       "hire_date": date(2008, 3, 15)},
-        {"id": 2, "name": "Mehmet Demir", "department": "Muhasebe", "hire_date": date(2019, 6, 1)},
-        {"id": 3, "name": "Zeynep Kaya",  "department": "IK",       "hire_date": date(2024, 11, 10)},
-        {"id": 4, "name": "Ahmet Celik",  "department": "IT",       "hire_date": date(2020, 2, 29)},  # artik yil - dikkat
-        {"id": 5, "name": "Elif Sahin",   "department": "Satis",    "hire_date": date(2026, 6, 1)},
-    ]
-    Db.requests = [
-        {"id": 1, "employee_id": 1, "start": date(2026, 7, 6),  "end": date(2026, 7, 17), "reason": "Yaz tatili",      "status": "Onaylandi"},
-        {"id": 2, "employee_id": 2, "start": date(2026, 11, 2), "end": date(2026, 11, 4), "reason": "Aile ziyareti",   "status": "Beklemede"},
-        {"id": 3, "employee_id": 3, "start": date(2026, 11, 9), "end": date(2026, 11, 9), "reason": "Saglik",          "status": "Beklemede"},
-        {"id": 4, "employee_id": 4, "start": date(2026, 12, 21),"end": date(2026, 12, 25),"reason": "Yilbasi oncesi",  "status": "Beklemede"},
-        {"id": 5, "employee_id": 1, "start": date(2026, 12, 28),"end": date(2026, 12, 30),"reason": "Yil sonu",        "status": "Beklemede"},
-        {"id": 6, "employee_id": 5, "start": date(2026, 10, 5), "end": date(2026, 10, 7), "reason": "Tasinma",         "status": "Reddedildi"},
-        {"id": 7, "employee_id": 3, "start": date(2026, 9, 14), "end": date(2026, 9, 25), "reason": "Uzun tatil",      "status": "Reddedildi"},
-        {"id": 8, "employee_id": 2, "start": date(2026, 8, 3),  "end": date(2026, 8, 3),  "reason": "Ozel is",         "status": "Reddedildi"},
-    ]
-    Db.next_id = 9
-
-seed()
 
 # ---------------------------------------------------------------
 # Baglanti noktalari (spec 0005): testler yalniz clock, storage, svc ve app'e
@@ -48,23 +20,6 @@ class SystemClock:
         return datetime.now().date()
 
 clock = SystemClock()
-
-class MemoryStorage:
-    # Db uzerinde ince sarmalayici; SQL'e gecilince yalniz bu degisir
-    def employees(self):
-        return Db.employees
-
-    def requests(self):
-        return Db.requests
-
-    def add_employee(self, record):
-        Db.employees.append(record)
-
-    def add_request(self, record):
-        Db.requests.append(record)
-
-    def reset(self):
-        seed()
 
 storage = MemoryStorage()
 
@@ -92,7 +47,7 @@ class LeaveService:
 
     # def recalculate_year_end(self):
     #     # yil sonunda devreden izinleri yeniden hesapla
-    #     # for e in Db.employees:
+    #     # for e in storage.employees():
     #     #     carry = self.get_remaining(e)
     #     #     if carry > 5: carry = 5
     #     #     e["carry"] = carry
@@ -101,7 +56,7 @@ class LeaveService:
 
     def get_used_days(self, emp_id):
         total = 0
-        for r in Db.requests:
+        for r in storage.requests():
             if r["employee_id"] == emp_id and r["status"] == "Onaylandi":
                 total += self.calc_days(r["start"], r["end"])
         return total
@@ -117,7 +72,7 @@ class LeaveService:
     def create_request(self, emp_id, start, end, reason):
         try:
             emp = None
-            for e in Db.employees:
+            for e in storage.employees():
                 if e["id"] == emp_id:
                     emp = e
             if emp is None:
@@ -128,9 +83,8 @@ class LeaveService:
                 return False
             if start < clock.today():
                 pass  # gecmis tarih... IK bazen geriye donuk giriyor, dokunma
-            Db.requests.append({"id": Db.next_id, "employee_id": emp_id, "start": start,
-                                "end": end, "reason": reason, "status": "Beklemede"})
-            Db.next_id += 1
+            storage.add_request({"id": storage.next_request_id(), "employee_id": emp_id, "start": start,
+                                 "end": end, "reason": reason, "status": "Beklemede"})
             return True
         except Exception:
             # loglanacak
@@ -162,12 +116,12 @@ td,th{border:1px solid #ccc;padding:6px 10px} .kutu{display:inline-block;border:
 
 @app.route("/")
 def dashboard():
-    bekleyen = len([r for r in Db.requests if r["status"] == "Beklemede"])
-    onaylanan = len([r for r in Db.requests if r["status"] == "Onaylandi"])
-    reddedilen = len([r for r in Db.requests if r["status"] == "Reddedildi"])
+    bekleyen = len([r for r in storage.requests() if r["status"] == "Beklemede"])
+    onaylanan = len([r for r in storage.requests() if r["status"] == "Onaylandi"])
+    reddedilen = len([r for r in storage.requests() if r["status"] == "Reddedildi"])
     body = "<div class='kutu'>Bekleyen: <b>%d</b></div><div class='kutu'>Onaylanan: <b>%d</b></div><div class='kutu'>Reddedilen: <b>%d</b></div>" % (bekleyen, onaylanan, reddedilen)
     body += "<h3>Personel Bakiyeleri</h3><table><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanilan</th><th>Kalan</th></tr>"
-    for e in Db.employees:
+    for e in storage.employees():
         body += "<tr><td>%s</td><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>" % (
             escape(e["name"]), escape(e["department"]), svc.get_entitlement(e), svc.get_used_days(e["id"]), svc.get_remaining(e))
     body += "</table>"
@@ -176,8 +130,8 @@ def dashboard():
 @app.route("/requests")
 def list_requests():
     body = "<h3>Izin Talepleri</h3><table><tr><th>Personel</th><th>Baslangic</th><th>Bitis</th><th>Gun</th><th>Neden</th><th>Durum</th></tr>"
-    for r in Db.requests:
-        emp = [e for e in Db.employees if e["id"] == r["employee_id"]][0]
+    for r in storage.requests():
+        emp = [e for e in storage.employees() if e["id"] == r["employee_id"]][0]
         body += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>" % (
             escape(emp["name"]), r["start"], r["end"], svc.calc_days(r["start"], r["end"]), escape(r["reason"]), svc.status_badge(r["status"]))
     body += "</table>"
@@ -190,7 +144,7 @@ def new_request():
             emp_id = int(request.form["employee_id"])
             start = datetime.strptime(request.form["start"], "%Y-%m-%d").date()
             end = datetime.strptime(request.form["end"], "%Y-%m-%d").date()
-            emp = [e for e in Db.employees if e["id"] == emp_id][0]
+            emp = [e for e in storage.employees() if e["id"] == emp_id][0]
             days = (end - start).days + 1
             # bakiye kontrolu (serviste de var ama formda erken uyari iyi oluyor)
             if svc.get_remaining(emp) < days:
@@ -200,7 +154,7 @@ def new_request():
         except Exception:
             # loglanacak
             return redirect("/requests")
-    options = "".join("<option value='%d'>%s</option>" % (e["id"], escape(e["name"])) for e in Db.employees)
+    options = "".join("<option value='%d'>%s</option>" % (e["id"], escape(e["name"])) for e in storage.employees())
     body = """<h3>Yeni Talep</h3><form method="post">
     Personel: <select name="employee_id">%s</select><br><br>
     Baslangic: <input type="date" name="start"><br><br>
