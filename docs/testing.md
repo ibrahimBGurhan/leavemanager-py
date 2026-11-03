@@ -16,8 +16,8 @@
 - **E2E / tarayıcı testi yok** (bootstrap kararı). Gerekirse Playwright eklenir: tek worker,
   headless, yalnızca full profilde; uygulama sürecinin yaşam döngüsünü bir pytest fixture'ı yönetir
   (başlatır, hata ve timeout dahil her durumda durdurur).
-- **Temiz durum (Resource hygiene, kural 5):** veri bugün bellekte. Her test, `seed()` çağıran bir
-  autouse fixture ile bilinen durumdan başlar. Kalıcı DB gelince her çalıştırma için geçici bir
+- **Temiz durum (Resource hygiene, kural 5):** veri bugün bellekte. Her test, açılış verisini yükleyen
+  `storage.reset()`'i çağıran bir autouse fixture ile bilinen durumdan başlar. Kalıcı DB gelince her çalıştırma için geçici bir
   veritabanı kullanılır.
 - **Saat:** "bugün" testlerde sabitlenir (`docs/conventions.md`, Data rules). Seed verisi 2026
   tarihli olduğu için gerçek saate bağlı bir test zamanla kendiliğinden kırılır.

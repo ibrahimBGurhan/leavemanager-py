@@ -9,10 +9,21 @@ uygulamasıdır. Stil: **modüler monolit, üç katman** — `web → domain →
 kuralları (kıdem, hak, bakiye) Flask olmadan test edilebilmeli ve 2016'dan beri bekleyen kalıcı
 veritabanı geçişi yalnızca storage katmanını değiştirmeli.
 
-**Bugünkü durum:** her şey tek dosyada (`app.py`). `Db` bellekte tutuluyor ve her başlatmada
-`seed()` ile sıfırlanıyor. `LeaveService` iş kurallarının yanında HTML de üretiyor
-(`status_badge`), route'lar HTML'i string birleştirerek kuruyor. Katmanlara ayrılma ayrı bir
-refactor spec'iyle yapılır.
+**Bugünkü durum (spec 0006):** üç katman ayrı paketlerde:
+- **`storage/memory.py`:** `MemoryStorage` kayıtları bellekte tutar ve her başlatmada açılış
+  verisiyle kurulur.
+- **`domain/leave_service.py`:** `LeaveService` saati ve depoyu kurulumda parametre olarak alır.
+- **`web/routes.py`:** route'lar, sayfa ve durum rozeti burada.
+- **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati
+  (`SystemClock`), depoyu ve servisi kurup birbirine bağlar; `app`, `clock`, `storage`, `svc`
+  adları testlerin bağlantı noktalarıdır (spec 0005).
+
+Hedeften kalan farklar:
+- Route'lar HTML'i hâlâ string birleştirerek kuruyor (Jinja şablonu yok).
+- Depo arayüzü yazılı bir sözleşme değil, ortak metot adları.
+- Tipli domain istisnaları yok.
+
+Bunlar ayrı işlerle kapatılır.
 
 ## Modules / components and ownership
 
@@ -29,7 +40,7 @@ refactor spec'iyle yapılır.
 - Olay/mesaj altyapısı yok; tüm çağrılar senkron ve süreç içi.
 
 ## Forbidden dependencies (make them testable)
-Bir pytest mimari testi (import taraması) bunları doğrular; katmanlar ayrıldığında eklenir.
+`tests/test_architecture.py` (import ve string taraması, `ast` ile) bunları doğrular (spec 0006).
 1. `domain` paketi `flask`, `werkzeug` veya `jinja2` import etmez.
 2. `domain` HTML üretmez (HTML etiketi içeren string döndürmez; sunum `web`'e aittir).
 3. `web`, `storage`'a doğrudan erişmez — her zaman `domain` üzerinden gider.
