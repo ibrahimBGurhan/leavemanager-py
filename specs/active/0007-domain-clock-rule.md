@@ -1,6 +1,6 @@
 # Spec 0007 — domain-clock-rule (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0007-plan.md`
 - Source: #16
