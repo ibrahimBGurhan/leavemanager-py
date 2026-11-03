@@ -1,6 +1,6 @@
 # Spec 0006 — refactor-layers (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0006-plan.md`
 - Source: #13
