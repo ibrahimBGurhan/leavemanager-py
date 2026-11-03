@@ -2,7 +2,8 @@
 
 **LeaveManager** — personel yıllık izin takibi (Python 3.13 · Flask 3.1). İç kullanım: IK + personel,
 1–2 geliştirici. Hedef: kademeli modernizasyon — mevcut davranış önce karakterizasyon testleriyle
-sabitlenir, sonra değişir. Bugün tek dosya (`app.py`); hedef mimari `docs/architecture.md`.
+sabitlenir, sonra değişir. Bugün üç katman (`web/`, `domain/`, `storage/`) ve composition root `app.py`;
+mimari `docs/architecture.md`.
 
 ## Operating mode
 

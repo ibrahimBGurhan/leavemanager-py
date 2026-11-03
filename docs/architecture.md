@@ -41,6 +41,8 @@ Bunlar ayrı işlerle kapatılır.
 
 ## Forbidden dependencies (make them testable)
 `tests/test_architecture.py` (import ve string taraması, `ast` ile) bunları doğrular (spec 0006).
+Kural 3 ve 4 import düzeyinde sınanır; özel alan erişimi (ör. `svc._storage`) ve ham SQL
+string'leri review'da kontrol edilir.
 1. `domain` paketi `flask`, `werkzeug` veya `jinja2` import etmez.
 2. `domain` HTML üretmez (HTML etiketi içeren string döndürmez; sunum `web`'e aittir).
 3. `web`, `storage`'a doğrudan erişmez — her zaman `domain` üzerinden gider.
