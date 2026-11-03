@@ -56,5 +56,6 @@
 - **Proje araçları** `tools/` altında durur. `scripts/` altındaki ANEW core dosyaları (`doctor`,
   `check`, `residue`, `selftest`, `init`) yerelde değiştirilmez; `scripts/check.conf` projeye aittir
   ve proje adımları, ANEW yükseltmelerinde çakışma olmasın diye, onun üzerinden bağlanır.
+- Mimari yasaklar `tests/test_architecture.py` ile zorlanır (spec 0006).
 - Henüz araçla zorlanmayan, review'da kontrol edilen kurallar: hata yönetimi, enjekte edilen
-  saat, mimari yasaklar (mimari testi katmanlar ayrılınca eklenir), mypy (refactor sonrası).
+  saat, mypy (refactor sonrası).
