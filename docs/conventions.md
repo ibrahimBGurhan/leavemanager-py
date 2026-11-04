@@ -19,7 +19,8 @@
   `python -m venv .venv` ve ardından `.venv/Scripts/python -m pip install -r requirements-dev.txt`
   (Linux/macOS'ta `.venv/bin/python`).
 - Çalışma zamanı bağımlılıkları `requirements.txt`, geliştirme bağımlılıkları `requirements-dev.txt`
-  içinde durur ve **sürümleri sabitlenir** (`==`). Bugün: Flask 3.1.3 · pytest 9.1.1 · ruff 0.17.2.
+  içinde durur ve **sürümleri sabitlenir** (`==`). Bugün: Flask 3.1.3 · Flask-WTF 1.3.0 · WTForms 3.2.1 · pytest 9.1.1 ·
+  ruff 0.17.2.
 
 ## Naming
 - PEP 8: modül/fonksiyon/değişken `snake_case`, sınıf `PascalCase`, sabit `UPPER_SNAKE`.

@@ -7,7 +7,11 @@
 ## Secrets
 - Secrets never enter the repo, specs, prompts, or chat. `.env` is gitignored; provide `.env.example`.
 - Agents never print secret values, even when debugging.
-- Flask `SECRET_KEY` (oturum ve CSRF için gerekli olacak) ortam değişkeninden okunur, koda yazılmaz.
+- Flask `SECRET_KEY` (oturum ve CSRF token'larını imzalar) `SECRET_KEY` ortam değişkeninden okunur,
+  koda yazılmaz; örnek `.env.example`'da (spec 0011). Tanımlı değilse uygulama süreç başına
+  rastgele bir anahtar kullanır ve `app.secrets` logger'ından değeri içermeyen tek bir WARNING
+  yazar; yeniden başlatmada açık formlar geçersizleşir. **Üretimde ve birden çok süreçte mutlaka
+  tanımlanmalı** — her süreç farklı anahtar üretirse formlar rastgele reddedilir.
 
 ## Input & output
 - **Çıktı:** HTML yalnızca Jinja şablonlarında, otomatik kaçış (autoescape) açık olarak üretilir.
@@ -16,7 +20,11 @@
 - **Girdi:** form verisi web katmanında, sınırda doğrulanır: tarih formatı (`YYYY-MM-DD`),
   bitiş ≥ başlangıç, personel kimliği var olan bir personel, `reason` için uzunluk sınırı.
   Geçersiz girdi kullanıcıya anlaşılır bir mesajla döner; sessizce yönlendirilmez.
-- **CSRF:** durum değiştiren her form (POST) CSRF token'ı taşır.
+- **CSRF:** durum değiştiren her form (POST) CSRF token'ı taşır. Flask-WTF `CSRFProtect` ile
+  sağlanır (spec 0011): token tarayıcı oturumuna bağlıdır, süre sınırı yoktur; eksik, bozuk ya da
+  başka oturumun token'ı → 400, hiçbir kayıt değişmez, Türkçe mesaj. Oturum çerezi `HttpOnly` ve
+  `SameSite=Lax`; `Secure` zorlanmaz (iç ağ HTTP). Testlerin ortak istemcisi korumayı kapatır;
+  korumayı `tests/test_csrf.py` açık olarak sınar.
 - **Hata mesajları:** stack trace, istisna metni ve iç kodlar kullanıcıya sızmaz (`docs/conventions.md`).
 - **Debug:** `debug=True` koda yazılmaz. Debug yalnızca yerelde bir ortam değişkeniyle açılır.
   Werkzeug debugger ağdan erişilebilir olduğunda uzaktan kod çalıştırmaya izin verir.
@@ -29,8 +37,9 @@
 - Yetki kontrolü sunucu tarafında, domain'e girmeden önce web katmanında yapılır ve domain
   servisi çağıranın rolünü parametre olarak alır. UI'da bir butonu gizlemek yetkilendirme sayılmaz.
 - *Bugün:* kimlik doğrulama yok, herkes her şeyi görür, herkes adına talep girebilir ve
-  bekleyen her talebi onaylayıp reddedebilir (spec 0010; bilinçli kabul edilen risk). Formlarda
-  CSRF koruması da yok (#25). Giriş sistemi ayrı bir feature'dır; Yönetici / IK onay ayrımı
+  bekleyen her talebi onaylayıp reddedebilir (spec 0010; bilinçli kabul edilen risk). Başka bir
+  siteden gelen sahte form isteği ise CSRF koruması nedeniyle reddedilir (spec 0011). Giriş
+  sistemi ayrı bir feature'dır; Yönetici / IK onay ayrımı
   orada değerlendirilir (`docs/domain.md` OD-7, BR-10).
 
 ## Dependencies
