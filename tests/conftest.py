@@ -12,7 +12,11 @@ from html.parser import HTMLParser
 
 import pytest
 
-import app as leave_app
+# The app configures logging on import (spec 0009); LOG_LEVEL from the developer's shell must not
+# reach the process under test, or caplog stops seeing records (0009 review F-1).
+os.environ.pop("LOG_LEVEL", None)
+
+import app as leave_app  # noqa: E402
 
 TODAY = _dt.date(2026, 10, 23)
 

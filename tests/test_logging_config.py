@@ -143,6 +143,17 @@ def test_each_event_is_logged_once(run, entry):
     assert proc.stderr.count("izin talebi kaydedilemedi") == 1
 
 
+def test_shell_log_level_does_not_reach_the_suite(tmp_path):
+    """S-6, PB-4: LOG_LEVEL=CRITICAL in the shell; the caplog test of spec 0008 still sees ERROR."""
+    env = dict(os.environ, LOG_LEVEL="CRITICAL", PYTHONIOENCODING="utf-8")
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--rootdir", str(ROOT),
+         "-c", str(ROOT / "pytest.ini"),
+         str(ROOT / "tests" / "test_request_errors.py::test_screen_unexpected_error_is_logged_not_shown")],
+        cwd=tmp_path, env=env, capture_output=True, encoding="utf-8", timeout=60)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
 def test_log_level_debug_does_not_enable_debug_mode(monkeypatch):
     """PB-2: LOG_LEVEL=DEBUG Werkzeug debugger'ını ya da Flask debug modunu açmaz."""
     run_signature = inspect.signature(flask.Flask.run)
