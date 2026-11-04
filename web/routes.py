@@ -5,7 +5,9 @@ from datetime import datetime
 from flask import request, redirect, render_template_string
 from markupsafe import escape
 
-from domain.errors import EmployeeNotFound, InsufficientBalance, InvalidDateRange
+from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
+                           RequestAlreadyDecided, RequestNotFound)
+from domain.leave_service import APPROVED, PENDING, REJECTED
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,16 @@ MSG_EMPLOYEE_NOT_FOUND = "Seçilen personel bulunamadı."
 MSG_INVALID_DATE_RANGE = "Bitiş tarihi başlangıç tarihinden önce olamaz."
 MSG_INSUFFICIENT_BALANCE = "Kalan izin bakiyeniz yetersiz (kalan %d gün, talep %d gün)."
 MSG_UNEXPECTED = "Talep kaydedilemedi. Lütfen daha sonra tekrar deneyin."
+# Onay / red (spec 0010)
+MSG_APPROVED = "Talep #%d onaylandı."
+MSG_REJECTED = "Talep #%d reddedildi."
+MSG_APPROVE_INSUFFICIENT = "Personelin kalan izin bakiyesi yetersiz (kalan %d gün, talep %d gün)."
+MSG_ALREADY_DECIDED = "Bu talep zaten sonuçlandırılmış."
+MSG_REQUEST_NOT_FOUND = "Talep bulunamadı."
+MSG_ACTION_UNEXPECTED = "İşlem tamamlanamadı. Lütfen daha sonra tekrar deneyin."
+
+# Basari parametresi (PRG): sonuc -> (beklenen gercek durum, mesaj)
+RESULTS = {"onaylandi": (APPROVED, MSG_APPROVED), "reddedildi": (REJECTED, MSG_REJECTED)}
 
 PAGE = """
 <html><head><meta charset="utf-8"><title>LeaveManager</title>
@@ -40,6 +52,25 @@ def status_badge(status):
     return "<b style='color:%s'>%s</b>" % (color, status)
 
 
+def parse_request_id(text):
+    # Talep numarasi yalniz ASCII rakamdir; int()'in kabul ettigi bosluk, Unicode rakam ve "_"
+    # bir talebe eslenmez (spec 0010 AC-7, review F-1)
+    if not (text.isascii() and text.isdigit()):
+        return None
+    try:
+        return int(text)
+    except ValueError:  # int()'in hane siniri (4300) asilirsa da talep yok (review F-4)
+        return None
+
+
+def decision_buttons(request_id):
+    # Durum hucresinde; dugme etiketi value ozniteliginde ("Kaydet" kalibi, plan 0010 Risk 1)
+    return "".join(
+        " <form method='post' action='/requests/%d/%s' style='display:inline'>"
+        "<input type='submit' value='%s'></form>" % (request_id, action, label)
+        for action, label in (("approve", "Onayla"), ("reject", "Reddet")))
+
+
 def register_routes(app, svc):
 
     @app.route("/")
@@ -55,15 +86,60 @@ def register_routes(app, svc):
         body += "</table>"
         return render_template_string(PAGE, body=body)
 
-    @app.route("/requests")
-    def list_requests():
+    def requests_page(message=None, success=False):
         body = "<h3>Izin Talepleri</h3><table><tr><th>Personel</th><th>Baslangic</th><th>Bitis</th><th>Gun</th><th>Neden</th><th>Durum</th></tr>"
         for r in svc.requests():
             emp = [e for e in svc.employees() if e["id"] == r["employee_id"]][0]
             body += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>" % (
-                escape(emp["name"]), r["start"], r["end"], svc.calc_days(r["start"], r["end"]), escape(r["reason"]), status_badge(r["status"]))
+                escape(emp["name"]), r["start"], r["end"], svc.calc_days(r["start"], r["end"]), escape(r["reason"]),
+                status_badge(r["status"]) + (decision_buttons(r["id"]) if r["status"] == PENDING else ""))
         body += "</table>"
+        if message is not None:
+            color = "green" if success else "red"
+            body = "<p style='color:%s'>%s</p>" % (color, escape(message)) + body
         return render_template_string(PAGE, body=body)
+
+    def success_message():
+        # Mesaj yalniz talebin gercek durumu parametreyle eslesirse gosterilir (plan 0010 Risk 2)
+        result = RESULTS.get(request.args.get("sonuc", ""))
+        talep = parse_request_id(request.args.get("talep", ""))
+        if result is None or talep is None:
+            return None
+        expected, message = result
+        if any(r["id"] == talep and r["status"] == expected for r in svc.requests()):
+            return message % talep
+        return None
+
+    @app.route("/requests")
+    def list_requests():
+        message = success_message()
+        return requests_page(message, success=True)
+
+    def decide(request_id, action, result):
+        # Hata: yonlendirme yok, liste mesajla yeniden gosterilir (spec 0010, K-4)
+        rid = parse_request_id(request_id)
+        if rid is None:
+            return requests_page(MSG_REQUEST_NOT_FOUND), 404
+        try:
+            action(rid)
+        except RequestNotFound:
+            return requests_page(MSG_REQUEST_NOT_FOUND), 404
+        except RequestAlreadyDecided:
+            return requests_page(MSG_ALREADY_DECIDED), 400
+        except InsufficientBalance as e:
+            return requests_page(MSG_APPROVE_INSUFFICIENT % (e.remaining, e.requested)), 400
+        except Exception:
+            logger.exception("izin talebi sonuclandirilamadi")
+            return requests_page(MSG_ACTION_UNEXPECTED), 500
+        return redirect("/requests?sonuc=%s&talep=%d" % (result, rid))
+
+    @app.route("/requests/<request_id>/approve", methods=["POST"])
+    def approve_request(request_id):
+        return decide(request_id, svc.approve_request, "onaylandi")
+
+    @app.route("/requests/<request_id>/reject", methods=["POST"])
+    def reject_request(request_id):
+        return decide(request_id, svc.reject_request, "reddedildi")
 
     def new_request_form(message=None):
         options = "".join("<option value='%d'>%s</option>" % (e["id"], escape(e["name"])) for e in svc.employees())
