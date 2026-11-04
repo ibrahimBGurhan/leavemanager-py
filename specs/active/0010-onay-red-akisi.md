@@ -160,6 +160,13 @@ Bağımsız review (read-only reviewer subagent, HEAD `fe6c24a`): 3 bulgu, hepsi
   maddesi (klavye, görünür metin, yalnız renge dayanmama) karşılanıyor; satıra özel ad
   (`aria-label`) spec dışı bir iyileştirme, tablo revizyonuyla (plan Risk 3) ele alınır.
 
+## Review triage (round 2, İbrahim Gürhan, 2026-11-04)
+Bağımsız review, fix diff `fe6c24a..940fb70`: fix-1 F-1'i karşılıyor (testler fix öncesi kopyada
+5/5 kırmızı); 1 yeni bulgu.
+- **F-4 — real → fix-2 (`3a2299a`):** fix-1'in getirdiği regresyon. 4300 haneden uzun numara
+  `int()`'te `ValueError` fırlatıyordu ve `try` dışındaydı; işlem adresi ve salt görüntüleme
+  olan `?talep=` parametresi 500 veriyordu. Artık bulunamadı (404) / mesaj yok sayılır.
+
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
