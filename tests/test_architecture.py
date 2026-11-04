@@ -1,7 +1,8 @@
-"""Architecture rules (docs/architecture.md, Forbidden dependencies) — spec 0006, PB-5.
+"""Architecture rules (docs/architecture.md, Forbidden dependencies) — spec 0006 PB-5, spec 0007.
 
 The production code is read with ast, never imported: every import (absolute and relative) and,
-for the domain, every string constant is checked. A failure names the file and the line.
+for the domain, every string constant and every access to the real clock is checked. A failure
+names the file and the line.
 """
 import ast
 import pathlib
@@ -12,6 +13,7 @@ LAYERS = ("domain", "storage", "web")
 WEB_FRAMEWORKS = {"flask", "werkzeug", "jinja2"}
 SQL_LIBRARIES = {"sqlite3", "sqlalchemy", "psycopg", "psycopg2", "pymysql"}
 HTML_TAG = re.compile(r"<[A-Za-z/]")
+CLOCK_READS = {"datetime.date": {"today"}, "datetime.datetime": {"now", "utcnow", "today"}}
 
 
 def layer_files(layer):
@@ -53,6 +55,31 @@ def where(path, line):
     return f"{path.relative_to(ROOT).as_posix()}:{line}"
 
 
+def datetime_names(path):
+    """Local name -> "datetime", "datetime.date" or "datetime.datetime", from the file's imports."""
+    names = {}
+    for node in ast.walk(parse(path)):
+        if isinstance(node, ast.Import):
+            names.update({alias.asname or alias.name: alias.name
+                          for alias in node.names if alias.name == "datetime"})
+        elif isinstance(node, ast.ImportFrom) and node.module == "datetime" and not node.level:
+            for alias in node.names:
+                if alias.name == "*":
+                    names.update({"date": "datetime.date", "datetime": "datetime.datetime"})
+                elif alias.name in ("date", "datetime"):
+                    names[alias.asname or alias.name] = f"datetime.{alias.name}"
+    return names
+
+
+def resolve(node, names):
+    """What an expression names in the datetime module, or None."""
+    if isinstance(node, ast.Name):
+        return names.get(node.id)
+    if isinstance(node, ast.Attribute) and resolve(node.value, names) == "datetime":
+        return f"datetime.{node.attr}"
+    return None
+
+
 def test_domain_does_not_import_the_web_framework():
     """Rule 1: domain imports no flask, werkzeug or jinja2."""
     bad = [f"{where(f, line)} {m}" for f in layer_files("domain")
@@ -81,4 +108,15 @@ def test_sql_lives_only_in_storage():
     bad = [f"{where(f, line)} {m}" for f in production_files()
            if f.relative_to(ROOT).parts[0] != "storage"
            for line, m in imports(f) if top(m) in SQL_LIBRARIES]
+    assert bad == []
+
+
+def test_domain_does_not_read_the_real_clock():
+    """Rule 5: the domain never reads the real clock (date.today, datetime.now...); it is injected."""
+    bad = []
+    for f in layer_files("domain"):
+        names = datetime_names(f)
+        bad += [f"{where(f, node.lineno)} {ast.unparse(node)}" for node in ast.walk(parse(f))
+                if isinstance(node, ast.Attribute)
+                and node.attr in CLOCK_READS.get(resolve(node.value, names), ())]
     assert bad == []

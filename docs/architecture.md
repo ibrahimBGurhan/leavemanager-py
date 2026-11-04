@@ -40,13 +40,17 @@ Bunlar ayrı işlerle kapatılır.
 - Olay/mesaj altyapısı yok; tüm çağrılar senkron ve süreç içi.
 
 ## Forbidden dependencies (make them testable)
-`tests/test_architecture.py` (import ve string taraması, `ast` ile) bunları doğrular (spec 0006).
-Kural 3 ve 4 import düzeyinde sınanır; özel alan erişimi (ör. `svc._storage`) ve ham SQL
-string'leri review'da kontrol edilir.
+`tests/test_architecture.py` (import, string ve öznitelik taraması, `ast` ile) bunları doğrular
+(kural 1–4 spec 0006, kural 5 spec 0007). Kural 3 ve 4 import düzeyinde sınanır; özel alan erişimi
+(ör. `svc._storage`) ve ham SQL string'leri review'da kontrol edilir. Kural 5 de yazılı erişime
+bakar; dinamik erişim (`getattr(date, "today")`, `__import__`), atamayla yeniden bağlanan ad
+(`d = date; d.today()`), aynı adın dosyada birden çok `datetime` import'una bağlanması ve saati
+okuyan bir fonksiyonun domain dışından import edilmesi review'da kontrol edilir.
 1. `domain` paketi `flask`, `werkzeug` veya `jinja2` import etmez.
 2. `domain` HTML üretmez (HTML etiketi içeren string döndürmez; sunum `web`'e aittir).
 3. `web`, `storage`'a doğrudan erişmez — her zaman `domain` üzerinden gider.
 4. SQL (ham sorgu veya ORM oturumu) yalnızca `storage` içinde bulunur.
+5. `domain` gerçek saati okumaz (`date.today`, `datetime.now`…); saat dışarıdan verilir.
 
 ## Deliberately out of scope
 - Bordro/muhasebe entegrasyonu, e-posta/SMS bildirimleri, mobil uygulama.
