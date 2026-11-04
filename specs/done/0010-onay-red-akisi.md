@@ -1,6 +1,6 @@
 # Spec 0010 — onay-red-akisi
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0010-plan.md`
 - Source: `docs/domain.md` OD-7
@@ -79,38 +79,38 @@ listenin üstünde görünür metin. HTTP durumu (K-4, 0008 ile tutarlı): başa
 yönlendirme; yetersiz bakiye ve zaten sonuçlanmış talep **400**, bulunamayan talep **404**,
 beklenmeyen hata **500**.
 
-- [ ] AC-1 — **Onay (mutlu yol):** Mehmet Demir'in bekleyen talebi #2 (3 gün) onaylanınca durumu
+- [x] AC-1 — **Onay (mutlu yol):** Mehmet Demir'in bekleyen talebi #2 (3 gün) onaylanınca durumu
   `Onaylandi` olur; "Talep #2 onaylandı." mesajı gösterilir; ana sayfada Mehmet'in Kullanılan'ı
   0 → 3, Kalan'ı 20 → 17 olur; sayaçlar Bekleyen 4 → 3, Onaylanan 1 → 2 olur. Başarıdan sonra
   sayfayı yenilemek işlemi tekrar göndermez (K-5). Uygulama loguna talep numarasını ve sonucu
   içeren bir INFO satırı yazılır; satırda personel adı ve izin nedeni yoktur (K-6, AC-2 için de
   geçerli).
-- [ ] AC-2 — **Red (mutlu yol):** Ahmet Celik'in bekleyen talebi #4 reddedilince durumu
+- [x] AC-2 — **Red (mutlu yol):** Ahmet Celik'in bekleyen talebi #4 reddedilince durumu
   `Reddedildi` olur; "Talep #4 reddedildi." mesajı gösterilir; Ahmet'in Kullanılan ve Kalan'ı
   değişmez; sayaçlar Bekleyen 4 → 3, Reddedilen 3 → 4 olur.
-- [ ] AC-3 — **Araya giren onay (R-2):** Ayse Yilmaz (Kalan 14) için 12 günlük yeni bir talep
+- [x] AC-3 — **Araya giren onay (R-2):** Ayse Yilmaz (Kalan 14) için 12 günlük yeni bir talep
   girilip onaylandıktan sonra Kalan 2 olur. Bu durumda bekleyen #5 (3 gün) onaylanmak istenirse
   onay gerçekleşmez, #5 `Beklemede` kalır ve "Personelin kalan izin bakiyesi yetersiz (kalan 2
   gün, talep 3 gün)." mesajı gösterilir; mesaj iç kod ya da ayrıntı içermez.
-- [ ] AC-4 — **Onayda bakiye sınırı (R-2):** Kalan K iken talep edilen gün K − 1, K ve K + 1 olan
+- [x] AC-4 — **Onayda bakiye sınırı (R-2):** Kalan K iken talep edilen gün K − 1, K ve K + 1 olan
   bekleyen talepler için onay sonucu sırasıyla onaylandı / onaylandı / yetersiz bakiye olur
   (bakiyeyi tam kullanan onay kabul edilir). Servis ve ekran aynı kararı verir.
-- [ ] AC-5 — **Red bakiyeye bakmaz (R-3):** AC-3 durumundaki #5 reddedilebilir ve `Reddedildi` olur.
-- [ ] AC-6 — **Son durumlar değişmez (R-1, R-5):** Onaylanmış (#1) ya da reddedilmiş (#6) bir
+- [x] AC-5 — **Red bakiyeye bakmaz (R-3):** AC-3 durumundaki #5 reddedilebilir ve `Reddedildi` olur.
+- [x] AC-6 — **Son durumlar değişmez (R-1, R-5):** Onaylanmış (#1) ya da reddedilmiş (#6) bir
   talebe onay veya red gönderilirse kayıt değişmez ve "Bu talep zaten sonuçlandırılmış." mesajı
   gösterilir. Aynı bekleyen talebe art arda iki kez onay gönderilirse ikincisi bu mesajı verir ve
   Kullanılan bir kez artar.
-- [ ] AC-7 — **Bulunamayan talep (R-5):** Var olmayan bir talep numarasına (ör. 99) ya da sayı
+- [x] AC-7 — **Bulunamayan talep (R-5):** Var olmayan bir talep numarasına (ör. 99) ya da sayı
   olmayan bir numaraya yapılan işlem hiçbir kaydı değiştirmez ve "Talep bulunamadı." mesajı
   gösterilir.
-- [ ] AC-8 — **Beklenmeyen hata:** İşlem sırasında beklenmeyen bir hata olursa "İşlem
+- [x] AC-8 — **Beklenmeyen hata:** İşlem sırasında beklenmeyen bir hata olursa "İşlem
   tamamlanamadı. Lütfen daha sonra tekrar deneyin." mesajı gösterilir, hata stack trace'iyle
   loga yazılır, kullanıcıya istisna metni gösterilmez ve başarı mesajı görünmez.
-- [ ] AC-9 — **Ekran durumları (UX):** Talepler ekranında yalnızca `Beklemede` satırlarda
+- [x] AC-9 — **Ekran durumları (UX):** Talepler ekranında yalnızca `Beklemede` satırlarda
   "Onayla" ve "Reddet" düğmeleri vardır; sonuçlanmış satırlarda düğme yoktur. Düğmeler klavyeyle
   erişilebilir ve metinleri görünürdür. Talepler ekranını ya da ana sayfayı açmak (yalnızca
   görüntüleme) hiçbir talebin durumunu değiştirmez (R-6).
-- [ ] AC-10 — **Geçmiş tarih ve domain sözleşmesi (R-4, R-5):** Başlangıcı bugünden önce olan
+- [x] AC-10 — **Geçmiş tarih ve domain sözleşmesi (R-4, R-5):** Başlangıcı bugünden önce olan
   bekleyen bir talep onaylanabilir. Servisi doğrudan çağıran da AC-3/6/7'deki durumlarda tipli
   istisna alır; başarısızlık dönüş değeriyle bildirilmez. Belgeler güncellenir:
   - `docs/domain.md`: OD-7 "Bu sürümde IK onaylar; Yönetici onayı auth spec'inde
@@ -120,11 +120,11 @@ beklenmeyen hata **500**.
     değişmez (K-2).
 
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation) — Verification
+- [x] `scripts/check` green (full; CI → PR)
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed (`docs/domain.md`, `docs/security.md`)
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Kararlar (clarify, İbrahim Gürhan, 2026-11-04)
 - **S1:** Auth beklenmez; onay/red herkese açık, risk `docs/security.md`'ye yazılır; "yalnızca IK"
@@ -204,8 +204,8 @@ Kayıtlar:
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 0 (S1…S7 ve K-1…K-6 onay öncesi taslağa işlendi; onaydan sonra yalnız #25 referansı) |
+| Fix rounds | 3 (fix-1 review F-1, fix-2 review F-4, fix-3 VERIFY G-1 — yalnız test) |
+| Review findings: real / noise | 2 / 2 (F-1, F-4 real; F-2 → #26, F-3 noise); round 3 clean. VERIFY: G-1 düzeltildi, G-2/G-3 kabul, G-4 düzeltildi |
+| Regressions introduced | 1 (F-4: fix-1'in getirdiği 500; round 2 review'da yakalandı, ship'e ulaşmadı) |
+| Bugs escaped to production | 0 (henüz yayında değil) |
