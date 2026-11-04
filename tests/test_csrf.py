@@ -122,6 +122,11 @@ def test_every_post_form_on_every_page_carries_a_token(csrf_client):
     assert len(post_forms) >= 1 + 8  # en az: Yeni Talep + 4 bekleyen talep x (Onayla, Reddet)
     missing = [page for page, body in post_forms if not TOKEN.search(body)]
     assert missing == []
+    # G-4 (PB-1): the token field is invisible — the screens look as they did before 0011
+    fields = [tag for _, body in post_forms
+              for tag in re.findall(r"""<input[^>]*name=['"]csrf_token['"][^>]*>""", body)]
+    assert len(fields) == len(post_forms)
+    assert all(re.search(r"""type\s*=\s*['"]?hidden""", tag, re.IGNORECASE) for tag in fields)
 
 
 @pytest.mark.parametrize("name, page, path, data, marker", ACTIONS, ids=ACTION_IDS)
