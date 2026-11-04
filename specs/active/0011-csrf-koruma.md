@@ -157,6 +157,42 @@ değişmedi; round 4 review gerekmez, fix-3 kullanılmadı.
   bunlar spec kriteri değil; K-2 (süre sınırı yok) nedeniyle VERIFY gerçek süreç logunda token,
   çerez ve anahtar arar.
 
+## Verification (VERIFY, 2026-11-04, HEAD `3966b39`, bağımsız QA subagent)
+Mutantlar, gerçek süreç ve ekran görüntüleri repo dışında, scratch'teki `git archive` kopyalarında
+üretildi; hiçbiri commit'lenmedi. Suite kanıtı: HEAD `3966b39` için `190 passed, 5 skipped`,
+`CHECK GREEN (full)`.
+
+| Kriter | Kanıt | Durum |
+|---|---|---|
+| CB-1 | `test_forms_carry_a_token`, `test_every_post_form_on_every_page_carries_a_token`, `test_valid_token_flow_works[new/approve/reject]`; token düşüren mutantlar 2–8 kırmızı. Gerçek süreç (çerez + sayfadan token): üç işlem 302, kayıtlar doğru | Pass |
+| CB-2 | `test_post_without_token_is_rejected[×3]`, `test_bad_or_foreign_token_is_rejected[×6]`, `test_csrf_check_comes_before_request_lookup`; 8 mutant kırmızı. Gerçek süreç: token'sız / bozuk / başka oturum → 400 + mesaj, kayıt değişmez | Pass (G-1 → fix-3) |
+| CB-3 | `test_secret_key_from_environment`, `test_missing_secret_key_warns_once_without_value[×3]`, `test_token_has_no_time_limit`, `test_env_example_has_placeholder`. Gerçek süreç: anahtarsız tek `WARNING app.secrets:`; anahtarlı 0 satır, anahtar log'da 0. Yeniden başlatma: anahtarsız eski token 400, anahtarlı 302 | Pass (G-2 kabul, G-3 → fix-3) |
+| CB-4 | `requirements.txt` (`flask-wtf==1.3.0`, `wtforms==3.2.1`, `.venv` ile aynı), `docs/conventions.md` sürüm satırı, `docs/security.md` CSRF/Secrets/"Bugün" | Pass |
+| PB-1 | `test_get_needs_no_token[×3]` (`main`'de de yeşil); baseline testleri blob-identical. Önce/sonra ekran görüntüleri SHA-256 aynı (Yeni Talep, Talepler) | Pass (G-4 → fix-3) |
+| PB-2 | `test_request_errors.py`, `test_approval.py` blob-identical ve yeşil; CSRF açık + geçerli token'la 8 senaryo gözlendi (0008 mesajları, 404, 400 zaten sonuçlanmış, PRG) | Pass |
+| PB-3 | `tests/` diff: `test_csrf.py` yeni, `conftest.py` +1, `test_logging_config.py` +1, silme yok; 6 korumalı dosya blob-identical | Pass |
+| PB-4 | `test_session_cookie_flags`, `test_secret_never_in_logs`, `test_logging_config.py` (assert'ler aynı), debug testi; 5 mutant kırmızı. Gerçek süreç: `HttpOnly; SameSite=Lax`, `Secure` yok, `Debug mode: off` | Pass |
+
+Kayıtlar:
+- Mutantlar: 30'un 26'sı kırıldı. Hayatta kalanlar M09, M17, M23, M30 → G-1…G-4. `csrf_field()` koşulsuz yapılınca korumalı baseline testi kırmızı (plan Risk 2'nin gerekçesi kanıtlandı).
+- Ters kontrol: HEAD'in `tests/test_csrf.py` testleri `main`'in kodunda `23 failed, 3 passed`; 17'si davranış farkı (token'sız POST 302), 3 geçen GET-token-yok testi.
+- F-10 gözlemi: iki gerçek süreç çalıştırmasında 4 token ve 3 oturum çerezi değeri log'da 0 kez; anahtar 0 kez.
+- Ekran görüntüleri: önce/sonra Yeni Talep ve Talepler (piksel aynı), CSRF hata ekranı `/new` ve liste; repoda değiller, PR'a eklenir.
+
+### VERIFY triage (İbrahim Gürhan, 2026-11-04)
+Fix-3 (son izinli round) yalnız `tests/test_csrf.py`; her düzeltme kendi mutantıyla gösterildi
+(eski testle paket yeşildi, yeni testle kırmızı).
+- **G-1 — real → fix-3 (`f4eb0aa`):** `/new` için mesaj işareti `<form` liste sayfasındaki formlarla
+  da eşleşiyordu; artık `<h3>Yeni Talep` ve önce varlığı kontrol edilir. M09: 3 kırmızı.
+- **G-2 — kabul (sınır kayda geçti):** composition root'ta `SECRET_KEY` koda yazılsa testler
+  yakalamaz; testler `load_secret_key()` seam'ini sınar. Kapatmak `SECRET_KEY` ile alt süreç testi
+  ve `scripts/check.conf` kaynak envanteri değişikliği ister (F-9 ile aynı altyapı). Bugün iki
+  gözlem korur: `git grep` anahtarın tek atamasının `load_secret_key(os.environ)` olduğunu gösterir;
+  yeniden başlatma gözlemi ortamdaki anahtarın kullanıldığını kanıtlar.
+- **G-3 — real → fix-3 (`d39851b`):** yedek anahtar artık iki çağrıda farklı olmalı. M23: 3 kırmızı.
+- **G-4 — real → fix-3 (`64ff7d8`):** her POST formundaki token alanı `type=hidden` olmalı. M30:
+  1 kırmızı.
+
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
