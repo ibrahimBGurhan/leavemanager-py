@@ -1,6 +1,6 @@
 # Spec 0009 — logging-config (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0009-plan.md`
 - Source: #21

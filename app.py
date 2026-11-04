@@ -5,6 +5,9 @@
 #
 # Kurulum noktasi (composition root): katmanlari kurar ve birbirine baglar
 # (web -> domain -> storage, docs/architecture.md).
+import logging
+import os
+import sys
 from datetime import datetime
 
 from flask import Flask
@@ -12,6 +15,31 @@ from flask import Flask
 from domain.leave_service import LeaveService
 from storage.memory import MemoryStorage
 from web.routes import register_routes
+
+# ---------------------------------------------------------------
+# Log yapilandirmasi (spec 0009): seviye LOG_LEVEL'dan, hedef stderr.
+# Katmanlar yalniz logging.getLogger(__name__) kullanir.
+# ---------------------------------------------------------------
+LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+
+
+def configure_logging(value):
+    # Kok logger'da zaten handler varsa (pytest, ya da log'u kendisi kuran bir host)
+    # yapilandirma kurulmaz; host'un ayari gecerli kalir (plan 0009, R-1)
+    name = (value or "").strip().upper() or "INFO"
+    invalid = name not in LOG_LEVELS
+    level = "INFO" if invalid else name
+    if not logging.getLogger().handlers:
+        logging.basicConfig(level=level, format=LOG_FORMAT, stream=sys.stderr)
+        # Werkzeug, logger'inin seviyesi bos ise INFO koyar; LOG_LEVEL ona da gecsin
+        logging.getLogger("werkzeug").setLevel(level)
+    if invalid:
+        logging.getLogger("app").warning(
+            "LOG_LEVEL=%r tanınmıyor; seviye INFO kullanılıyor", value)
+
+
+configure_logging(os.environ.get("LOG_LEVEL"))
 
 app = Flask(__name__)
 
