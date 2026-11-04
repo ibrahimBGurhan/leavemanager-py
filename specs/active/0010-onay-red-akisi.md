@@ -167,6 +167,40 @@ Bağımsız review, fix diff `fe6c24a..940fb70`: fix-1 F-1'i karşılıyor (test
   `int()`'te `ValueError` fırlatıyordu ve `try` dışındaydı; işlem adresi ve salt görüntüleme
   olan `?talep=` parametresi 500 veriyordu. Artık bulunamadı (404) / mesaj yok sayılır.
 
+Round 3 (fix diff `940fb70..53faa69`): clean, triage edilecek bulgu yok.
+
+## Verification (VERIFY, 2026-11-04, HEAD `53faa69`, bağımsız QA subagent)
+Mutantlar ve ekran görüntüleri repo dışında, scratch'teki `git archive` kopyalarında üretildi;
+hiçbiri commit'lenmedi. Gerçek süreç `python app.py` ile koşuldu (`Debug mode: off`). Suite
+kanıtı: HEAD `53faa69` için `162 passed, 5 skipped`, `CHECK GREEN (full)`.
+
+| Kriter | Kanıt | Durum |
+|---|---|---|
+| AC-1 | `test_approve_pending_request_updates_status_and_balance`, `test_screen_approve_redirects_with_message_and_updates_dashboard`, `test_screen_reload_after_success_does_not_repeat`, `test_decision_logs_info_without_personal_data[approve]`. Gerçek süreç: 302 → `?sonuc=onaylandi&talep=2`, mesaj; iki F5'te yeni log yok; Mehmet 20/3/17; log satırında ad/neden yok | Pass |
+| AC-2 | `test_reject_pending_request_keeps_balance`, `test_screen_reject_shows_message_and_counts`, `…logs_info…[reject]`. Gerçek süreç: 302, mesaj, Ahmet 20/0/20 | Pass |
+| AC-3 | `test_approve_after_intervening_approval_is_refused`, `test_screen_approve_insufficient_shows_message`. Gerçek süreç: Ayse 12 gün onay → Kalan 2; #5 → 400 ve tam mesaj; `ERR-`/`Traceback` yok | Pass |
+| AC-4 | `test_approve_balance_boundary[K-1/K/K+1]`, `test_screen_and_service_agree_on_approval[K-1/K/K+1]`; `<`→`<=` mutantı ikisini de kırdı | Pass |
+| AC-5 | `test_reject_ignores_balance`, `test_screen_reject_ignores_balance`; gerçek süreçte 302 | Pass |
+| AC-6 | `test_decided_request_cannot_change[×4]`, `test_screen_decided_request_shows_message[×4]`, `test_double_approve_counts_once`; gerçek süreçte 400 ve mesaj | Pass |
+| AC-7 | `test_unknown_request_raises_not_found[×2]`, `test_screen_unknown_or_non_numeric_request[99/abc/%202/%D9%A2/0_2/4301-digits]`; gerçek süreçte 404 ve mesaj | Pass |
+| AC-8 | `test_screen_unexpected_error_is_logged_not_shown`; ilgili iki mutant kırıldı. Gerçek süreçte repo değişmeden tetiklenemez (G-3) | Pass (yalnız test) |
+| AC-9 | `test_buttons_only_on_pending_rows`, `test_get_never_changes_status`, `test_success_message_requires_matching_state`; gerçek süreçte düğmeler yalnız 4 bekleyen satırda, GET → 405 | Pass (klavye: G-2) |
+| AC-10 | `test_approve_past_dated_pending_request`; başarıda `None`, başarısızlıkta tipli istisna (mutantlarla gösterildi); `docs/domain.md` BR-10 + OD-7, `docs/security.md` "Bugün" notu | Pass |
+| Kısıtlar | `requirements*.txt`, `app.py`, `scripts/`, `tools/` değişmedi; `test_security.py`, `test_architecture.py`, baseline testleri ve `conftest.py` blob'ları `main` ile aynı | Pass |
+
+Kayıtlar:
+- Mutantlar: 23'ün 22'si kırıldı. Hayatta kalan M23 (başarı mesajı için yalnız "Beklemede değil") → G-1, fix-3 ile kapandı.
+- Ters kontrol: HEAD'in `tests/test_approval.py` testleri `main`'in kodu üzerinde `40 failed, 9 passed` (geçen 9, mesaj olmadığını söyleyen negatif durumlar).
+- UI ekran görüntüleri: 8 durum (başlangıç listesi, onay başarısı, onay sonrası ana sayfa, red başarısı, yetersiz bakiye, zaten sonuçlanmış, bulunamadı, bekleyen talep yok) headless Chrome ile çekildi; repoda değiller, PR'a eklenir.
+
+### VERIFY triage (İbrahim Gürhan, 2026-11-04)
+- **G-1 — real → fix-3 (`c0e5f65`, yalnız test):** `test_success_message_requires_matching_state`'e ters sonuçla sonuçlanmış iki durum eklendi (`onaylandi&talep=6`, `reddedildi&talep=1`). M23 mutantı scratch kopyada artık `2 failed`.
+- **G-2 — kabul:** klavye erişiminin kanıtı yapısal. Düğmeler form içinde yerel `<input type=submit>`; `tabindex`/`disabled` yok. Yerel submit öğesi tanım gereği odaklanabilir ve Enter ile gönderilir.
+- **G-3 — kabul:** AC-8 yalnız testle kanıtlı; test ayırt edici (iki mutant kırıldı).
+- **G-4 — düzeltildi:** plandaki criterion↔test haritası gerçek test adlarıyla hizalandı (log testleri tek parametreli test, AC-5 servis + ekran, AC-7 ve AC-9 yeni durumlar).
+- **I-1 — kabul, #25'e not:** iki ekran testi yönlendirme adresinin tam sorgu biçimini sabitliyor; #25'te flash'a geçilirse "302 + /requests + hedefte mesaj" iddiasına gevşetilir.
+- **I-2, I-3 — kabul:** monkeypatch, sanctioned storage seam'inden; form `action` adresleri route sözleşmesi.
+
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
