@@ -70,7 +70,7 @@ def test_post_without_token_is_rejected(csrf_client, caplog, name, page, path, d
 
 
 @pytest.mark.parametrize("kind", ["bozuk", "baska-oturum"])
-@pytest.mark.parametrize("name, page, path, data, marker", ACTIONS[:2], ids=ACTION_IDS[:2])
+@pytest.mark.parametrize("name, page, path, data, marker", ACTIONS, ids=ACTION_IDS)  # F-2: all 3
 def test_bad_or_foreign_token_is_rejected(csrf_client, kind, name, page, path, data, marker):
     if kind == "bozuk":
         csrf_client.get(page)
