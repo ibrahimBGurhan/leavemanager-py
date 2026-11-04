@@ -1,6 +1,16 @@
-# Is kurallari: kidem, hak, kullanilan, kalan, talep olusturma (docs/domain.md).
+# Is kurallari: kidem, hak, kullanilan, kalan, talep olusturma, durum gecisleri (docs/domain.md).
 # Saat ve depo disaridan verilir; bu katman Flask'i, HTML'i ve gercek saati bilmez.
-from domain.errors import EmployeeNotFound, InsufficientBalance, InvalidDateRange
+import logging
+
+from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
+                           RequestAlreadyDecided, RequestNotFound)
+
+logger = logging.getLogger(__name__)
+
+# Durum degerleri (docs/domain.md, Durum): ASCII veri
+PENDING = "Beklemede"
+APPROVED = "Onaylandi"
+REJECTED = "Reddedildi"
 
 
 class LeaveService:
@@ -60,16 +70,42 @@ class LeaveService:
             raise EmployeeNotFound(emp_id)
         if end < start:
             raise InvalidDateRange(start, end)  # BR-9
-        days = self.calc_days(start, end)
-        remaining = self.get_remaining(emp)
-        if remaining < days:
-            raise InsufficientBalance(remaining, days)  # BR-6: tam bakiye kabul
+        self._check_balance(emp, self.calc_days(start, end))
         if start < self._clock.today():
             pass  # gecmis tarih... IK bazen geriye donuk giriyor, dokunma
         self._storage.add_request({"id": self._storage.next_request_id(), "employee_id": emp_id,
                                    "start": start, "end": end, "reason": reason,
                                    "status": "Beklemede"})
         return True
+
+    def _check_balance(self, emp, days):
+        # BR-6 tek yerde: talep olusturma ve onay ayni karari verir (spec 0010, AC-4)
+        remaining = self.get_remaining(emp)
+        if remaining < days:
+            raise InsufficientBalance(remaining, days)  # tam bakiye kabul
+
+    def _pending_request(self, request_id):
+        # Sonuclandirilacak talep: var olmali ve Beklemede olmali (BR-10)
+        for r in self._storage.requests():
+            if r["id"] == request_id:
+                if r["status"] != PENDING:
+                    raise RequestAlreadyDecided(request_id, r["status"])
+                return r
+        raise RequestNotFound(request_id)
+
+    def _decide(self, request_id, status):
+        self._storage.set_request_status(request_id, status)
+        logger.info("izin talebi #%d: %s", request_id, status)  # ad ve neden yok (KVKK)
+
+    def approve_request(self, request_id):
+        r = self._pending_request(request_id)
+        emp = next(e for e in self._storage.employees() if e["id"] == r["employee_id"])
+        self._check_balance(emp, self.calc_days(r["start"], r["end"]))
+        self._decide(request_id, APPROVED)
+
+    def reject_request(self, request_id):
+        self._pending_request(request_id)  # redde bakiye kontrolu yok (R-3)
+        self._decide(request_id, REJECTED)
 
     # Salt okuma: web veriye yalniz servis uzerinden erisir (docs/architecture.md)
     def employees(self):

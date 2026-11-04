@@ -44,6 +44,12 @@ class MemoryStorage:
         # sayaca dokunmaz; yeni numarayi next_request_id verir
         self._requests.append(record)
 
+    def set_request_status(self, request_id, status):
+        # is kurali bilmez; gecis karari domain'de verilir (spec 0010)
+        for r in self._requests:
+            if r["id"] == request_id:
+                r["status"] = status
+
     def next_request_id(self):
         request_id = self._next_id
         self._next_id += 1
