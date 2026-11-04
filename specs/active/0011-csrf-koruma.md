@@ -104,6 +104,25 @@ tarayıcı oturumu için ürettiği ve formda gönderilen token.
   `conftest.py` ile aynı nitelikte tek satırlık CSRF kapatma eklenir. Korumanın gerçek süreçte
   çalıştığı, BUILD kanıtında ve VERIFY'da gözlemle kanıtlanır.
 
+## Review triage (round 1, İbrahim Gürhan, 2026-11-04)
+Bağımsız review (read-only reviewer subagent, HEAD `231e585`): güvenlik ve doğrulukta bulgu yok;
+3 Low + 1 Info, hepsi test/bakım. Fix round 1 yalnız `tests/test_csrf.py`'ye dokundu; her
+düzeltme scratch kopyada bir mutantla kırmızıya döndürüldü.
+- **F-1 — real → fix-1 (`dbd17fb`):** ortak istemci CSRF kapalı çalıştığı için ileride token'sız
+  eklenen bir POST formu testlerden geçerdi. Yeni test, argümansız her GET sayfasını CSRF açık
+  ziyaret eder ve token'sız POST formu olan sayfaları listeler. Yeni bir ekrana token'sız form
+  ekleyen mutant: test `['/yeni-ekran']` ile kırmızı, paketin geri kalanı yeşil.
+- **F-2 — real → fix-1 (`3a3da55`):** "bozuk / başka oturum" testi yalnız `new` ve `approve`'u
+  sınıyordu; CB-2 üç işlemi de istiyor. Artık `reject` de var; red rotasını muaf tutan mutant
+  `reject-bozuk` ve `reject-baska-oturum`'da kırmızı.
+- **F-3 — real → fix-1 (`1196b86`):** `test_secret_never_in_logs`'un ilk assert'i hiç
+  kırılamıyordu. Test artık çalışan uygulamaya bilinen bir anahtar verir; anahtarı ya da token'ı
+  log'a yazan mutantlar kırmızı.
+- **F-4 — noise:** `conftest.py` satırı global yapılandırmayı geri almıyor. Spec PB-3 ve plan bu
+  satırı birebir onayladı; mevcut `app.testing = True` kalıbıyla aynı; bugün sıraya bağımlılık
+  yok (`csrf_client` `monkeypatch` kullanıyor). Değiştirmek korumalı dosyada yeni bir değişiklik
+  ve R-08 olurdu.
+
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
