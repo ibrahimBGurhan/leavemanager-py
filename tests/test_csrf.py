@@ -112,7 +112,7 @@ def test_every_post_form_on_every_page_carries_a_token(csrf_client):
         html = csrf_client.get(page).get_data(as_text=True)
         for block in html.split("<form")[1:]:
             opening, body = block.split(">", 1)
-            if re.search(r"""method=['"]?post""", opening, re.IGNORECASE):
+            if re.search(r"""method\s*=\s*['"]?post""", opening, re.IGNORECASE):  # F-6
                 post_forms.append((page, body.split("</form>")[0]))
     assert len(post_forms) >= 1 + 8  # en az: Yeni Talep + 4 bekleyen talep x (Onayla, Reddet)
     missing = [page for page, body in post_forms if not TOKEN.search(body)]
