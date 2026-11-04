@@ -131,10 +131,11 @@ def test_level_from_env(run, entry, level, debug_line, request_line, error_line)
     assert not [line for line in lines if " WARNING app: " in line]
 
 
+@ENTRIES
 @pytest.mark.parametrize("level", ["verbose", "WARN", "10"])
-def test_invalid_level_falls_back_to_info_with_one_warning(run, level):
-    """CB-4 (S-2, R-3): uygulama başlar, seviye INFO, bir WARNING satırı."""
-    lines = run("import", level)[0].stderr.splitlines()
+def test_invalid_level_falls_back_to_info_with_one_warning(run, entry, level):
+    """CB-4 (S-2, R-3), CB-6 (R-4): uygulama başlar, seviye INFO, iki yolda da aynı WARNING satırı."""
+    lines = run(entry, level)[0].stderr.splitlines()
     warnings = [line for line in lines if re.match(rf"^{TIMESTAMP} WARNING app: ", line)]
     assert len(warnings) == 1, lines
     assert repr(level) in warnings[0]
