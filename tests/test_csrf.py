@@ -159,6 +159,7 @@ def test_missing_secret_key_warns_once_without_value(caplog, environ):
     assert len(warnings) == 1
     assert key not in warnings[0].getMessage()
     assert "SECRET_KEY" in warnings[0].getMessage()
+    assert leave_app.load_secret_key(dict(environ)) != key  # G-3: random per call, not a constant
 
 
 def test_token_has_no_time_limit(csrf_client, monkeypatch):
