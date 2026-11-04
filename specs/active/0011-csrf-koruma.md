@@ -129,8 +129,8 @@ düzeltme scratch kopyada bir mutantla kırmızıya döndürüldü.
 Bağımsız review, fix diff `231e585..d912a81`: F-1 ve F-2 düzeltmeleri doğrulandı (mutantlarla);
 F-3 kısmen. Fix round 2 yine yalnız `tests/test_csrf.py`; her düzeltme bir mutantla gösterildi.
 - **F-5 — real → fix-2 (`9a5a5d7`):** fix-1'in getirdiği regresyon. F-3'te silinen
-  `load_secret_key({"SECRET_KEY": …})` çağrısı, ortamdan gelen anahtarın loglanmasına karşı tek
-  korumaydı. Aynı teste aynı bilinen değerle geri eklendi; anahtarı loglayan mutant paketin
+  `load_secret_key({"SECRET_KEY": …})` çağrısı, `load_secret_key()` içinde ortamdan gelen
+  anahtarın loglanmasına karşı tek korumaydı (composition root'taki import anı kapsam dışı: F-9). Aynı teste aynı bilinen değerle geri eklendi; anahtarı loglayan mutant paketin
   tamamında tek kırmızı verir.
 - **F-6 — madde 1 real → fix-2 (`6e5b9ff`); madde 2–4 noise:** form taraması artık
   `method = "post"` (boşluklu) yazımını da yakalar; önceki desen bu mutantı geçiriyordu. Noise
@@ -142,6 +142,20 @@ F-3 kısmen. Fix round 2 yine yalnız `tests/test_csrf.py`; her düzeltme bir mu
   F-3 kaydındaki aşırı iddia düzeltildi.
 - **F-8 — ship'te:** plan haritası (CB-1 yeni test, CB-2 üç işlem, PB-4) ship sırasında gerçek
   test adlarıyla hizalanır (0010 G-4 ile aynı uygulama).
+
+## Review triage (round 3, İbrahim Gürhan, 2026-11-04)
+Bağımsız review, fix diff `d912a81..5da9f6c`: fix-2'nin üç düzeltmesi doğrulandı (F-5 1, F-7 6,
+F-6/1 1 kırmızı; `d912a81` testleri aynı mutantları geçiriyordu). Test ID'leri aynı (195). Kod
+değişmedi; round 4 review gerekmez, fix-3 kullanılmadı.
+- **F-9 — noise (sınır kayda geçti):** `app.py` import edilirken atılan log kayıtları süreç içi
+  `caplog`'dan önce oluşur; composition root'ta anahtarı loglayan bir satır testlerden geçer.
+  Kapatmanın tek yolu `SECRET_KEY` ile alt süreç testi — son fix round'u yeni test altyapısına
+  harcamak. Bugün uygulama kodu anahtarı hiçbir yerde loglamıyor; gerçek süreçte gözlemlendi
+  (BUILD adım 6: anahtar log'da 0 kez), VERIFY'da tekrarlanır.
+- **F-10 — noise (VERIFY gözlem notu):** onay/red başarı yolunda geçerli token, handler'da ham
+  oturum token'ı ya da `Cookie` başlığı loglansa yakalanmaz. Bugünkü kod hiçbirini loglamıyor ve
+  bunlar spec kriteri değil; K-2 (süre sınırı yok) nedeniyle VERIFY gerçek süreç logunda token,
+  çerez ve anahtar arar.
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
