@@ -6,10 +6,12 @@ Examples use today = 2026-10-23 and the opening data (conftest).
 """
 import datetime as dt
 import logging
+from html.parser import HTMLParser
 
 import pytest
 
 import app as leave_app
+from conftest import table_rows, visible_text
 from domain.errors import InsufficientBalance, RequestAlreadyDecided, RequestNotFound
 
 
@@ -141,3 +143,174 @@ def test_decision_logs_info_without_personal_data(svc, caplog, action, request_i
     line = infos[0].getMessage()
     assert f"#{request_id}" in line and result in line
     assert name not in line and reason not in line
+
+
+# --- screen --------------------------------------------------------------------------------
+
+MSG_APPROVE_INSUFFICIENT = "Personelin kalan izin bakiyesi yetersiz (kalan %d gün, talep %d gün)."
+MSG_ALREADY_DECIDED = "Bu talep zaten sonuçlandırılmış."
+MSG_REQUEST_NOT_FOUND = "Talep bulunamadı."
+MSG_ACTION_UNEXPECTED = "İşlem tamamlanamadı. Lütfen daha sonra tekrar deneyin."
+
+
+def statuses():
+    return [r["status"] for r in leave_app.storage.requests()]
+
+
+def dashboard(client):
+    html = client.get("/").get_data(as_text=True)
+    text = visible_text(html)
+    counts = tuple(int(text.split(label + ": ")[1].split()[0])
+                   for label in ("Bekleyen", "Onaylanan", "Reddedilen"))
+    return counts, {row[0]: row[1:] for row in table_rows(html)[1:]}
+
+
+def assert_message_above_list(resp, status, message):
+    """Failure: no redirect, message shown above the requests table."""
+    assert resp.status_code == status
+    html = resp.get_data(as_text=True)
+    assert message in visible_text(html)
+    assert html.index(message) < html.index("<table")
+
+
+def test_screen_approve_redirects_with_message_and_updates_dashboard(client):
+    resp = client.post("/requests/2/approve")
+    assert resp.status_code == 302
+    assert resp.headers["Location"].endswith("/requests?sonuc=onaylandi&talep=2")
+    html = client.get(resp.headers["Location"]).get_data(as_text=True)
+    assert "Talep #2 onaylandı." in visible_text(html)
+    assert html.index("Talep #2 onaylandı.") < html.index("<table")
+    counts, balances = dashboard(client)
+    assert counts == (3, 2, 3)
+    assert balances["Mehmet Demir"] == ["Muhasebe", "20", "3", "17"]
+
+
+def test_screen_reload_after_success_does_not_repeat(client):
+    location = client.post("/requests/2/approve").headers["Location"]
+    for _ in range(2):
+        assert "Talep #2 onaylandı." in visible_text(client.get(location).get_data(as_text=True))
+    assert dashboard(client)[1]["Mehmet Demir"] == ["Muhasebe", "20", "3", "17"]
+    assert statuses().count("Onaylandi") == 2
+
+
+def test_screen_reject_shows_message_and_counts(client):
+    _, before = dashboard(client)
+    resp = client.post("/requests/4/reject")
+    assert resp.status_code == 302
+    assert resp.headers["Location"].endswith("/requests?sonuc=reddedildi&talep=4")
+    assert "Talep #4 reddedildi." in visible_text(
+        client.get(resp.headers["Location"]).get_data(as_text=True))
+    counts, balances = dashboard(client)
+    assert counts == (3, 1, 4)
+    assert balances["Ahmet Celik"] == before["Ahmet Celik"]
+
+
+def test_screen_approve_insufficient_shows_message(client, svc):
+    intervening_approval(svc)
+    before = statuses()
+    resp = client.post("/requests/5/approve")
+    assert_message_above_list(resp, 400, MSG_APPROVE_INSUFFICIENT % (2, 3))
+    html = resp.get_data(as_text=True)
+    assert "ERR-" not in html and "InsufficientBalance" not in html
+    assert statuses() == before
+
+
+@pytest.mark.parametrize("days, approved", [(13, True), (14, True), (15, False)],
+                         ids=["K-1", "K", "K+1"])
+def test_screen_and_service_agree_on_approval(client, days, approved):
+    request_id = add_pending(1, dt.date(2026, 11, 2), days)
+    resp = client.post(f"/requests/{request_id}/approve")
+    assert resp.status_code == (302 if approved else 400)
+    assert status_of(request_id) == ("Onaylandi" if approved else "Beklemede")
+
+
+def test_screen_reject_ignores_balance(client, svc):
+    intervening_approval(svc)
+    assert client.post("/requests/5/reject").status_code == 302
+    assert status_of(5) == "Reddedildi"
+
+
+@pytest.mark.parametrize("path", ["/requests/1/approve", "/requests/1/reject",
+                                  "/requests/6/approve", "/requests/6/reject"])
+def test_screen_decided_request_shows_message(client, path):
+    before = statuses()
+    assert_message_above_list(client.post(path), 400, MSG_ALREADY_DECIDED)
+    assert statuses() == before
+
+
+@pytest.mark.parametrize("path", ["/requests/99/approve", "/requests/99/reject",
+                                  "/requests/abc/approve", "/requests/abc/reject"])
+def test_screen_unknown_or_non_numeric_request(client, path):
+    before = statuses()
+    assert_message_above_list(client.post(path), 404, MSG_REQUEST_NOT_FOUND)
+    assert statuses() == before
+
+
+def test_screen_unexpected_error_is_logged_not_shown(client, monkeypatch, caplog):
+    def broken(request_id, status):
+        raise RuntimeError("gizli ayrinti")
+    monkeypatch.setattr(leave_app.storage, "set_request_status", broken)
+    resp = client.post("/requests/2/approve")
+    assert_message_above_list(resp, 500, MSG_ACTION_UNEXPECTED)
+    html = resp.get_data(as_text=True)
+    assert "gizli ayrinti" not in html and "Traceback" not in html
+    assert "onaylandı" not in visible_text(html)
+    errors = [r for r in caplog.records if r.levelname == "ERROR"]
+    assert len(errors) == 1
+    assert errors[0].exc_info[0] is RuntimeError
+
+
+class _RowForms(HTMLParser):
+    """Per table row: the POST forms it holds as (action, [submit values])."""
+    def __init__(self):
+        super().__init__()
+        self.rows = []
+        self._form = None
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "tr":
+            self.rows.append([])
+        elif tag == "form" and self.rows:
+            self._form = (attrs.get("method", "").lower(), attrs.get("action"), [])
+            self.rows[-1].append(self._form)
+        elif tag == "input" and self._form is not None and attrs.get("type") == "submit":
+            self._form[2].append(attrs.get("value"))
+
+    def handle_endtag(self, tag):
+        if tag == "form":
+            self._form = None
+
+
+def test_buttons_only_on_pending_rows(client):
+    p = _RowForms()
+    p.feed(client.get("/requests").get_data(as_text=True))
+    data_rows = p.rows[1:]
+    assert len(data_rows) == 8
+    for r, forms in zip(leave_app.storage.requests(), data_rows):
+        if r["status"] == "Beklemede":
+            assert forms == [("post", f"/requests/{r['id']}/approve", ["Onayla"]),
+                             ("post", f"/requests/{r['id']}/reject", ["Reddet"])]
+        else:
+            assert forms == []
+
+
+def test_get_never_changes_status(client):
+    before = statuses()
+    for path in ("/", "/requests", "/requests?sonuc=onaylandi&talep=2"):
+        assert client.get(path).status_code == 200
+    for path in ("/requests/2/approve", "/requests/2/reject"):
+        assert client.get(path).status_code == 405
+    assert statuses() == before
+    assert dashboard(client)[0] == (4, 1, 3)
+
+
+@pytest.mark.parametrize("query", [
+    "sonuc=onaylandi&talep=3", "sonuc=reddedildi&talep=2", "sonuc=onaylandi&talep=99",
+    "sonuc=onaylandi&talep=abc", "sonuc=xyz&talep=1", "talep=1",
+])
+def test_success_message_requires_matching_state(client, query):
+    resp = client.get("/requests?" + query)
+    assert resp.status_code == 200
+    text = visible_text(resp.get_data(as_text=True))
+    assert "onaylandı." not in text and "reddedildi." not in text
