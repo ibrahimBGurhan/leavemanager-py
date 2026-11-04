@@ -52,6 +52,14 @@ def status_badge(status):
     return "<b style='color:%s'>%s</b>" % (color, status)
 
 
+def parse_request_id(text):
+    # Talep numarasi yalniz ASCII rakamdir; int()'in kabul ettigi bosluk, Unicode rakam ve "_"
+    # bir talebe eslenmez (spec 0010 AC-7, review F-1)
+    if text.isascii() and text.isdigit():
+        return int(text)
+    return None
+
+
 def decision_buttons(request_id):
     # Durum hucresinde; dugme etiketi value ozniteliginde ("Kaydet" kalibi, plan 0010 Risk 1)
     return "".join(
@@ -91,11 +99,8 @@ def register_routes(app, svc):
     def success_message():
         # Mesaj yalniz talebin gercek durumu parametreyle eslesirse gosterilir (plan 0010 Risk 2)
         result = RESULTS.get(request.args.get("sonuc", ""))
-        try:
-            talep = int(request.args.get("talep", ""))
-        except ValueError:
-            return None
-        if result is None:
+        talep = parse_request_id(request.args.get("talep", ""))
+        if result is None or talep is None:
             return None
         expected, message = result
         if any(r["id"] == talep and r["status"] == expected for r in svc.requests()):
@@ -109,9 +114,8 @@ def register_routes(app, svc):
 
     def decide(request_id, action, result):
         # Hata: yonlendirme yok, liste mesajla yeniden gosterilir (spec 0010, K-4)
-        try:
-            rid = int(request_id)
-        except ValueError:
+        rid = parse_request_id(request_id)
+        if rid is None:
             return requests_page(MSG_REQUEST_NOT_FOUND), 404
         try:
             action(rid)

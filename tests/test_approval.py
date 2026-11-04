@@ -239,7 +239,10 @@ def test_screen_decided_request_shows_message(client, path):
 
 
 @pytest.mark.parametrize("path", ["/requests/99/approve", "/requests/99/reject",
-                                  "/requests/abc/approve", "/requests/abc/reject"])
+                                  "/requests/abc/approve", "/requests/abc/reject",
+                                  # fix-1 (review F-1): only ASCII digits name a request
+                                  "/requests/%202/approve", "/requests/%D9%A2/reject",
+                                  "/requests/0_2/approve"])
 def test_screen_unknown_or_non_numeric_request(client, path):
     before = statuses()
     assert_message_above_list(client.post(path), 404, MSG_REQUEST_NOT_FOUND)
@@ -308,6 +311,7 @@ def test_get_never_changes_status(client):
 @pytest.mark.parametrize("query", [
     "sonuc=onaylandi&talep=3", "sonuc=reddedildi&talep=2", "sonuc=onaylandi&talep=99",
     "sonuc=onaylandi&talep=abc", "sonuc=xyz&talep=1", "talep=1",
+    "sonuc=onaylandi&talep=%201", "sonuc=onaylandi&talep=%D9%A1",  # fix-1 (review F-1)
 ])
 def test_success_message_requires_matching_state(client, query):
     resp = client.get("/requests?" + query)
