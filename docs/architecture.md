@@ -21,7 +21,6 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
 Hedeften kalan farklar:
 - Route'lar HTML'i hâlâ string birleştirerek kuruyor (Jinja şablonu yok).
 - Depo arayüzü yazılı bir sözleşme değil, ortak metot adları.
-- Tipli domain istisnaları yok.
 
 Bunlar ayrı işlerle kapatılır.
 

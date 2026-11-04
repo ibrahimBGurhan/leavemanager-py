@@ -116,35 +116,42 @@ def test_post_valid_request_is_listed_as_pending(client):
 
 
 def test_post_insufficient_balance_shows_error(client):
-    """AC-10: kalan < gün → hata mesajı, kayıt yok."""
+    """Spec 0008 CB-1 (supersedes 0001/AC-10): kalan < gün → anlaşılır mesaj, 400, kayıt yok;
+    iç kod ve dahili numara sızmaz."""
     resp = post_new(client, 5, "2026-11-16", "2026-11-16")  # Elif: kalan 0
-    assert resp.status_code == 200
+    assert resp.status_code == 400
     text = visible_text(resp.get_data(as_text=True))
-    assert "ERR-412" in text
-    assert "bakiye yetersiz" in text
+    assert "Kalan izin bakiyeniz yetersiz (kalan 0 gün, talep 1 gün)." in text
+    for leak in ("ERR-", "4127", "IT'ye"):
+        assert leak not in text
+    assert "Kaydet" in resp.get_data(as_text=True)
     assert request_rows(client) == OPENING_REQUESTS
 
 
-def test_post_remaining_equals_days_is_silently_dropped_current(client):
-    """MEVCUT DAVRANIŞ — hedef değil (BR-6) · AC-10: yönlendirir ama kayıt oluşmaz."""
+def test_post_remaining_equals_days_is_saved(client):
+    """Spec 0008 CB-1 (BR-6 kararı; supersedes 0001/AC-10): bakiyeyi tam kullanan talep kaydedilir."""
     resp = post_new(client, 3, "2026-12-01", "2026-12-14")  # Zeynep: kalan 14, 14 gün
     assert_redirects_to_requests(resp)
-    assert request_rows(client) == OPENING_REQUESTS
+    assert request_rows(client)[8:] == [
+        ["Zeynep Kaya", "2026-12-01", "2026-12-14", "14", "Test", "Beklemede"],
+    ]
 
 
 @pytest.mark.parametrize(
-    "employee_id, start, end",
+    "employee_id, start, end, message",
     [
-        (2, "16.11.2026", "18.11.2026"),  # bozuk tarih formatı
-        (99, "2026-11-16", "2026-11-18"),  # olmayan personel
+        (2, "16.11.2026", "18.11.2026",  # bozuk tarih formatı
+         "Lütfen personeli ve geçerli başlangıç ve bitiş tarihlerini girin."),
+        (99, "2026-11-16", "2026-11-18", "Seçilen personel bulunamadı."),  # olmayan personel
     ],
     ids=["bad-date", "unknown-employee"],
 )
-def test_post_invalid_input_redirects_without_saving_current(client, employee_id, start, end):
-    """MEVCUT DAVRANIŞ — hedef değil (invariant: talep var olan personele bağlı; başarısız işlem
-    başarılı gösterilmez · OD-7) · AC-10: hata yutulur, yönlendirir, kayıt oluşmaz."""
+def test_post_invalid_input_shows_message(client, employee_id, start, end, message):
+    """Spec 0008 CB-2/CB-4 (supersedes 0001/AC-10): başarısız talep başarılı gösterilmez —
+    mesaj, 400, yönlendirme ve kayıt yok."""
     resp = post_new(client, employee_id, start, end)
-    assert_redirects_to_requests(resp)
+    assert resp.status_code == 400
+    assert message in visible_text(resp.get_data(as_text=True))
     assert request_rows(client) == OPENING_REQUESTS
 
 

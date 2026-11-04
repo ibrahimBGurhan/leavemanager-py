@@ -1,8 +1,20 @@
 # HTTP: route'lar, form girdisi, sayfa ve durum rozeti. Veriye yalniz servis uzerinden erisir.
+import logging
 from datetime import datetime
 
 from flask import request, redirect, render_template_string
 from markupsafe import escape
+
+from domain.errors import EmployeeNotFound, InsufficientBalance, InvalidDateRange
+
+logger = logging.getLogger(__name__)
+
+# Kullaniciya giden hata mesajlari (spec 0008); ic kod ve ayrinti icermez.
+MSG_INVALID_INPUT = "Lütfen personeli ve geçerli başlangıç ve bitiş tarihlerini girin."
+MSG_EMPLOYEE_NOT_FOUND = "Seçilen personel bulunamadı."
+MSG_INVALID_DATE_RANGE = "Bitiş tarihi başlangıç tarihinden önce olamaz."
+MSG_INSUFFICIENT_BALANCE = "Kalan izin bakiyeniz yetersiz (kalan %d gün, talep %d gün)."
+MSG_UNEXPECTED = "Talep kaydedilemedi. Lütfen daha sonra tekrar deneyin."
 
 PAGE = """
 <html><head><meta charset="utf-8"><title>LeaveManager</title>
@@ -53,23 +65,7 @@ def register_routes(app, svc):
         body += "</table>"
         return render_template_string(PAGE, body=body)
 
-    @app.route("/new", methods=["GET", "POST"])
-    def new_request():
-        if request.method == "POST":
-            try:
-                emp_id = int(request.form["employee_id"])
-                start = datetime.strptime(request.form["start"], "%Y-%m-%d").date()
-                end = datetime.strptime(request.form["end"], "%Y-%m-%d").date()
-                emp = [e for e in svc.employees() if e["id"] == emp_id][0]
-                days = (end - start).days + 1
-                # bakiye kontrolu (serviste de var ama formda erken uyari iyi oluyor)
-                if svc.get_remaining(emp) < days:
-                    return render_template_string(PAGE, body="<p style='color:red'>HATA: ERR-412 NullReferenceGibi - bakiye yetersiz. IT'ye bildirin: dahili 4127</p>")
-                svc.create_request(emp_id, start, end, request.form.get("reason", ""))
-                return redirect("/requests")
-            except Exception:
-                # loglanacak
-                return redirect("/requests")
+    def new_request_form(message=None):
         options = "".join("<option value='%d'>%s</option>" % (e["id"], escape(e["name"])) for e in svc.employees())
         body = """<h3>Yeni Talep</h3><form method="post">
     Personel: <select name="employee_id">%s</select><br><br>
@@ -77,4 +73,31 @@ def register_routes(app, svc):
     Bitis: <input type="date" name="end"><br><br>
     Neden: <input type="text" name="reason"><br><br>
     <input type="submit" value="Kaydet"></form>""" % options
+        if message is not None:
+            body = "<p style='color:red'>%s</p>" % escape(message) + body
         return render_template_string(PAGE, body=body)
+
+    @app.route("/new", methods=["GET", "POST"])
+    def new_request():
+        if request.method == "POST":
+            # Ihlal sirasi: bozuk girdi -> personel -> tarih araligi -> bakiye (spec 0008, S-4)
+            try:
+                emp_id = int(request.form["employee_id"])
+                start = datetime.strptime(request.form["start"], "%Y-%m-%d").date()
+                end = datetime.strptime(request.form["end"], "%Y-%m-%d").date()
+            except (KeyError, ValueError):
+                return new_request_form(MSG_INVALID_INPUT), 400
+            try:
+                svc.create_request(emp_id, start, end, request.form.get("reason", ""))
+            except EmployeeNotFound:
+                return new_request_form(MSG_EMPLOYEE_NOT_FOUND), 400
+            except InvalidDateRange:
+                return new_request_form(MSG_INVALID_DATE_RANGE), 400
+            except InsufficientBalance as e:
+                return new_request_form(MSG_INSUFFICIENT_BALANCE % (e.remaining, e.requested)), 400
+            except Exception:
+                # beklenmeyen hata: ayrinti loga, kullaniciya genel mesaj (docs/conventions.md)
+                logger.exception("izin talebi kaydedilemedi")
+                return new_request_form(MSG_UNEXPECTED), 500
+            return redirect("/requests")
+        return new_request_form()

@@ -9,6 +9,7 @@ import pytest
 
 import app as leave_app
 from conftest import TODAY, status_cell_html
+from domain.errors import EmployeeNotFound
 
 
 def employee(hire_date, emp_id=100):
@@ -132,19 +133,19 @@ def test_create_request_accepts_past_dates(svc):
     assert leave_app.storage.requests()[-1]["status"] == "Beklemede"
 
 
-def test_create_request_rejects_when_remaining_equals_days_current(svc):
-    """MEVCUT DAVRANIŞ — hedef değil (BR-6) · AC-5: kalan = gün ise reddedilir."""
+def test_create_request_accepts_when_remaining_equals_days(svc):
+    """Spec 0008 CB-1 (BR-6 kararı; supersedes 0001/AC-5): bakiyeyi tam kullanan talep kaydedilir."""
     zeynep = by_name("Zeynep Kaya")  # kalan 14
     ok = svc.create_request(zeynep["id"], dt.date(2026, 12, 1), dt.date(2026, 12, 14), "Uzun")
-    assert ok is False
-    assert len(leave_app.storage.requests()) == 8
-
-
-def test_create_request_unknown_employee_reports_success_current(svc):
-    """MEVCUT DAVRANIŞ — hedef değil (invariant: talep var olan personele bağlı; başarısız işlem
-    başarılı gösterilmez · OD-7) · AC-5: olmayan personel kaydedilmez ama True döner."""
-    ok = svc.create_request(99, dt.date(2026, 11, 16), dt.date(2026, 11, 16), "x")
     assert ok is True
+    assert len(leave_app.storage.requests()) == 9
+
+
+def test_create_request_unknown_employee_raises(svc):
+    """Spec 0008 CB-2/CB-6 (supersedes 0001/AC-5): olmayan personel EmployeeNotFound fırlatır,
+    kayıt oluşmaz."""
+    with pytest.raises(EmployeeNotFound):
+        svc.create_request(99, dt.date(2026, 11, 16), dt.date(2026, 11, 16), "x")
     assert len(leave_app.storage.requests()) == 8
 
 
