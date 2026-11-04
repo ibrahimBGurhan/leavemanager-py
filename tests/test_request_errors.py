@@ -8,11 +8,25 @@ import datetime as dt
 import pytest
 
 import app as leave_app
+from conftest import visible_text
 from domain.errors import EmployeeNotFound, InsufficientBalance, InvalidDateRange
+
+MSG_INVALID_INPUT = "Lütfen personeli ve geçerli başlangıç ve bitiş tarihlerini girin."
+MSG_INVALID_DATE_RANGE = "Bitiş tarihi başlangıç tarihinden önce olamaz."
+MSG_UNEXPECTED = "Talep kaydedilemedi. Lütfen daha sonra tekrar deneyin."
 
 
 def by_name(name):
     return next(e for e in leave_app.storage.employees() if e["name"] == name)
+
+
+def assert_shown_not_saved(resp, status, message):
+    """A failed request: message above the form, no redirect, no new record."""
+    assert resp.status_code == status
+    html = resp.get_data(as_text=True)
+    assert message in visible_text(html)
+    assert "Kaydet" in html
+    assert len(leave_app.storage.requests()) == 8
 
 
 # --- service (CB-1, CB-3, CB-6) -------------------------------------------------------------
@@ -53,3 +67,63 @@ def test_violations_are_reported_in_order(svc, name, expected):
     emp_id = 99 if name == "Yok" else by_name(name)["id"]
     with pytest.raises(expected):
         svc.create_request(emp_id, dt.date(2026, 11, 18), dt.date(2026, 11, 16), "x")
+
+
+# --- screen (CB-1..CB-5) --------------------------------------------------------------------
+
+@pytest.mark.parametrize("days, saved", [(13, True), (14, True), (15, False)])
+def test_screen_and_service_agree_on_balance(client, svc, days, saved):
+    """CB-1: Zeynep, kalan 14. Ekran ve servis kalan - 1, kalan, kalan + 1 için aynı karar."""
+    start = dt.date(2026, 12, 1)
+    end = start + dt.timedelta(days=days - 1)
+    resp = client.post("/new", data={
+        "employee_id": "3", "start": start.isoformat(), "end": end.isoformat(), "reason": "x"})
+    if saved:
+        assert resp.status_code == 302
+    else:
+        assert_shown_not_saved(resp, 400, "Kalan izin bakiyeniz yetersiz (kalan 14 gün, talep 15 gün).")
+    leave_app.storage.reset()
+    try:
+        service_saved = svc.create_request(3, start, end, "x") is True
+    except InsufficientBalance:
+        service_saved = False
+    assert service_saved is saved
+
+
+def test_screen_end_before_start_shows_message(client):
+    """CB-3 (BR-9): ters tarih → mesaj, 400."""
+    resp = client.post("/new", data={
+        "employee_id": "2", "start": "2026-11-18", "end": "2026-11-16", "reason": "x"})
+    assert_shown_not_saved(resp, 400, MSG_INVALID_DATE_RANGE)
+
+
+@pytest.mark.parametrize(
+    "form",
+    [
+        {"employee_id": "2", "start": "", "end": "2026-11-16"},
+        {"employee_id": "iki", "start": "2026-11-16", "end": "2026-11-16"},
+        {"start": "2026-11-16", "end": "2026-11-16"},
+        {"employee_id": "99", "start": "16.11.2026", "end": "2026-11-16"},
+    ],
+    ids=["empty-date", "non-numeric-employee", "missing-employee", "bad-date-before-unknown-employee"],
+)
+def test_screen_bad_input_shows_message(client, form):
+    """CB-4 ve S-4 (bozuk girdi önce gelir): mesaj, 400."""
+    resp = client.post("/new", data={**form, "reason": "x"})
+    assert_shown_not_saved(resp, 400, MSG_INVALID_INPUT)
+
+
+def test_screen_unexpected_error_is_logged_not_shown(client, monkeypatch, caplog):
+    """CB-5: genel mesaj, 500; ayrıntı sayfada yok, stack trace logda."""
+    def broken(record):
+        raise RuntimeError("gizli ayrinti")
+    monkeypatch.setattr(leave_app.storage, "add_request", broken)
+    resp = client.post("/new", data={
+        "employee_id": "2", "start": "2026-11-16", "end": "2026-11-16", "reason": "x"})
+    assert_shown_not_saved(resp, 500, MSG_UNEXPECTED)
+    html = resp.get_data(as_text=True)
+    assert "gizli ayrinti" not in html
+    assert "Traceback" not in html
+    errors = [r for r in caplog.records if r.levelname == "ERROR"]
+    assert len(errors) == 1
+    assert errors[0].exc_info[0] is RuntimeError
