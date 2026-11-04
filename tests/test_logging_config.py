@@ -22,9 +22,10 @@ APP_PY = ROOT / "app.py"
 TIMESTAMP = r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d,\d{3}"
 ERROR_LINE = re.compile(rf"^{TIMESTAMP} ERROR web\.routes: izin talebi kaydedilemedi$")
 REQUEST_LINE = re.compile(rf'^{TIMESTAMP} INFO werkzeug: .*"GET / HTTP/1\.1" 200')
+DEBUG_LINE = re.compile(rf"^{TIMESTAMP} DEBUG web\.routes: debug kaydi$")
 
 SCRIPT = r'''
-import sys, threading, urllib.error, urllib.parse, urllib.request
+import logging, sys, threading, urllib.error, urllib.parse, urllib.request
 
 import flask
 from werkzeug.serving import make_server
@@ -39,6 +40,8 @@ def broken(self, record):
 
 
 def serve(flask_app):
+    # the app writes no DEBUG record of its own; this one shows whether DEBUG is let through
+    logging.getLogger("web.routes").debug("debug kaydi")
     server = make_server("127.0.0.1", 0, flask_app)
     worker = threading.Thread(target=lambda: [server.handle_request() for _ in range(2)],
                               daemon=True)
@@ -112,16 +115,17 @@ def test_logs_go_to_stderr_only(run):
 
 @ENTRIES
 @pytest.mark.parametrize(
-    "level, request_line, error_line",
-    [(None, True, True), ("", True, True), ("  ", True, True), ("debug", True, True),
-     ("WARNING", False, True), ("error", False, True), ("ERROR", False, True),
-     ("CRITICAL", False, False)],
+    "level, debug_line, request_line, error_line",
+    [(None, False, True, True), ("", False, True, True), ("  ", False, True, True),
+     ("debug", True, True, True), ("WARNING", False, False, True), ("error", False, False, True),
+     ("ERROR", False, False, True), ("CRITICAL", False, False, False)],
     ids=["unset", "empty", "blank", "debug-lower", "warning", "error-lower", "error", "critical"],
 )
-def test_level_from_env(run, entry, level, request_line, error_line):
+def test_level_from_env(run, entry, level, debug_line, request_line, error_line):
     """CB-3, CB-6: varsayılan INFO; büyük/küçük harf fark etmez; altındaki kayıtlar yazılmaz;
     geçerli ya da boş değer uyarı üretmez (CB-4 yalnızca tanınmayan değer içindir)."""
     lines = run(entry, level)[0].stderr.splitlines()
+    assert any(DEBUG_LINE.match(line) for line in lines) is debug_line
     assert any(REQUEST_LINE.match(line) for line in lines) is request_line
     assert any(ERROR_LINE.match(line) for line in lines) is error_line
     assert not [line for line in lines if " WARNING app: " in line]
