@@ -22,8 +22,8 @@ Loglar stderr'e `zaman seviye logger: mesaj` biçiminde yazılır. Seviye `LOG_L
 
     LOG_LEVEL=WARNING .venv/Scripts/python app.py
 
-`WARNING` ve üstünde Werkzeug'un "Running on http://…" satırı da gizlenir. Uygulamayı yükleyen
-ortam log'u zaten kendisi yapılandırmışsa onun ayarı geçerli kalır.
+`WARNING` ve üstünde Werkzeug'un "Running on http://…" satırı ve geliştirme sunucusu uyarısı da
+gizlenir. Uygulamayı yükleyen ortam log'u zaten kendisi yapılandırmışsa onun ayarı geçerli kalır.
 
 Doğrulama (lint + testler):
 
