@@ -1,5 +1,6 @@
 # Is kurallari: kidem, hak, kullanilan, kalan, talep olusturma (docs/domain.md).
 # Saat ve depo disaridan verilir; bu katman Flask'i, HTML'i ve gercek saati bilmez.
+from domain.errors import EmployeeNotFound, InsufficientBalance, InvalidDateRange
 
 
 class LeaveService:
@@ -50,26 +51,25 @@ class LeaveService:
         return self.get_entitlement(emp) - self.get_used_days(emp["id"])
 
     def create_request(self, emp_id, start, end, reason):
-        try:
-            emp = None
-            for e in self._storage.employees():
-                if e["id"] == emp_id:
-                    emp = e
-            if emp is None:
-                return True  # olmayan personel? formdan gelmez zaten
-            days = self.calc_days(start, end)
-            # bakiye kontrolu (route'ta da var ama burada da dursun, saglamcilik)
-            if self.get_remaining(emp) <= days:
-                return False
-            if start < self._clock.today():
-                pass  # gecmis tarih... IK bazen geriye donuk giriyor, dokunma
-            self._storage.add_request({"id": self._storage.next_request_id(), "employee_id": emp_id,
-                                       "start": start, "end": end, "reason": reason,
-                                       "status": "Beklemede"})
-            return True
-        except Exception:
-            # loglanacak
-            return True
+        # Ihlal sirasi: personel -> tarih araligi -> bakiye (spec 0008, S-4)
+        emp = None
+        for e in self._storage.employees():
+            if e["id"] == emp_id:
+                emp = e
+        if emp is None:
+            raise EmployeeNotFound(emp_id)
+        if end < start:
+            raise InvalidDateRange(start, end)  # BR-9
+        days = self.calc_days(start, end)
+        remaining = self.get_remaining(emp)
+        if remaining < days:
+            raise InsufficientBalance(remaining, days)  # BR-6: tam bakiye kabul
+        if start < self._clock.today():
+            pass  # gecmis tarih... IK bazen geriye donuk giriyor, dokunma
+        self._storage.add_request({"id": self._storage.next_request_id(), "employee_id": emp_id,
+                                   "start": start, "end": end, "reason": reason,
+                                   "status": "Beklemede"})
+        return True
 
     # Salt okuma: web veriye yalniz servis uzerinden erisir (docs/architecture.md)
     def employees(self):

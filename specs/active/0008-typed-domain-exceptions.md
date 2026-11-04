@@ -1,6 +1,6 @@
 # Spec 0008 — typed-domain-exceptions (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0008-plan.md`
 - Source: #19

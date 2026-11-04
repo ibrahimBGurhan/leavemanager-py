@@ -125,11 +125,13 @@ def test_post_insufficient_balance_shows_error(client):
     assert request_rows(client) == OPENING_REQUESTS
 
 
-def test_post_remaining_equals_days_is_silently_dropped_current(client):
-    """MEVCUT DAVRANIŞ — hedef değil (BR-6) · AC-10: yönlendirir ama kayıt oluşmaz."""
+def test_post_remaining_equals_days_is_saved(client):
+    """Spec 0008 CB-1 (BR-6 kararı; supersedes 0001/AC-10): bakiyeyi tam kullanan talep kaydedilir."""
     resp = post_new(client, 3, "2026-12-01", "2026-12-14")  # Zeynep: kalan 14, 14 gün
     assert_redirects_to_requests(resp)
-    assert request_rows(client) == OPENING_REQUESTS
+    assert request_rows(client)[8:] == [
+        ["Zeynep Kaya", "2026-12-01", "2026-12-14", "14", "Test", "Beklemede"],
+    ]
 
 
 @pytest.mark.parametrize(
