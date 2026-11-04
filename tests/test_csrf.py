@@ -101,6 +101,24 @@ def test_forms_carry_a_token(csrf_client):
     assert all(TOKEN.search(f.split("</form>")[0]) for f in forms)
 
 
+def test_every_post_form_on_every_page_carries_a_token(csrf_client):
+    """Review F-1: a POST form added later without csrf_field() goes red here, not in production.
+    Visits every GET page the app routes (no URL arguments) and checks each POST form."""
+    pages = sorted(r.rule for r in leave_app.app.url_map.iter_rules()
+                   if "GET" in r.methods and not r.arguments and r.endpoint != "static")
+    assert {"/", "/requests", "/new"} <= set(pages)
+    post_forms = []
+    for page in pages:
+        html = csrf_client.get(page).get_data(as_text=True)
+        for block in html.split("<form")[1:]:
+            opening, body = block.split(">", 1)
+            if re.search(r"""method=['"]?post""", opening, re.IGNORECASE):
+                post_forms.append((page, body.split("</form>")[0]))
+    assert len(post_forms) >= 1 + 8  # en az: Yeni Talep + 4 bekleyen talep x (Onayla, Reddet)
+    missing = [page for page, body in post_forms if not TOKEN.search(body)]
+    assert missing == []
+
+
 @pytest.mark.parametrize("name, page, path, data, marker", ACTIONS, ids=ACTION_IDS)
 def test_valid_token_flow_works(csrf_client, name, page, path, data, marker):
     token = token_from(csrf_client.get(page).get_data(as_text=True))
