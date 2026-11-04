@@ -1,6 +1,6 @@
 # Spec 0011 — csrf-koruma (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0011-plan.md`
 - Source: #25
@@ -20,17 +20,17 @@ anahtarı (`SECRET_KEY`) koddan değil ortamdan gelir.
 "Korunan istek" şu üç işlemdir: Yeni Talep kaydı, onay, red. "Geçerli token" = uygulamanın aynı
 tarayıcı oturumu için ürettiği ve formda gönderilen token.
 
-- [ ] CB-1 — **Formlar token taşır:** Yeni Talep formu ile Talepler ekranındaki her "Onayla" ve
+- [x] CB-1 — **Formlar token taşır:** Yeni Talep formu ile Talepler ekranındaki her "Onayla" ve
   "Reddet" formu geçerli bir CSRF token'ı içerir. Kullanıcı ekrandan çalıştığında talep
   oluşturma, onay ve red bugünkü gibi çalışır (yönlendirme, mesaj, kayıt).
-- [ ] CB-2 — **Token'sız ya da geçersiz token'lı istek reddedilir:** üç korunan işlemin her
+- [x] CB-2 — **Token'sız ya da geçersiz token'lı istek reddedilir:** üç korunan işlemin her
   birinde token yoksa, bozuksa ya da başka bir oturuma aitse:
   - hiçbir kayıt oluşmaz ya da değişmez;
   - yanıt **400** olur;
   - "Form geçersiz ya da süresi dolmuş. Lütfen sayfayı yenileyip tekrar deneyin." mesajı
     gösterilir: Yeni Talep'te formun üstünde, onay ve redde Talepler listesinin üstünde;
   - Flask'ın İngilizce hata sayfası, istisna metni ya da iç ayrıntı gösterilmez.
-- [ ] CB-3 — **Gizli anahtar ortamdan gelir (D2):**
+- [x] CB-3 — **Gizli anahtar ortamdan gelir (D2):**
   - `SECRET_KEY` ortam değişkeninden okunur; değer koda, repoya ya da log'a yazılmaz.
   - Tanımlı değilse uygulama yine açılır, süreç başına rastgele bir anahtar kullanır ve log'a
     anahtarın değerini içermeyen **tek** bir WARNING satırı yazar. Satır `app.secrets` logger'ından
@@ -38,18 +38,18 @@ tarayıcı oturumu için ürettiği ve formda gönderilen token.
     başlatma, açık formların token'larını geçersiz kılar.
   - Token'ın süre sınırı yoktur; tarayıcı oturumu boyunca geçerlidir (K-2).
   - Repoda `.env.example` bulunur ve `SECRET_KEY` için bir yer tutucu içerir (gerçek değer değil).
-- [ ] CB-4 — **Belgeler güncel:** `docs/security.md` "Bugün" notundan CSRF eksikliği kalkar;
+- [x] CB-4 — **Belgeler güncel:** `docs/security.md` "Bugün" notundan CSRF eksikliği kalkar;
   CSRF'in nasıl sağlandığı ve `SECRET_KEY` yoksa ne olduğu yazılır. Yeni bağımlılıklar
   (Flask-WTF ve onun getirdiği WTForms, K-5) `requirements.txt`'de `==` ile sabitlenir ve `docs/conventions.md` sürüm satırına eklenir.
 
 ## Preserved behavior
-- [ ] PB-1 — **Görüntüleme ve ekranlar değişmez:** GET istekleri token istemez. Ana sayfa,
+- [x] PB-1 — **Görüntüleme ve ekranlar değişmez:** GET istekleri token istemez. Ana sayfa,
   Talepler ve Yeni Talep ekranlarının görünen alanları, tablo hücreleri, hesapları ve 0008/0010
   mesajları aynı kalır. Talepler ekranındaki Durum hücresinin görünen metni yine yalnız durumdur.
-- [ ] PB-2 — **İş kuralları ve hata kodları değişmez:** geçerli token'lı isteklerde 0008 ve
+- [x] PB-2 — **İş kuralları ve hata kodları değişmez:** geçerli token'lı isteklerde 0008 ve
   0010'un tüm davranışları aynıdır: ihlal sırası, 400/404/500 kodları, mesaj metinleri, PRG ve
   başarı mesajının durum eşleşmesi.
-- [ ] PB-3 — **Testler (D3):**
+- [x] PB-3 — **Testler (D3):**
   - Mevcut test dosyalarının gövdeleri ve assert'leri bayt düzeyinde aynı kalır. İki istisna var,
     ikisi de birer satırlık test kurgusu değişikliğidir (R-08, plan 0011 Risk 1):
     - `tests/conftest.py`: ortak test istemcisi CSRF kapalı çalışır.
@@ -57,7 +57,7 @@ tarayıcı oturumu için ürettiği ve formda gönderilen token.
       testin konusu log biçimidir, assert'ler değişmez.
   - CSRF açık çalışan ayrı testler her korunan işlemi hem geçerli hem geçersiz token'la sınar.
   - `tests/test_security.py` ve `tests/test_architecture.py` değişmeden yeşil kalır.
-- [ ] PB-4 — **Güvenlik ve log:**
+- [x] PB-4 — **Güvenlik ve log:**
   - `debug` kapalı kalır. Gizli anahtar hiçbir çıktıda görünmez.
   - 0009 log biçimi ve `LOG_LEVEL` davranışı aynıdır; CB-3'ün WARNING satırı da bu biçimdedir.
     `tests/test_logging_config.py` assert'leri değişmeden yeşil kalır (K-1; kurgu satırı PB-3).
@@ -72,10 +72,10 @@ tarayıcı oturumu için ürettiği ve formda gönderilen token.
 - Token hatasından sonra Yeni Talep formunun girilen değerleri koruması (0008 S-3 ile tutarlı, K-4).
 
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green (full; CI → PR)
+- [x] Independent review done; real findings fixed, noise rejected with written rationale (4 rounds)
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots → PR)
+- [x] Spec moved to `specs/done/` (immutable there)
 
 ## Kararlar (triage, İbrahim Gürhan, 2026-11-04)
 - **Lane:** rubrik (a) → BUG (`docs/security.md` CSRF kuralından sapma). Yeni bağımlılık plan
@@ -196,8 +196,8 @@ Fix-3 (son izinli round) yalnız `tests/test_csrf.py`; her düzeltme kendi mutan
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 1 (R-08 plan aşamasında: PB-3/PB-4, `test_logging_config.py` süreç betiği satırı) |
+| Fix rounds | 3 (fix-1 review F-1/F-2/F-3, fix-2 review F-5/F-6-1/F-7, fix-3 VERIFY G-1/G-3/G-4 — hepsi yalnız test) |
+| Review findings: real / noise | 6 / 4 (real: F-1, F-2, F-3, F-5, F-6/1, F-7; noise: F-4, F-6/2–4, F-9, F-10; F-8 ship'te). Round 4 clean. VERIFY: G-1/G-3/G-4 düzeltildi, G-2 kabul |
+| Regressions introduced | 1 (F-5: fix-1 bir test korumasını kaldırdı; round 2 review'da yakalandı, ship'e ulaşmadı) |
+| Bugs escaped to production | 0 (henüz yayında değil) |
