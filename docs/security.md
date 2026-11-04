@@ -20,7 +20,7 @@
 - **Hata mesajları:** stack trace, istisna metni ve iç kodlar kullanıcıya sızmaz (`docs/conventions.md`).
 - **Debug:** `debug=True` koda yazılmaz. Debug yalnızca yerelde bir ortam değişkeniyle açılır.
   Werkzeug debugger ağdan erişilebilir olduğunda uzaktan kod çalıştırmaya izin verir.
-  *Mevcut kod ihlal ediyor:* `app.run(debug=True)`.
+  Kodda debug kapalıdır; bunu `tests/test_security.py::test_running_app_py_does_not_force_debug_mode` sınar.
 
 ## AuthN / AuthZ
 - **Hedef:** varsayılan deny. Giriş yapmamış kullanıcı hiçbir sayfayı göremez.
