@@ -55,9 +55,12 @@ def status_badge(status):
 def parse_request_id(text):
     # Talep numarasi yalniz ASCII rakamdir; int()'in kabul ettigi bosluk, Unicode rakam ve "_"
     # bir talebe eslenmez (spec 0010 AC-7, review F-1)
-    if text.isascii() and text.isdigit():
+    if not (text.isascii() and text.isdigit()):
+        return None
+    try:
         return int(text)
-    return None
+    except ValueError:  # int()'in hane siniri (4300) asilirsa da talep yok (review F-4)
+        return None
 
 
 def decision_buttons(request_id):

@@ -242,7 +242,10 @@ def test_screen_decided_request_shows_message(client, path):
                                   "/requests/abc/approve", "/requests/abc/reject",
                                   # fix-1 (review F-1): only ASCII digits name a request
                                   "/requests/%202/approve", "/requests/%D9%A2/reject",
-                                  "/requests/0_2/approve"])
+                                  "/requests/0_2/approve",
+                                  # fix-2 (review F-4): beyond int()'s 4300-digit limit
+                                  "/requests/" + "9" * 4301 + "/approve"],
+                         ids=lambda p: p if len(p) < 40 else "4301-digits")
 def test_screen_unknown_or_non_numeric_request(client, path):
     before = statuses()
     assert_message_above_list(client.post(path), 404, MSG_REQUEST_NOT_FOUND)
@@ -312,7 +315,8 @@ def test_get_never_changes_status(client):
     "sonuc=onaylandi&talep=3", "sonuc=reddedildi&talep=2", "sonuc=onaylandi&talep=99",
     "sonuc=onaylandi&talep=abc", "sonuc=xyz&talep=1", "talep=1",
     "sonuc=onaylandi&talep=%201", "sonuc=onaylandi&talep=%D9%A1",  # fix-1 (review F-1)
-])
+    "sonuc=onaylandi&talep=" + "9" * 4301,  # fix-2 (review F-4)
+], ids=lambda q: q if len(q) < 40 else "4301-digits")
 def test_success_message_requires_matching_state(client, query):
     resp = client.get("/requests?" + query)
     assert resp.status_code == 200
