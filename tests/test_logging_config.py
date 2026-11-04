@@ -40,6 +40,7 @@ def broken(self, record):
 
 
 def serve(flask_app):
+    flask_app.config["WTF_CSRF_ENABLED"] = False  # spec 0011 PB-3: the subject here is logging
     # the app writes no DEBUG record of its own; this one shows whether DEBUG is let through
     logging.getLogger("web.routes").debug("debug kaydi")
     server = make_server("127.0.0.1", 0, flask_app)

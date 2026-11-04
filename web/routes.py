@@ -2,7 +2,8 @@
 import logging
 from datetime import datetime
 
-from flask import request, redirect, render_template_string
+from flask import current_app, request, redirect, render_template_string
+from flask_wtf.csrf import CSRFError, generate_csrf
 from markupsafe import escape
 
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
@@ -24,6 +25,8 @@ MSG_APPROVE_INSUFFICIENT = "Personelin kalan izin bakiyesi yetersiz (kalan %d g�
 MSG_ALREADY_DECIDED = "Bu talep zaten sonuçlandırılmış."
 MSG_REQUEST_NOT_FOUND = "Talep bulunamadı."
 MSG_ACTION_UNEXPECTED = "İşlem tamamlanamadı. Lütfen daha sonra tekrar deneyin."
+# CSRF (spec 0011)
+MSG_CSRF = "Form geçersiz ya da süresi dolmuş. Lütfen sayfayı yenileyip tekrar deneyin."
 
 # Basari parametresi (PRG): sonuc -> (beklenen gercek durum, mesaj)
 RESULTS = {"onaylandi": (APPROVED, MSG_APPROVED), "reddedildi": (REJECTED, MSG_REJECTED)}
@@ -63,11 +66,19 @@ def parse_request_id(text):
         return None
 
 
+def csrf_field():
+    # Durum degistiren her formda token (spec 0011 CB-1). Koruma kapaliyken alan uretilmez:
+    # token'in anlami yok ve ortak test istemcisi korumayi kapatir (plan 0011 Risk 2)
+    if not current_app.config.get("WTF_CSRF_ENABLED", True):
+        return ""
+    return "<input type='hidden' name='csrf_token' value='%s'>" % escape(generate_csrf())
+
+
 def decision_buttons(request_id):
     # Durum hucresinde; dugme etiketi value ozniteliginde ("Kaydet" kalibi, plan 0010 Risk 1)
     return "".join(
-        " <form method='post' action='/requests/%d/%s' style='display:inline'>"
-        "<input type='submit' value='%s'></form>" % (request_id, action, label)
+        " <form method='post' action='/requests/%d/%s' style='display:inline'>%s"
+        "<input type='submit' value='%s'></form>" % (request_id, action, csrf_field(), label)
         for action, label in (("approve", "Onayla"), ("reject", "Reddet")))
 
 
@@ -143,12 +154,12 @@ def register_routes(app, svc):
 
     def new_request_form(message=None):
         options = "".join("<option value='%d'>%s</option>" % (e["id"], escape(e["name"])) for e in svc.employees())
-        body = """<h3>Yeni Talep</h3><form method="post">
+        body = """<h3>Yeni Talep</h3><form method="post">%s
     Personel: <select name="employee_id">%s</select><br><br>
     Baslangic: <input type="date" name="start"><br><br>
     Bitis: <input type="date" name="end"><br><br>
     Neden: <input type="text" name="reason"><br><br>
-    <input type="submit" value="Kaydet"></form>""" % options
+    <input type="submit" value="Kaydet"></form>""" % (csrf_field(), options)
         if message is not None:
             body = "<p style='color:red'>%s</p>" % escape(message) + body
         return render_template_string(PAGE, body=body)
@@ -177,3 +188,12 @@ def register_routes(app, svc):
                 return new_request_form(MSG_UNEXPECTED), 500
             return redirect("/requests")
         return new_request_form()
+
+    @app.errorhandler(CSRFError)
+    def csrf_failed(e):
+        # Token yok / bozuk / baska oturumun: hicbir sey degismez, 400 + Turkce mesaj (spec 0011
+        # CB-2). Kontrol view'dan once calisir; istisna metni ve token loga da yazilmaz.
+        logger.warning("CSRF dogrulamasi basarisiz: %s %r", request.method, request.path)
+        if request.path == "/new":
+            return new_request_form(MSG_CSRF), 400
+        return requests_page(MSG_CSRF), 400

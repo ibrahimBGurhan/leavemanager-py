@@ -7,10 +7,12 @@
 # (web -> domain -> storage, docs/architecture.md).
 import logging
 import os
+import secrets
 import sys
 from datetime import datetime
 
 from flask import Flask
+from flask_wtf.csrf import CSRFProtect
 
 from domain.leave_service import LeaveService
 from storage.memory import MemoryStorage
@@ -41,7 +43,27 @@ def configure_logging(value):
 
 configure_logging(os.environ.get("LOG_LEVEL"))
 
+
+# ---------------------------------------------------------------
+# Gizli anahtar ve CSRF (spec 0011): anahtar ortamdan gelir, koda yazilmaz
+# (docs/security.md). Yoksa surec basina rastgele anahtar + tek WARNING;
+# uyari "app.secrets" logger'indan (spec 0011 K-1). Deger hicbir yere yazilmaz.
+# ---------------------------------------------------------------
+def load_secret_key(environ):
+    key = (environ.get("SECRET_KEY") or "").strip()
+    if key:
+        return key
+    logging.getLogger("app.secrets").warning(
+        "SECRET_KEY tanımlı değil; süreç başına rastgele bir anahtar kullanılıyor "
+        "(yeniden başlatmada açık formlar geçersizleşir)")
+    return secrets.token_hex(32)
+
+
 app = Flask(__name__)
+app.config["SECRET_KEY"] = load_secret_key(os.environ)
+app.config["WTF_CSRF_TIME_LIMIT"] = None        # token tarayici oturumu boyunca gecerli (K-2)
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"   # HttpOnly varsayilan; Secure zorlanmaz (K-3)
+CSRFProtect(app)
 
 # ---------------------------------------------------------------
 # Baglanti noktalari (spec 0005): testler yalniz clock, storage, svc ve app'e
