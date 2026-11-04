@@ -12,7 +12,7 @@
 | Personel (`Employee`) | İzin hakkı olan çalışan: ad, birim, işe giriş tarihi | Kullanıcı hesabı değildir (auth henüz yok) |
 | Birim (`department`) | Personelin bağlı olduğu departman (IT, Muhasebe, IK, Satis…) | |
 | İzin Talebi (`LeaveRequest`) | Bir personelin başlangıç–bitiş tarihli yıllık izin isteği ve nedeni | Yalnızca yıllık ücretli izin; başka izin türü yok |
-| Durum (`status`) | Talebin durumu: `Beklemede` · `Onaylandi` · `Reddedildi` | Veri değeridir: ASCII yazılır, Türkçe karakterli hali (`Onaylandı`) **farklı** bir değerdir |
+| Durum (`status`) | Talebin durumu: `Beklemede` · `Onaylandi` · `Reddedildi` | Veri değeridir: ASCII yazılır, Türkçe karakterli hali (`Onaylandı`) **farklı** bir değerdir. Geçişler: BR-10 |
 | Kıdem (`seniority`) | Personelin hizmet süresi, tam yıl olarak | Bugün kod yalnızca yıl farkını alıyor (BR-2) |
 | Hak (`entitlement`) | Kıdeme göre bir yıl için hak edilen izin günü | "Kalan" ile karıştırılmamalı |
 | İzin günü | Bir talebin bakiyeden düşen gün sayısı; tam sayı | Takvim günü ≠ iş günü (BR-3) |
@@ -42,6 +42,12 @@
 - **BR-9** Bitiş tarihi ≥ başlangıç tarihi. Talep oluşturulurken uygulanır (spec 0008); ters
   tarihli talep oluşmaz ve kullanıcı mesaj görür. Gün sayısı hesabı (`calc_days`) ters aralıkta
   hâlâ 0 ya da negatif döner (*mevcut kod*), ama bu değer artık bir talebe ulaşmıyor.
+- **BR-10 Durum geçişleri** (spec 0010): bir talep yalnızca `Beklemede` iken sonuçlandırılır:
+  `Beklemede → Onaylandi` ya da `Beklemede → Reddedildi`. `Onaylandi` ve `Reddedildi` son
+  durumlardır; geri alınmaz, birbirine çevrilmez. Onayda BR-6 yeniden uygulanır (Kalan ≥ talebin
+  izin günü; aynı karar fonksiyonu); yetmezse talep `Beklemede` kalır. Redde bakiye kontrolü
+  yoktur. Geçmiş tarihli bekleyen talep de sonuçlandırılabilir (BR-8). Bu sürümde sonuçlandıran
+  IK'dır; yetki kısıtı henüz yok (OD-7, `docs/security.md`).
 
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.
@@ -49,7 +55,7 @@
 - Her izin talebi var olan bir personele bağlıdır.
 - Bir işlem başarısız olduysa kullanıcıya başarılı gibi gösterilmez. Talep oluşturmada spec
   0008'den beri uygulanıyor: iş kuralı ihlali domain'de tipli bir istisnadır, web onu Türkçe
-  bir mesaja çevirir.
+  bir mesaja çevirir. Onay/red de aynı kuralla çalışır (spec 0010).
 
 ## Open decisions
 Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davranış değişikliği) veya
@@ -66,6 +72,6 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
   tutulmuyor. Öneri: kapsama alınsın, ayrı spec.
 - **OD-6** Devreden izin (yorum satırındaki "en fazla 5 gün" taslağı) — öneri: IK yazılı kural
   verene kadar kapsam dışı; ölü kod refactor ile silinsin.
-- **OD-7** Onay/red akışı yok; durum yalnızca seed verisinde değişiyor. Kim onaylar (Yönetici mi,
-  IK mi)? — öneri: auth feature'ıyla birlikte ayrı spec.
+- **OD-7** ~~Onay/red akışı yok~~ — **kapandı** (spec 0010, İbrahim Gürhan, 2026-11-04): bu
+  sürümde IK onaylar (BR-10). Yönetici onayı ve "yalnızca IK" kısıtı auth spec'inde değerlendirilir.
 - **OD-8** Kalıcılık: bellekteki veri her yeniden başlatmada kayboluyor. Öneri: SQLite, ADR ile.

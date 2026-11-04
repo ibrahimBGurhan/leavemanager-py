@@ -28,8 +28,10 @@
   onaylar/reddeder) · **IK** (tüm personel, geriye dönük giriş).
 - Yetki kontrolü sunucu tarafında, domain'e girmeden önce web katmanında yapılır ve domain
   servisi çağıranın rolünü parametre olarak alır. UI'da bir butonu gizlemek yetkilendirme sayılmaz.
-- *Bugün:* kimlik doğrulama yok, herkes her şeyi görür ve herkes adına talep girebilir.
-  Giriş sistemi ayrı bir feature'dır (açık karar, `docs/domain.md` OD-7).
+- *Bugün:* kimlik doğrulama yok, herkes her şeyi görür, herkes adına talep girebilir ve
+  bekleyen her talebi onaylayıp reddedebilir (spec 0010; bilinçli kabul edilen risk). Formlarda
+  CSRF koruması da yok (#25). Giriş sistemi ayrı bir feature'dır; Yönetici / IK onay ayrımı
+  orada değerlendirilir (`docs/domain.md` OD-7, BR-10).
 
 ## Dependencies
 - Her yeni paket plan aşamasında gerekçesiyle önerilir ve **insan onaylar**.
