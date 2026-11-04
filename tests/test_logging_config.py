@@ -61,6 +61,11 @@ def serve(flask_app):
 
 
 MemoryStorage.add_request = broken
+if entry == "host":
+    # a host that configured logging before loading the app (plan 0009, R-1)
+    logging.basicConfig(level=logging.DEBUG, format="HOST %(levelname)s %(name)s: %(message)s",
+                        stream=sys.stderr)
+    entry = "import"
 if entry == "import":
     import app
     serve(app.app)
@@ -151,6 +156,17 @@ def test_each_event_is_logged_once(run, entry):
     assert len(requests) == 1, requests
     assert REQUEST_LINE.match(requests[0])
     assert proc.stderr.count("izin talebi kaydedilemedi") == 1
+
+
+def test_host_logging_configuration_is_kept(run):
+    """R-1 (README): log'u kendisi kurmuş bir host'ta onun biçimi ve seviyesi geçerli kalır;
+    LOG_LEVEL=ERROR host'un DEBUG seviyesini ve Werkzeug satırlarını bastırmaz."""
+    lines = run("host", "ERROR")[0].stderr.splitlines()
+    assert any(line.startswith("HOST INFO werkzeug: ") and '"GET / HTTP/1.1" 200' in line
+               for line in lines), lines
+    assert "HOST DEBUG web.routes: debug kaydi" in lines
+    assert "HOST ERROR web.routes: izin talebi kaydedilemedi" in lines
+    assert not [line for line in lines if re.match(TIMESTAMP, line)]
 
 
 def test_shell_log_level_does_not_reach_the_suite(tmp_path):
