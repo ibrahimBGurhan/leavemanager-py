@@ -90,6 +90,13 @@ def test_screen_and_service_agree_on_balance(client, svc, days, saved):
     assert service_saved is saved
 
 
+def test_screen_unknown_employee_shows_message(client):
+    """CB-2: olmayan personel → mesaj formun üstünde, 400."""
+    resp = client.post("/new", data={
+        "employee_id": "99", "start": "2026-11-16", "end": "2026-11-18", "reason": "x"})
+    assert_shown_not_saved(resp, 400, "Seçilen personel bulunamadı.")
+
+
 def test_screen_end_before_start_shows_message(client):
     """CB-3 (BR-9): ters tarih → mesaj, 400."""
     resp = client.post("/new", data={
