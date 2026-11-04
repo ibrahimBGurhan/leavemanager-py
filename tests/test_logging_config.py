@@ -40,14 +40,15 @@ def broken(self, record):
 
 def serve(flask_app):
     server = make_server("127.0.0.1", 0, flask_app)
-    worker = threading.Thread(target=lambda: [server.handle_request() for _ in range(2)])
+    worker = threading.Thread(target=lambda: [server.handle_request() for _ in range(2)],
+                              daemon=True)
     worker.start()
     base = "http://127.0.0.1:%d" % server.server_port
-    urllib.request.urlopen(base + "/").read()
+    urllib.request.urlopen(base + "/", timeout=10).read()
     form = urllib.parse.urlencode({"employee_id": "2", "start": "2026-11-16",
                                    "end": "2026-11-16", "reason": "x"}).encode()
     try:
-        urllib.request.urlopen(base + "/new", data=form)
+        urllib.request.urlopen(base + "/new", data=form, timeout=10)
         status = 200
     except urllib.error.HTTPError as err:
         status = err.code
