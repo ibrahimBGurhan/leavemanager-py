@@ -111,15 +111,19 @@ def test_logs_go_to_stderr_only(run):
 
 @ENTRIES
 @pytest.mark.parametrize(
-    "level, request_line",
-    [(None, True), ("", True), ("  ", True), ("error", False), ("ERROR", False), ("debug", True)],
-    ids=["unset", "empty", "blank", "error-lower", "error", "debug-lower"],
+    "level, request_line, error_line",
+    [(None, True, True), ("", True, True), ("  ", True, True), ("debug", True, True),
+     ("WARNING", False, True), ("error", False, True), ("ERROR", False, True),
+     ("CRITICAL", False, False)],
+    ids=["unset", "empty", "blank", "debug-lower", "warning", "error-lower", "error", "critical"],
 )
-def test_level_from_env(run, entry, level, request_line):
-    """CB-3, CB-6: varsayılan INFO; büyük/küçük harf fark etmez; altındaki kayıtlar yazılmaz."""
+def test_level_from_env(run, entry, level, request_line, error_line):
+    """CB-3, CB-6: varsayılan INFO; büyük/küçük harf fark etmez; altındaki kayıtlar yazılmaz;
+    geçerli ya da boş değer uyarı üretmez (CB-4 yalnızca tanınmayan değer içindir)."""
     lines = run(entry, level)[0].stderr.splitlines()
     assert any(REQUEST_LINE.match(line) for line in lines) is request_line
-    assert any(ERROR_LINE.match(line) for line in lines)
+    assert any(ERROR_LINE.match(line) for line in lines) is error_line
+    assert not [line for line in lines if " WARNING app: " in line]
 
 
 @pytest.mark.parametrize("level", ["verbose", "WARN", "10"])
