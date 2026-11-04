@@ -44,8 +44,8 @@ Bunlar ayrı işlerle kapatılır.
 (kural 1–4 spec 0006, kural 5 spec 0007). Kural 3 ve 4 import düzeyinde sınanır; özel alan erişimi
 (ör. `svc._storage`) ve ham SQL string'leri review'da kontrol edilir. Kural 5 de yazılı erişime
 bakar; dinamik erişim (`getattr(date, "today")`, `__import__`), atamayla yeniden bağlanan ad
-(`d = date; d.today()`) ve saati okuyan bir fonksiyonun domain dışından import edilmesi review'da
-kontrol edilir.
+(`d = date; d.today()`), aynı adın dosyada birden çok `datetime` import'una bağlanması ve saati
+okuyan bir fonksiyonun domain dışından import edilmesi review'da kontrol edilir.
 1. `domain` paketi `flask`, `werkzeug` veya `jinja2` import etmez.
 2. `domain` HTML üretmez (HTML etiketi içeren string döndürmez; sunum `web`'e aittir).
 3. `web`, `storage`'a doğrudan erişmez — her zaman `domain` üzerinden gider.
