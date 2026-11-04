@@ -39,6 +39,7 @@ def svc():
 @pytest.fixture
 def client():
     leave_app.app.testing = True
+    leave_app.app.config["WTF_CSRF_ENABLED"] = False  # spec 0011 D3; CSRF: tests/test_csrf.py
     with leave_app.app.test_client() as c:
         yield c
 
