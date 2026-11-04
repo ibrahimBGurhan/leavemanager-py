@@ -71,7 +71,8 @@ def test_post_without_token_is_rejected(csrf_client, caplog, name, page, path, d
 
 @pytest.mark.parametrize("kind", ["bozuk", "baska-oturum"])
 @pytest.mark.parametrize("name, page, path, data, marker", ACTIONS, ids=ACTION_IDS)  # F-2: all 3
-def test_bad_or_foreign_token_is_rejected(csrf_client, kind, name, page, path, data, marker):
+def test_bad_or_foreign_token_is_rejected(csrf_client, caplog, kind, name, page, path, data,
+                                         marker):
     if kind == "bozuk":
         csrf_client.get(page)
         token = "x" + token_from(csrf_client.get(page).get_data(as_text=True))[1:]
@@ -80,8 +81,11 @@ def test_bad_or_foreign_token_is_rejected(csrf_client, kind, name, page, path, d
             token = token_from(other.get(page).get_data(as_text=True))
         csrf_client.get(page)
     before = records()
-    resp = csrf_client.post(path, data={**data, "csrf_token": token})
+    with caplog.at_level(logging.DEBUG):
+        resp = csrf_client.post(path, data={**data, "csrf_token": token})
     assert_rejected(resp, marker, before)
+    assert any(r.name == "web.routes" for r in caplog.records)  # the failure was logged
+    assert token not in caplog.text  # review F-7: the submitted token is never logged
 
 
 def test_csrf_check_comes_before_request_lookup(csrf_client):
