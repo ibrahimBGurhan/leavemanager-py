@@ -17,6 +17,14 @@ Yalnızca yerel geliştirmede debug modu (asla paylaşılan bir sunucuda değil)
 
     FLASK_DEBUG=1 .venv/Scripts/python app.py
 
+Loglar stderr'e `zaman seviye logger: mesaj` biçiminde yazılır. Seviye `LOG_LEVEL` ile seçilir
+(`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; varsayılan `INFO`):
+
+    LOG_LEVEL=WARNING .venv/Scripts/python app.py
+
+`WARNING` ve üstünde Werkzeug'un "Running on http://…" satırı ve geliştirme sunucusu uyarısı da
+gizlenir. Uygulamayı yükleyen ortam log'u zaten kendisi yapılandırmışsa onun ayarı geçerli kalır.
+
 Doğrulama (lint + testler):
 
     ./scripts/check          # full — tek kanıt

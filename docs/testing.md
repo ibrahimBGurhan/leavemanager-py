@@ -13,6 +13,11 @@
 - **Birim testleri:** domain kuralları, Flask olmadan.
 - **Entegrasyon testleri:** Flask `app.test_client()` ile; sunucu başlatılmaz, port açılmaz, geride
   süreç kalmaz. Dönen HTML'in içeriği doğrulanır, yalnızca status code değil.
+- **Süreç düzeyi testler (istisna):** log yapılandırması süreç genelinde olduğu için
+  `tests/test_logging_config.py` uygulamayı kısa ömürlü Python alt süreçlerinde yükler (spec 0009).
+  Her alt süreç `subprocess.run(..., timeout=...)` ile senkron çalışır ve bitmeden test ilerlemez.
+  Port yalnızca `127.0.0.1`'de ve işletim sisteminin verdiği geçici bir porttur (sabit port yok).
+  Çalışma dizini pytest'in geçici dizinidir. Geride süreç ve dosya kalmaz.
 - **E2E / tarayıcı testi yok** (bootstrap kararı). Gerekirse Playwright eklenir: tek worker,
   headless, yalnızca full profilde; uygulama sürecinin yaşam döngüsünü bir pytest fixture'ı yönetir
   (başlatır, hata ve timeout dahil her durumda durdurur).

@@ -17,6 +17,8 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
 - **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati
   (`SystemClock`), depoyu ve servisi kurup birbirine bağlar; `app`, `clock`, `storage`, `svc`
   adları testlerin bağlantı noktalarıdır (spec 0005).
+  Log yapılandırması da burada kurulur (spec 0009); katmanlar yalnızca
+  `logging.getLogger(__name__)` kullanır.
 
 Hedeften kalan farklar:
 - Route'lar HTML'i hâlâ string birleştirerek kuruyor (Jinja şablonu yok).
