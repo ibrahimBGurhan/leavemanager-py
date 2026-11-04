@@ -26,6 +26,7 @@ def assert_shown_not_saved(resp, status, message):
     html = resp.get_data(as_text=True)
     assert message in visible_text(html)
     assert "Kaydet" in html
+    assert html.index(message) < html.index("<form")
     assert len(leave_app.storage.requests()) == 8
 
 
