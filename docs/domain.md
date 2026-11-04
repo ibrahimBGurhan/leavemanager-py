@@ -34,20 +34,22 @@
 - **BR-4 Kullanılan:** yalnızca `Onaylandi` durumundaki taleplerin izin günleri toplanır.
 - **BR-5 Kalan:** Hak − Kullanılan. Bekleyen talepler düşülmez (*mevcut kod*; OD-3).
 - **BR-6 Bakiye kontrolü:** talep, Kalan ≥ talebin izin günü ise oluşturulur; bakiyeyi tam
-  kullanan talep kabul edilir [IK onayı bekliyor]. *Mevcut kod tutarsız:* route `Kalan < gün`
-  durumunda reddediyor, servis `Kalan <= gün` durumunda reddediyor. Bakiyeyi tam kullanan talep
-  route'tan geçiyor, serviste sessizce düşüyor ve kullanıcı yine de talepler listesine
-  yönlendiriliyor.
+  kullanan talep kabul edilir (karar: İbrahim Gürhan, IK adına, 2026-11-04; spec 0008). Karar
+  yalnızca domain'de verilir. Kalan yetmezse talep oluşmaz ve kullanıcı kalanı ve talep edilen
+  günü söyleyen bir mesaj görür.
 - **BR-7** Yeni talep her zaman `Beklemede` durumuyla oluşur.
 - **BR-8** Geçmiş tarihli talep kabul edilir (IK geriye dönük giriş yapıyor; *mevcut kod*, korunur).
-- **BR-9** Bitiş tarihi ≥ başlangıç tarihi (hedef). *Mevcut kod:* doğrulanmıyor; ters tarihler
-  negatif ya da sıfır gün üretiyor.
+- **BR-9** Bitiş tarihi ≥ başlangıç tarihi. Talep oluşturulurken uygulanır (spec 0008); ters
+  tarihli talep oluşmaz ve kullanıcı mesaj görür. Gün sayısı hesabı (`calc_days`) ters aralıkta
+  hâlâ 0 ya da negatif döner (*mevcut kod*), ama bu değer artık bir talebe ulaşmıyor.
 
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.
 - Durum yalnızca `Beklemede`, `Onaylandi`, `Reddedildi` değerlerinden biri olabilir.
 - Her izin talebi var olan bir personele bağlıdır.
-- Bir işlem başarısız olduysa kullanıcıya başarılı gibi gösterilmez (bugün ihlal ediliyor: BR-6, OD-7).
+- Bir işlem başarısız olduysa kullanıcıya başarılı gibi gösterilmez. Talep oluşturmada spec
+  0008'den beri uygulanıyor: iş kuralı ihlali domain'de tipli bir istisnadır, web onu Türkçe
+  bir mesaja çevirir.
 
 ## Open decisions
 Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davranış değişikliği) veya
