@@ -316,6 +316,8 @@ def test_get_never_changes_status(client):
     "sonuc=onaylandi&talep=abc", "sonuc=xyz&talep=1", "talep=1",
     "sonuc=onaylandi&talep=%201", "sonuc=onaylandi&talep=%D9%A1",  # fix-1 (review F-1)
     "sonuc=onaylandi&talep=" + "9" * 4301,  # fix-2 (review F-4)
+    # fix-3 (VERIFY G-1): decided, but with the opposite result (#6 Reddedildi, #1 Onaylandi)
+    "sonuc=onaylandi&talep=6", "sonuc=reddedildi&talep=1",
 ], ids=lambda q: q if len(q) < 40 else "4301-digits")
 def test_success_message_requires_matching_state(client, query):
     resp = client.get("/requests?" + query)
