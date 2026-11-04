@@ -147,6 +147,19 @@ beklenmeyen hata **500**.
 - **K-6:** Başarılı her onay/red için INFO log satırı: talep numarası ve sonuç; ad ve neden yok
   (KVKK).
 
+## Review triage (round 1, İbrahim Gürhan, 2026-11-04)
+Bağımsız review (read-only reviewer subagent, HEAD `fe6c24a`): 3 bulgu, hepsi Low.
+- **F-1 — real → fix-1 (`d2b6c84`):** talep numarası `int()` ile okunuyordu; `" 2"`, Unicode
+  rakam ve `0_2` gerçek bir talebe eşleniyordu (AC-7). Artık yalnız ASCII rakam kabul edilir; işlem
+  adresi ve başarı parametresi aynı ayrıştırıcıyı kullanır.
+- **F-2 — noise → #26:** durum değerlerinin string literal olarak kalan kullanımları
+  (`get_used_days`, `create_request`, dashboard, `status_badge`) bu spec'ten önce de vardı ve bu
+  spec'in yazdığı satırlar değil. Fix round'u yalnız bulguya dokunur; karakterizasyonla sabit
+  ekran koduna kapsam dışı dokunmamak için davranışı korunan ayrı bir refactor işi.
+- **F-3 — noise:** her satırda aynı "Onayla"/"Reddet" erişilebilir adı. Spec'in Accessibility
+  maddesi (klavye, görünür metin, yalnız renge dayanmama) karşılanıyor; satıra özel ad
+  (`aria-label`) spec dışı bir iyileştirme, tablo revizyonuyla (plan Risk 3) ele alınır.
+
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
