@@ -185,12 +185,15 @@ def test_session_cookie_flags(csrf_client):
     assert "Secure" not in cookie
 
 
-def test_secret_never_in_logs(csrf_client, caplog):
+def test_secret_never_in_logs(csrf_client, caplog, monkeypatch):
+    """The app's signing key and the form token appear in no log record, on a failed and on a
+    successful POST. Review F-3: the key is a known value set on the running app, not a call to
+    load_secret_key() that would log nothing anyway."""
+    monkeypatch.setitem(leave_app.app.config, "SECRET_KEY", "s3cr3t-deger-0011")
     with caplog.at_level(logging.DEBUG):
-        leave_app.load_secret_key({"SECRET_KEY": "s3cr3t-deger"})
         token = token_from(csrf_client.get("/new").get_data(as_text=True))
         csrf_client.post("/new", data=NEW_FORM)
         csrf_client.post("/new", data={**NEW_FORM, "csrf_token": token})
-    assert "s3cr3t-deger" not in caplog.text
-    assert leave_app.app.config["SECRET_KEY"] not in caplog.text
+    assert any(r.name == "web.routes" for r in caplog.records)  # the failed POST was logged
+    assert "s3cr3t-deger-0011" not in caplog.text
     assert token not in caplog.text
