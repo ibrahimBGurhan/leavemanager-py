@@ -21,7 +21,7 @@ NEW_FORM = {"employee_id": "2", "start": "2026-11-16", "end": "2026-11-16", "rea
 
 # (name, page that holds the form, POST path, form data, marker the message must precede)
 ACTIONS = [
-    ("new", "/new", "/new", NEW_FORM, "<form"),
+    ("new", "/new", "/new", NEW_FORM, "<h3>Yeni Talep"),  # G-1: the Yeni Talep page, not any form
     ("approve", "/requests", "/requests/2/approve", {}, "<table"),
     ("reject", "/requests", "/requests/4/reject", {}, "<table"),
 ]
@@ -51,6 +51,7 @@ def assert_rejected(resp, marker, before):
     html = resp.get_data(as_text=True)
     text = visible_text(html)
     assert MSG_CSRF in text
+    assert marker in html  # the message is on the page that owns the form (G-1)
     assert html.index(MSG_CSRF) < html.index(marker)
     for leak in ("Bad Request", "CSRF", "csrf_token", "Traceback"):
         assert leak not in text
