@@ -11,13 +11,13 @@ from conftest import table_rows, visible_text
 
 REQUESTS_HEADER = ["Personel", "Baslangic", "Bitis", "Gun", "Neden", "Durum"]
 OPENING_REQUESTS = [
-    ["Ayse Yilmaz", "2026-07-06", "2026-07-17", "12", "Yaz tatili", "Onaylandi"],
+    ["Ayse Yilmaz", "2026-07-06", "2026-07-17", "9", "Yaz tatili", "Onaylandi"],  # 0014 T1: iş günü, 15 Tem
     ["Mehmet Demir", "2026-11-02", "2026-11-04", "3", "Aile ziyareti", "Beklemede"],
     ["Zeynep Kaya", "2026-11-09", "2026-11-09", "1", "Saglik", "Beklemede"],
     ["Ahmet Celik", "2026-12-21", "2026-12-25", "5", "Yilbasi oncesi", "Beklemede"],
     ["Ayse Yilmaz", "2026-12-28", "2026-12-30", "3", "Yil sonu", "Beklemede"],
     ["Elif Sahin", "2026-10-05", "2026-10-07", "3", "Tasinma", "Reddedildi"],
-    ["Zeynep Kaya", "2026-09-14", "2026-09-25", "12", "Uzun tatil", "Reddedildi"],
+    ["Zeynep Kaya", "2026-09-14", "2026-09-25", "10", "Uzun tatil", "Reddedildi"],  # 0014 T1: iş günü
     ["Mehmet Demir", "2026-08-03", "2026-08-03", "1", "Ozel is", "Reddedildi"],
 ]
 
@@ -50,7 +50,7 @@ def test_dashboard_counts_and_balances(client):
     assert "Reddedilen: 3" in text
     assert table_rows(html) == [
         ["Ad", "Birim", "Hak", "Kullanilan", "Kalan", "Bekleyen"],
-        ["Ayse Yilmaz", "IT", "26", "12", "14", "3"],
+        ["Ayse Yilmaz", "IT", "26", "9", "17", "3"],  # 0014 T2: iş günü
         ["Mehmet Demir", "Muhasebe", "20", "0", "20", "3"],
         ["Zeynep Kaya", "IK", "14", "0", "14", "1"],
         ["Ahmet Celik", "IT", "20", "0", "20", "5"],
@@ -130,11 +130,11 @@ def test_post_insufficient_balance_shows_error(client):
 
 def test_post_remaining_equals_days_is_saved(client):
     """Spec 0008 CB-1 (BR-6 kararı; supersedes 0001/AC-10): bakiyeyi tam kullanan talep kaydedilir.
-    Spec 0013 K-2 (T3): sınır Kalan − Bekleyen."""
-    resp = post_new(client, 3, "2026-12-01", "2026-12-13")  # Zeynep: kalan 14, bekleyen 1, 13 gün
+    Spec 0013 K-2 (T3): sınır Kalan − Bekleyen. Spec 0014 T3: 1–17 Aralık = 13 iş günü."""
+    resp = post_new(client, 3, "2026-12-01", "2026-12-17")  # Zeynep: kalan 14, bekleyen 1, 13 gün
     assert_redirects_to_requests(resp)
     assert request_rows(client)[8:] == [
-        ["Zeynep Kaya", "2026-12-01", "2026-12-13", "13", "Test", "Beklemede"],
+        ["Zeynep Kaya", "2026-12-01", "2026-12-17", "13", "Test", "Beklemede"],
     ]
 
 

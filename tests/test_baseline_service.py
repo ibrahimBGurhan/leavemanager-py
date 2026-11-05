@@ -68,12 +68,13 @@ def test_seniority_is_year_difference_current(svc, hire_date, years):
     "start, end, days",
     [
         (dt.date(2026, 11, 9), dt.date(2026, 11, 9), 1),
-        (dt.date(2026, 11, 2), dt.date(2026, 11, 8), 7),  # Pazartesi–Pazar: hafta sonu da düşer
+        (dt.date(2026, 11, 2), dt.date(2026, 11, 8), 5),  # Pazartesi–Pazar: hafta sonu sayılmaz
         (dt.date(2026, 11, 2), dt.date(2026, 11, 1), 0),  # ters aralık doğrulanmıyor (BR-9)
     ],
 )
-def test_calc_days_counts_calendar_days_current(svc, start, end, days):
-    """MEVCUT DAVRANIŞ — hedef değil (BR-3 / OD-4, BR-9) · AC-3: takvim günü sayılır."""
+def test_calc_days_counts_working_days(svc, start, end, days):
+    """Spec 0014 CB-1 (supersedes 0001/AC-3; BR-3 kararı): iş günü sayılır. Ayrıntı:
+    tests/test_workdays.py."""
     assert svc.calc_days(start, end) == days
 
 
@@ -82,7 +83,7 @@ def test_calc_days_counts_calendar_days_current(svc, start, end, days):
 @pytest.mark.parametrize(
     "name, entitlement, used, remaining",
     [
-        ("Ayse Yilmaz", 26, 12, 14),
+        ("Ayse Yilmaz", 26, 9, 17),  # 0014 T4: #1 = 9 iş günü
         ("Mehmet Demir", 20, 0, 20),
         ("Zeynep Kaya", 14, 0, 14),
         ("Ahmet Celik", 20, 0, 20),
@@ -105,8 +106,8 @@ def test_only_approved_requests_count_as_used(svc):
             "id": 99, "employee_id": ayse["id"], "start": dt.date(2026, 11, 16),
             "end": dt.date(2026, 11, 20), "reason": "x", "status": status,
         })
-    assert svc.get_used_days(ayse["id"]) == 12
-    assert svc.get_remaining(ayse) == 14
+    assert svc.get_used_days(ayse["id"]) == 9  # 0014 T4: iş günü
+    assert svc.get_remaining(ayse) == 17
 
 
 # --- AC-5 -----------------------------------------------------------------------------------

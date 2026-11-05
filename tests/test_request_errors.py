@@ -8,7 +8,7 @@ import datetime as dt
 import pytest
 
 import app as leave_app
-from conftest import visible_text
+from conftest import end_after_workdays, visible_text
 from domain.errors import EmployeeNotFound, InsufficientBalance, InvalidDateRange
 
 MSG_INVALID_INPUT = "Lütfen personeli ve geçerli başlangıç ve bitiş tarihlerini girin."
@@ -77,7 +77,7 @@ def test_screen_and_service_agree_on_balance(client, svc, days, saved):
     """CB-1: Zeynep, kalan 14. Ekran ve servis aynı kararı verir. Spec 0013 K-2 (T6): bekleyen 1
     (#3), sınır kalan − bekleyen = 13 → 12, 13, 14."""
     start = dt.date(2026, 12, 1)
-    end = start + dt.timedelta(days=days - 1)
+    end = end_after_workdays(start, days)  # 0014 T7: iş günü
     resp = client.post("/new", data={
         "employee_id": "3", "start": start.isoformat(), "end": end.isoformat(), "reason": "x"})
     if saved:

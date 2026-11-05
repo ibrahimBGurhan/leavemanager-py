@@ -7,7 +7,7 @@ from flask_wtf.csrf import CSRFError, generate_csrf
 from markupsafe import escape
 
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
-                           RequestAlreadyDecided, RequestNotFound)
+                           NoWorkingDays, RequestAlreadyDecided, RequestNotFound)
 from domain.leave_service import APPROVED, PENDING, REJECTED
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,7 @@ MSG_EMPLOYEE_NOT_FOUND = "Seçilen personel bulunamadı."
 MSG_INVALID_DATE_RANGE = "Bitiş tarihi başlangıç tarihinden önce olamaz."
 MSG_INSUFFICIENT_BALANCE = "Kalan izin bakiyeniz yetersiz (kalan %d gün, bekleyen %d gün, talep %d gün)."  # 0013
 MSG_UNEXPECTED = "Talep kaydedilemedi. Lütfen daha sonra tekrar deneyin."
+MSG_NO_WORKING_DAYS = "Seçilen tarihler arasında iş günü yok."  # spec 0014 K-5
 # Onay / red (spec 0010)
 MSG_APPROVED = "Talep #%d onaylandı."
 MSG_REJECTED = "Talep #%d reddedildi."
@@ -168,7 +169,8 @@ def register_routes(app, svc):
     @app.route("/new", methods=["GET", "POST"])
     def new_request():
         if request.method == "POST":
-            # Ihlal sirasi: bozuk girdi -> personel -> tarih araligi -> bakiye (spec 0008, S-4)
+            # Ihlal sirasi: bozuk girdi -> personel -> tarih araligi -> is gunu yok -> bakiye
+            # (spec 0008 S-4, spec 0014 K-5)
             try:
                 emp_id = int(request.form["employee_id"])
                 start = datetime.strptime(request.form["start"], "%Y-%m-%d").date()
@@ -181,6 +183,8 @@ def register_routes(app, svc):
                 return new_request_form(MSG_EMPLOYEE_NOT_FOUND), 400
             except InvalidDateRange:
                 return new_request_form(MSG_INVALID_DATE_RANGE), 400
+            except NoWorkingDays:
+                return new_request_form(MSG_NO_WORKING_DAYS), 400
             except InsufficientBalance as e:
                 return new_request_form(MSG_INSUFFICIENT_BALANCE % (e.remaining, e.pending, e.requested)), 400
             except Exception:
