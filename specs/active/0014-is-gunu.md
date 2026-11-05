@@ -1,6 +1,6 @@
 # Spec 0014 — is-gunu (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0014-plan.md`
 - Source: `docs/domain.md` OD-4
