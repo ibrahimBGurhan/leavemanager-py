@@ -10,7 +10,7 @@ import time
 import pytest
 
 import app as leave_app
-from conftest import table_rows, visible_text
+from conftest import end_after_workdays, table_rows, visible_text
 from domain.errors import EmployeeNotFound, InsufficientBalance, InvalidDateRange, NoWorkingDays
 
 D = dt.date
@@ -112,10 +112,22 @@ def test_order_employee_before_no_working_days(svc):
         svc.create_request(99, D(2026, 11, 14), D(2026, 11, 15), "x")
 
 
-def test_no_working_days_before_balance(svc):
-    """Elif has Kalan 0: a weekend-only request reports no working days, not the balance."""
+def test_no_working_days_before_balance(client, svc):
+    """K-5 order (review F-1): with a negative available balance (Zeynep: Kalan 14, Bekleyen 15,
+    pre-0013 data) a weekend-only request reports no working days, not the balance."""
+    start = D(2026, 11, 16)
+    leave_app.storage.add_request({"id": 9, "employee_id": 3, "start": start,
+                                   "end": end_after_workdays(start, 14), "reason": "x",
+                                   "status": "Beklemede"})
+    assert svc.get_pending_days(3) == 15
     with pytest.raises(NoWorkingDays):
-        svc.create_request(5, D(2026, 11, 14), D(2026, 11, 15), "x")
+        svc.create_request(3, D(2026, 11, 14), D(2026, 11, 15), "x")
+    resp = post_new(client, 3, D(2026, 11, 14), D(2026, 11, 15))
+    assert resp.status_code == 400
+    text = visible_text(resp.get_data(as_text=True))
+    assert MSG_NO_WORKING_DAYS in text
+    assert "bakiyeniz yetersiz" not in text
+    assert len(leave_app.storage.requests()) == 9
 
 
 # --- CB-3 -----------------------------------------------------------------------------------
