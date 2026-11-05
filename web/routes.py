@@ -75,6 +75,25 @@ def csrf_field():
     return "<input type='hidden' name='csrf_token' value='%s'>" % escape(generate_csrf())
 
 
+def parse_date(text):
+    # Yalniz YYYY-MM-DD; degilse None (form hatasinda ham metin geri basilmaz, spec 0015 K-3)
+    try:
+        return datetime.strptime(text, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return None
+
+
+def form_values(form):
+    # Hata ekraninda geri basilacak degerler; her alan ayri dogrulanir (spec 0015 K-3, K-5).
+    # Personel yalniz secenek listesiyle tamsayi olarak eslesir; neden kacisla basilir.
+    try:
+        emp_id = int(form.get("employee_id", ""))
+    except ValueError:
+        emp_id = None
+    return {"employee_id": emp_id, "start": parse_date(form.get("start")),
+            "end": parse_date(form.get("end")), "reason": form.get("reason", "")}
+
+
 def decision_buttons(request_id):
     # Durum hucresinde; dugme etiketi value ozniteliginde ("Kaydet" kalibi, plan 0010 Risk 1)
     return "".join(
@@ -154,14 +173,20 @@ def register_routes(app, svc):
     def reject_request(request_id):
         return decide(request_id, svc.reject_request, "reddedildi")
 
-    def new_request_form(message=None):
-        options = "".join("<option value='%d'>%s</option>" % (e["id"], escape(e["name"])) for e in svc.employees())
+    def new_request_form(message=None, values=None):
+        v = values or {}
+        options = "".join("<option value='%d'%s>%s</option>" % (
+            e["id"], " selected" if e["id"] == v.get("employee_id") else "", escape(e["name"]))
+            for e in svc.employees())
+        start = v["start"].isoformat() if v.get("start") else ""
+        end = v["end"].isoformat() if v.get("end") else ""
         body = """<h3>Yeni Talep</h3><form method="post">%s
     Personel: <select name="employee_id">%s</select><br><br>
-    Baslangic: <input type="date" name="start"><br><br>
-    Bitis: <input type="date" name="end"><br><br>
-    Neden: <input type="text" name="reason"><br><br>
-    <input type="submit" value="Kaydet"></form>""" % (csrf_field(), options)
+    Baslangic: <input type="date" name="start" value="%s"><br><br>
+    Bitis: <input type="date" name="end" value="%s"><br><br>
+    Neden: <input type="text" name="reason" value="%s"><br><br>
+    <input type="submit" value="Kaydet"></form>""" % (csrf_field(), options, start, end,
+                                                       escape(v.get("reason", "")))
         if message is not None:
             body = "<p style='color:red'>%s</p>" % escape(message) + body
         return render_template_string(PAGE, body=body)
@@ -169,6 +194,7 @@ def register_routes(app, svc):
     @app.route("/new", methods=["GET", "POST"])
     def new_request():
         if request.method == "POST":
+            values = form_values(request.form)
             # Ihlal sirasi: bozuk girdi -> personel -> tarih araligi -> is gunu yok -> bakiye
             # (spec 0008 S-4, spec 0014 K-5)
             try:
@@ -176,21 +202,21 @@ def register_routes(app, svc):
                 start = datetime.strptime(request.form["start"], "%Y-%m-%d").date()
                 end = datetime.strptime(request.form["end"], "%Y-%m-%d").date()
             except (KeyError, ValueError):
-                return new_request_form(MSG_INVALID_INPUT), 400
+                return new_request_form(MSG_INVALID_INPUT, values), 400
             try:
                 svc.create_request(emp_id, start, end, request.form.get("reason", ""))
             except EmployeeNotFound:
-                return new_request_form(MSG_EMPLOYEE_NOT_FOUND), 400
+                return new_request_form(MSG_EMPLOYEE_NOT_FOUND, values), 400
             except InvalidDateRange:
-                return new_request_form(MSG_INVALID_DATE_RANGE), 400
+                return new_request_form(MSG_INVALID_DATE_RANGE, values), 400
             except NoWorkingDays:
-                return new_request_form(MSG_NO_WORKING_DAYS), 400
+                return new_request_form(MSG_NO_WORKING_DAYS, values), 400
             except InsufficientBalance as e:
-                return new_request_form(MSG_INSUFFICIENT_BALANCE % (e.remaining, e.pending, e.requested)), 400
+                return new_request_form(MSG_INSUFFICIENT_BALANCE % (e.remaining, e.pending, e.requested), values), 400
             except Exception:
                 # beklenmeyen hata: ayrinti loga, kullaniciya genel mesaj (docs/conventions.md)
                 logger.exception("izin talebi kaydedilemedi")
-                return new_request_form(MSG_UNEXPECTED), 500
+                return new_request_form(MSG_UNEXPECTED, values), 500
             return redirect("/requests")
         return new_request_form()
 
@@ -200,5 +226,5 @@ def register_routes(app, svc):
         # CB-2). Kontrol view'dan once calisir; istisna metni ve token loga da yazilmaz.
         logger.warning("CSRF dogrulamasi basarisiz: %s %r", request.method, request.path)
         if request.path == "/new":
-            return new_request_form(MSG_CSRF), 400
+            return new_request_form(MSG_CSRF), 400  # degerler geri basilmaz (0015 K-2)
         return requests_page(MSG_CSRF), 400
