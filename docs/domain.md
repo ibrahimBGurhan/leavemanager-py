@@ -32,11 +32,15 @@
   sayılmaz [IK onayı bekliyor]. *Mevcut kod:* `(bitiş − başlangıç) + 1` takvim günü; koddaki
   "iş günü hesabı" yorumu yanlış.
 - **BR-4 Kullanılan:** yalnızca `Onaylandi` durumundaki taleplerin izin günleri toplanır.
-- **BR-5 Kalan:** Hak − Kullanılan. Bekleyen talepler düşülmez (*mevcut kod*; OD-3).
-- **BR-6 Bakiye kontrolü:** talep, Kalan ≥ talebin izin günü ise oluşturulur; bakiyeyi tam
-  kullanan talep kabul edilir (karar: İbrahim Gürhan, IK adına, 2026-11-04; spec 0008). Karar
-  yalnızca domain'de verilir. Kalan yetmezse talep oluşmaz ve kullanıcı kalanı ve talep edilen
-  günü söyleyen bir mesaj görür.
+- **BR-5 Kalan ve Bekleyen:** Kalan = Hak − Kullanılan. Bekleyen = personelin `Beklemede`
+  durumundaki taleplerinin izin günleri toplamı, tarihe bakılmaz (geçmiş tarihli de sayılır).
+  `Reddedildi` hiçbir hesaba girmez. Bakiye tablosu Kalan'ı ve Bekleyen'i ayrı sütunlarda
+  gösterir (karar: İbrahim Gürhan, IK adına, 2026-11-05; spec 0013, OD-3).
+- **BR-6 Bakiye kontrolü:** yeni talep, Kalan − Bekleyen ≥ talebin izin günü ise oluşturulur
+  (spec 0013); bakiyeyi tam kullanan talep kabul edilir (karar: İbrahim Gürhan, IK adına,
+  2026-11-04; spec 0008). Karar yalnızca domain'de verilir. Yetmezse talep oluşmaz ve kullanıcı
+  kalanı, bekleyeni ve talep edilen günü söyleyen bir mesaj görür. Kalan − Bekleyen sıfırın
+  altındaysa (kural öncesi veri) özel durum yoktur: her talep reddedilir.
 - **BR-7** Yeni talep her zaman `Beklemede` durumuyla oluşur.
 - **BR-8** Geçmiş tarihli talep kabul edilir (IK geriye dönük giriş yapıyor; *mevcut kod*, korunur).
 - **BR-9** Bitiş tarihi ≥ başlangıç tarihi. Talep oluşturulurken uygulanır (spec 0008); ters
@@ -44,8 +48,8 @@
   hâlâ 0 ya da negatif döner (*mevcut kod*), ama bu değer artık bir talebe ulaşmıyor.
 - **BR-10 Durum geçişleri** (spec 0010): bir talep yalnızca `Beklemede` iken sonuçlandırılır:
   `Beklemede → Onaylandi` ya da `Beklemede → Reddedildi`. `Onaylandi` ve `Reddedildi` son
-  durumlardır; geri alınmaz, birbirine çevrilmez. Onayda BR-6 yeniden uygulanır (Kalan ≥ talebin
-  izin günü; aynı karar fonksiyonu); yetmezse talep `Beklemede` kalır. Redde bakiye kontrolü
+  durumlardır; geri alınmaz, birbirine çevrilmez. Onayda bakiye yeniden kontrol edilir: Kalan ≥ talebin
+  izin günü (aynı karar fonksiyonu; diğer bekleyen talepler sayılmaz, spec 0013 K-4); yetmezse talep `Beklemede` kalır. Redde bakiye kontrolü
   yoktur. Geçmiş tarihli bekleyen talep de sonuçlandırılabilir (BR-8). Bu sürümde sonuçlandıran
   IK'dır; yetki kısıtı henüz yok (OD-7, `docs/security.md`).
 
@@ -63,8 +67,9 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
 - **OD-1** Tam 15 yıl kıdem: 20 mi 26 mı? (BR-1) — öneri: 26, kanun gereği.
 - **OD-2** Kıdem tam yıl mı, yıl farkı mı? (BR-2) — öneri: tam yıl. 29 Şubat'ta işe girenlerin yıl
   dönümü artık olmayan yıllarda 28 Şubat mı 1 Mart mı sayılacak?
-- **OD-3** Bekleyen talepler Kalan'dan düşülsün mü? ("2018, karar yok") — öneri: yeni talepte
-  kontrol için düşülsün, bakiye ekranında ayrı sütunda gösterilsin.
+- **OD-3** ~~Bekleyen talepler Kalan'dan düşülsün mü?~~ — **kapandı** (spec 0013, İbrahim Gürhan,
+  IK adına, 2026-11-05): yeni talep kontrolünde düşülür, bakiye tablosunda ayrı sütun; Kalan ve
+  onay kontrolü değişmez (BR-5, BR-6, BR-10).
 - **OD-4** İzin günü takvim günü mü, iş günü mü? Hafta tatili hangi gün(ler)? Resmî tatil
   takvimi nereden gelecek? (BR-3) — öneri: iş günü, Cumartesi+Pazar hafta tatili, tatil listesi
   yıllık IK girişi.
