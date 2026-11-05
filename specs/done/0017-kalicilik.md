@@ -1,6 +1,6 @@
 # Spec 0017 — kalicilik
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0017-plan.md`
 - Source: ADR-0001 (`docs/decisions/0001-kalicilik-sqlite.md`), `docs/domain.md` OD-8; kararlar
@@ -79,34 +79,34 @@ Spec onayı: İbrahim Gürhan, 2026-11-05 (K-1…K-8 0016'da; S-1…S-5 önerild
 
 ## Acceptance criteria
 Örneklerde açılış verisi = 0016'daki demo verisi (5 personel, 8 talep, en büyük talep numarası 8).
-- [ ] AC-1 — **Yeniden başlatmada korunur (R-1):** Demo verili bir veritabanında Mehmet Demir için
+- [x] AC-1 — **Yeniden başlatmada korunur (R-1):** Demo verili bir veritabanında Mehmet Demir için
   16–18 Kasım 2026 talebi girilir (#9) ve #2 onaylanır; aynı dosyayla uygulama yeniden
   başlatıldığında #9 `Beklemede`, #2 `Onaylandi` görünür; ana sayfa sayaçları ve bakiyeler
   yeniden başlatmadan öncekiyle aynıdır.
-- [ ] AC-2 — **Alan ve türler (R-1, R-9):** Saklanıp geri okunan kayıtlarda tarihler tarih
+- [x] AC-2 — **Alan ve türler (R-1, R-9):** Saklanıp geri okunan kayıtlarda tarihler tarih
   türündedir; "Şükrü Öztürk" ve "İzin; 'test' -- x" metinleri aynen geri gelir; veritabanında
   başka bir değişiklik olmaz.
-- [ ] AC-3 — **Boş başlangıç (R-4):** `SEED_DEMO_DATA` tanımsızken yeni bir veritabanıyla açılan
+- [x] AC-3 — **Boş başlangıç (R-4):** `SEED_DEMO_DATA` tanımsızken yeni bir veritabanıyla açılan
   uygulamada ana sayfa, Talepler ve Yeni Talep yukarıdaki boş durumları gösterir; Yeni Talep
   gönderimi "Seçilen personel bulunamadı." verir ve kayıt oluşmaz.
-- [ ] AC-4 — **Demo verisi yalnız boşsa (R-5):** `SEED_DEMO_DATA=1` ile boş veritabanı 5 personel
+- [x] AC-4 — **Demo verisi yalnız boşsa (R-5):** `SEED_DEMO_DATA=1` ile boş veritabanı 5 personel
   ve 8 talep alır; aynı dosyayla `SEED_DEMO_DATA=1` ile tekrar başlatılınca kayıt sayısı ve
   içerik değişmez (talep durumları dahil); `SEED_DEMO_DATA=0` / `yes` / boş → yüklenmez.
-- [ ] AC-5 — **Numara devam eder (R-6):** Demo verili veritabanında yeni talep #9 olur; yeniden
+- [x] AC-5 — **Numara devam eder (R-6):** Demo verili veritabanında yeni talep #9 olur; yeniden
   başlatmadan sonra bir sonraki talep #10 olur.
-- [ ] AC-6 — **Varsayılan yer (R-2):** `DATABASE_PATH` tanımsızken veritabanı uygulama
+- [x] AC-6 — **Varsayılan yer (R-2):** `DATABASE_PATH` tanımsızken veritabanı uygulama
   klasöründeki `instance/leavemanager.db` dosyasıdır; `instance/` yoksa oluşturulur;
   `DATABASE_PATH` verilince o dosya kullanılır (klasörü yoksa oluşturulur).
-- [ ] AC-7 — **Açılamayan veritabanı (R-3):** `DATABASE_PATH` yazılamayan bir yeri gösterdiğinde
+- [x] AC-7 — **Açılamayan veritabanı (R-3):** `DATABASE_PATH` yazılamayan bir yeri gösterdiğinde
   uygulama başlamaz (sıfırdan farklı çıkış), log'da yolu ve nedeni içeren bir ERROR satırı vardır;
   bellek deposuyla çalışmaya devam etmez. Şema sürümü uygulamanınkinden yeni bir dosyada da
   uygulama başlamaz, ERROR iki sürümü söyler ve dosya değişmez (S-4).
-- [ ] AC-8 — **Sözleşme (R-7):** `tests/test_storage_contract.py` hem bellek hem SQLite deposuyla
+- [x] AC-8 — **Sözleşme (R-7):** `tests/test_storage_contract.py` hem bellek hem SQLite deposuyla
   (testler değişmeden, yalnız depo listesine SQLite eklenerek) yeşildir.
-- [ ] AC-9 — **Testler temiz (R-8):** Mevcut test dosyaları değişmeden yeşildir (plan, değişmesi
+- [x] AC-9 — **Testler temiz (R-8):** Mevcut test dosyaları değişmeden yeşildir (plan, değişmesi
   zorunlu bir test altyapısı satırı bulursa adıyla listeler ve onaya sunar); `scripts/check` full
   sonrası repoda veritabanı dosyası yoktur (`git status` temiz).
-- [ ] AC-10 — **Belgeler (R-10):** `.env.example` iki değişkeni açıklar, gerçek değer içermez;
+- [x] AC-10 — **Belgeler (R-10):** `.env.example` iki değişkeni açıklar, gerçek değer içermez;
   `.gitignore` `instance/`'ı içerir; yedekleme yöntemi ve KVKK notu yazılıdır;
   `docs/architecture.md` bugünkü durumu SQLite olarak anlatır.
 
@@ -127,18 +127,52 @@ Spec onayı: İbrahim Gürhan, 2026-11-05 (K-1…K-8 0016'da; S-1…S-5 önerild
 - **F-5 — real → fix-1 (`57fd736`):** SQLite listeleri ekleme sırasını korur testi.
 - **Not `DATABASE_PATH=:memory:` — noise:** operatörün açık yapılandırması, sessiz geri dönüş değil.
 
+## Verification (VERIFY, 2026-11-05, HEAD `9f4d362`, bağımsız QA subagent)
+Deneyler, gerçek süreç ve ekran görüntüleri repo dışında, scratch'teki `git archive` kopyalarında
+üretildi; veritabanları hep scratch'te; hiçbiri commit'lenmedi. Suite: HEAD `277 passed, 5
+skipped`, temiz kopyada `CHECK GREEN (full, 3 steps)`, sonrasında veritabanı dosyası yok; `main`
+`252 passed, 5 skipped`. Ters kontrol: HEAD'in iki test dosyası `main` kodunda toplanamıyor
+(`storage.sqlite` yok); `main` `app.py` + HEAD `storage/` ile 13 kırmızı / 4 yeşil (yeşiller
+doğrudan depo testleri). Fix-1 testlerinin her biri kendi mutantında kırmızı. Test adları koddaki
+gerçek adlardır (plan haritası fix-1'den önce).
+
+| Kriter | Kanıt | Durum |
+|---|---|---|
+| AC-1 | `test_data_survives_restart`. Gerçek süreç: SEED=1 → talep #9 (CSRF token'lı) + #2 onay → durdur → SEED'siz aç: sayaçlar, bakiyeler, satırlar birebir; `main`'de aynı senaryoda veri kayboldu | Pass |
+| AC-2 | `test_fields_and_types_round_trip` (tarih türü, "Şükrü Öztürk", "İzin; 'test' -- x", şema yalnız iki tablo); tüm SQL parametreli | Pass |
+| AC-3 | `test_empty_database_screens`. Gerçek süreç: 0/0/0, tablolar yalnız başlık, Yeni Talep seçeneksiz; POST 400 "Seçilen personel bulunamadı.", veritabanı boş kaldı | Pass |
+| AC-4 | `test_demo_data_only_when_empty`, `test_seeded_data_is_kept_without_a_write`, `test_seed_flag_values[×4]`. Gerçek süreç: dolu veritabanı SEED=1 ile yeniden açıldı, kayıtlar ve durumlar birebir | Pass |
+| AC-5 | `test_request_number_continues_after_restart`. Gerçek süreç: #9, yeniden başlatma sonrası #10 (`main`: yine #9) | Pass |
+| AC-6 | `test_default_database_path`, `test_missing_folder_is_created`. Gerçek süreç: eksik klasör oluşturuldu; `DATABASE_PATH` tanımsızken kopyada `instance/leavemanager.db` | Pass |
+| AC-7 | `test_unwritable_path_stops_the_app`, `test_read_only_database_stops_the_app`, `test_newer_schema_stops_the_app`. Gerçek süreç: üst yol dosya, salt-okunur, `user_version` 99, veritabanı olmayan dosya → çıkış 1, tek ERROR `app.storage` (yol + neden), traceback yok, dosya hash'leri aynı | Pass |
+| AC-8 | `tests/test_storage_contract.py[memory/sqlite]` (8 × 2), `test_lists_keep_insertion_order_not_id_order` | Pass |
+| AC-9 | `tests/` diff'i: `conftest.py` +1 (onaylı), sözleşme factory listesi, yeni `test_persistence.py`; diğer 12 test dosyası blob-identical; suite sonrası veritabanı dosyası yok; `test_shared_suite_runs_on_the_memory_storage` | Pass |
+| AC-10 | `.env.example`, `.gitignore` (`instance/`), `docs/security.md` "Veri ve yedekleme", `docs/architecture.md`, `docs/domain.md` OD-8 | Pass |
+
+Bellek modu (gerçek süreç): her açılışta `WARNING app.storage`, veri bellekte, yeniden başlatmada
+demo verisine döner, dosya oluşmaz. Ekran görüntüleri (repoda değiller, PR'a eklenir): boş
+veritabanı ana sayfa / Talepler / Yeni Talep; yeniden başlatma sonrası ana sayfa ve Talepler.
+
+### VERIFY triage (İbrahim Gürhan, 2026-11-05)
+- **G-1 — kabul:** `DATABASE_PATH` tanımsızken klasör oluşturma otomatik testle değil gerçek süreç
+  gözlemiyle kanıtlı (aynı `makedirs` satırı test edilen yolda).
+- **G-2 — kabul:** üst yol dosyayken nedenin metni işletim sisteminin iletisi; AC karşılanıyor,
+  daha açık ileti ayrı iş olabilir.
+- **G-3 — bilgi:** zorla durdurmada `-wal` / `-shm` kalır; veri kaybı yok, yedekleme notunda var.
+- **G-4 — kabul:** boş veritabanında Yeni Talep hata ekranının görüntüsü yok; kanıt 400 yanıtı ve test.
+
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 0 |
+| Fix rounds | 1 (fix-1: review F-1, F-2 kod — `storage/sqlite.py`; F-3…F-5 test) |
+| Review findings: real / noise | 5 / 1 (F-1 orta, F-2…F-5 düşük; `:memory:` notu noise; round 2 clean). VERIFY: G-1/G-2/G-4 kabul, G-3 bilgi |
+| Regressions introduced | 0 |
+| Bugs escaped to production | 0 (henüz yayında değil) |
