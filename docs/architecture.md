@@ -22,9 +22,10 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
 
 Hedeften kalan farklar:
 - Route'lar HTML'i hâlâ string birleştirerek kuruyor (Jinja şablonu yok).
-- Depo arayüzü yazılı bir sözleşme değil, ortak metot adları.
 
-Bunlar ayrı işlerle kapatılır.
+Bu ayrı bir işle kapatılır. Depo arayüzü artık yazılı bir sözleşmedir (spec 0016):
+`storage/contract.py` (`LeaveStorage`); her depo uygulaması `tests/test_storage_contract.py`'den
+geçer. Kalıcı depo SQLite olacak (ADR-0001).
 
 ## Modules / components and ownership
 
