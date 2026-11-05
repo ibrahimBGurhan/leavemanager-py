@@ -26,6 +26,7 @@ def _opening_requests():
 
 
 class MemoryStorage:
+    # storage/contract.py LeaveStorage sozlesmesini uygular (spec 0016).
     # Kayitlar sozluk: personel {id, name, department, hire_date};
     # talep {id, employee_id, start, end, reason, status}
     def __init__(self):
