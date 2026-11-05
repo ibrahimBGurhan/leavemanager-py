@@ -114,6 +114,20 @@ def test_fields_and_types_round_trip(tmp_path):
     assert tables == ["employees", "requests"]  # the quoted text did not touch the schema
 
 
+def test_lists_keep_insertion_order_not_id_order(tmp_path):
+    """Review F-5: the contract says "in insertion order"; SQLite keeps it apart from the id."""
+    store = SqliteStorage(tmp_path / "leave.db")
+    for emp_id in (5, 3):
+        store.add_employee({"id": emp_id, "name": "K%d" % emp_id, "department": "IT",
+                            "hire_date": D(2020, 1, 6)})
+    for request_id in (7, 4):
+        store.add_request({"id": request_id, "employee_id": 5, "start": D(2026, 12, 1),
+                           "end": D(2026, 12, 1), "reason": "x", "status": "Beklemede"})
+    assert [e["id"] for e in store.employees()] == [5, 3]
+    assert [r["id"] for r in store.requests()] == [7, 4]
+    store.close()
+
+
 # --- AC-3 -----------------------------------------------------------------------------------
 
 def test_empty_database_screens(tmp_path):
