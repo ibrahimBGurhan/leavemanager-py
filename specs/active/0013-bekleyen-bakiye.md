@@ -28,8 +28,8 @@ anlamını korur (Hak − Kullanılan); onay kontrolü bugünkü gibi kalır.
   talep Bekleyen'den çıkar, Kullanılan'a girer; iki kez sayılmaz. Onay mesajı değişmez.
 - **K-5 Sütun:** bakiye tablosunun en sağına "Bekleyen" sütunu: Ad, Birim, Hak, Kullanilan,
   Kalan, Bekleyen. Kalan = Hak − Kullanilan yan yana okunmaya devam eder.
-- **K-6 Testler:** eski kuralı sabitleyen mevcut testler (BUILD öncesi deneme: 8 test, sütun
-  ekiyle 9) yeni kurala göre güncellenir; bu bir test zayıflatması değil, Supersedes satırındaki
+- **K-6 Testler:** eski kuralı sabitleyen mevcut testler (10 test kimliği, 6 düzenleme noktası:
+  plan 0013 T1–T6; revizyon 1, plan onayında) yeni kurala göre güncellenir; bu bir test zayıflatması değil, Supersedes satırındaki
   kriterlerin yerine geçmesidir. Her sınır testi yeni sınırla (K − B − 1 / K − B / K − B + 1) aynı
   sıkılıkta kalır. Araya giren onay senaryosu (0010/AC-3, AC-5) yeni kuralla yeni talep üzerinden
   kurulamaz; kurulumu bekleyen talebi doğrudan depoya ekleyerek yapılır (kural öncesinden kalan
