@@ -66,6 +66,18 @@ Spec onayı: İbrahim Gürhan, 2026-11-05 (K-1…K-5, S-1…S-3 önerildiği gib
 - Formu Jinja şablonuna taşımak (F-3 / `|safe` borcu; ayrı iş).
 - Talepler ekranındaki onay/red hata ekranları (form yok).
 
+## Review (2026-11-05, bağımsız reviewer subagent)
+- **Round 1** (HEAD `8f0abd8`): güvenlik clean — her geri basma yolu probe'landı (kaçış, uzun ve
+  denetim karakterli girdi, tam genişlikli rakam, tekrarlı alan, CSRF yolu); 14 mutantın 12'si
+  kırmızı (biri güvenli eşdeğer). Bulgular F-1 (düşük), F-2 (bilgi).
+- **Round 2** (HEAD `485b240`, fix diff'i): **clean**; F-1 düzeldi, `.strip()` mutantı kırmızı.
+
+### Triage (İbrahim Gürhan, 2026-11-05)
+- **F-1 — real → fix-1 (`485b240`):** S-2 (neden boşluklarıyla geri basılır) testle korunmuyordu;
+  `reason-spaces` parametresi eklendi.
+- **F-2 — noise:** plan haritasındaki test adları koddakinden farklı (500 ayrı test,
+  `raw-text-dates` ek parametre); davranış tam kapsanıyor, VERIFY gerçek adları kullanır.
+
 ## Definition of Done
 - [ ] `scripts/check` green
 - [ ] Independent review done; real findings fixed, noise rejected with written rationale
