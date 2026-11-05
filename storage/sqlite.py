@@ -48,6 +48,11 @@ class SqliteStorage:
                 # Daha yeni sema: dosyaya hicbir sey yazilmaz (S-4)
                 raise StorageUnavailable(
                     "şema sürümü %d, bu uygulama %d'i biliyor" % (version, SCHEMA_VERSION))
+            # Yazilabilirlik yoklamasi (review F-1, R-3): salt-okunur dosyada uygulama acilmaz.
+            # Gecici bir yazma kilidi alinir ve geri alinir; dosyaya kalici bir sey yazilmaz.
+            self._db.execute("BEGIN IMMEDIATE")
+            self._db.execute("PRAGMA user_version = %d" % version)
+            self._db.rollback()
             self._db.execute("PRAGMA journal_mode=WAL")
             if version < SCHEMA_VERSION:
                 with self._db:

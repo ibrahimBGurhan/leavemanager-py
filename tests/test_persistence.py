@@ -11,6 +11,7 @@ import json
 import os
 import pathlib
 import sqlite3
+import stat
 import subprocess
 import sys
 
@@ -187,6 +188,22 @@ def test_unwritable_path_stops_the_app(tmp_path):
     assert len(errors) == 1 and str(db) in errors[0]
     assert "Traceback" not in proc.stderr
     assert "bellek deposu" not in proc.stderr     # no fall back to memory
+
+
+def test_read_only_database_stops_the_app(tmp_path):
+    """Review F-1: an existing file that cannot be written stops the app at start-up, instead of
+    serving pages and failing every write with a 500."""
+    db = tmp_path / "leave.db"
+    SqliteStorage(db, seed_records=([], [])).close()
+    os.chmod(db, stat.S_IREAD)
+    try:
+        proc = start_app(tmp_path, db)
+    finally:
+        os.chmod(db, stat.S_IREAD | stat.S_IWRITE)
+    assert proc.returncode != 0
+    errors = [line for line in proc.stderr.splitlines() if " ERROR app.storage: " in line]
+    assert len(errors) == 1 and str(db) in errors[0]
+    assert "Traceback" not in proc.stderr
 
 
 def test_newer_schema_stops_the_app(tmp_path):
