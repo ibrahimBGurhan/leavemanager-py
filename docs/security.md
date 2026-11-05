@@ -46,6 +46,9 @@
 
 ## AuthN / AuthZ
 - **Hedef:** varsayılan deny. Giriş yapmamış kullanıcı hiçbir sayfayı göremez.
+- **Yöntem:** uygulama içi kullanıcı (e-posta) ve şifre; Werkzeug şifre özeti, Flask oturumu
+  (en fazla 8 saat), 5 başarısız denemede 15 dakika kilit, en az 12 karakter, varsayılan şifre yok
+  (ADR-0002). **Giriş sistemi yayına yalnız HTTPS ile çıkar**; `SESSION_COOKIE_SECURE` orada açılır.
 - Roller: **Personel** (kendi bakiyesi ve talepleri) · **Yönetici** (biriminin taleplerini
   onaylar/reddeder) · **IK** (tüm personel, geriye dönük giriş).
 - Yetki kontrolü sunucu tarafında, domain'e girmeden önce web katmanında yapılır ve domain
