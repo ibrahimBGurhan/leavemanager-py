@@ -1,6 +1,6 @@
 # Spec 0015 — form-degerleri (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0015-plan.md`
 - Source: #31
