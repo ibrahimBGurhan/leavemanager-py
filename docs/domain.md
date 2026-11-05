@@ -15,7 +15,7 @@
 | Durum (`status`) | Talebin durumu: `Beklemede` · `Onaylandi` · `Reddedildi` | Veri değeridir: ASCII yazılır, Türkçe karakterli hali (`Onaylandı`) **farklı** bir değerdir. Geçişler: BR-10 |
 | Kıdem (`seniority`) | Personelin hizmet süresi, tam yıl olarak | Bugün kod yalnızca yıl farkını alıyor (BR-2) |
 | Hak (`entitlement`) | Kıdeme göre bir yıl için hak edilen izin günü | "Kalan" ile karıştırılmamalı |
-| İzin günü | Bir talebin bakiyeden düşen gün sayısı; tam sayı | Takvim günü ≠ iş günü (BR-3) |
+| İzin günü | Bir talebin bakiyeden düşen gün sayısı; tam sayı | İş günüdür: hafta sonu ve resmî tatil sayılmaz (BR-3) |
 | Kullanılan (`used`) | `Onaylandi` durumundaki taleplerin izin günü toplamı | Bekleyenler dahil değil |
 | Kalan / Bakiye (`remaining`) | Hak − Kullanılan | Tek bir yerde hesaplanır (invariant) |
 | Devreden izin (`carry`) | Yıl sonunda bir sonraki yıla aktarılan kalan izin | Bugün uygulanmıyor; kod yorum satırında (OD-6) |
@@ -28,9 +28,13 @@
   **Tam 15 yıl kıdem kodda 20 gün, kanunda 26 gün** [IK onayı bekliyor].
 - **BR-2 Kıdem:** tamamlanmış hizmet yılıdır (işe giriş yıl dönümü geçilince artar)
   [IK onayı bekliyor]. *Mevcut kod:* `bugün.yıl − giriş.yıl` (ay ve gün yok sayılıyor).
-- **BR-3 İzin günü (md. 56):** izne denk gelen hafta tatili ve genel tatil günleri izinden
-  sayılmaz [IK onayı bekliyor]. *Mevcut kod:* `(bitiş − başlangıç) + 1` takvim günü; koddaki
-  "iş günü hesabı" yorumu yanlış.
+- **BR-3 İzin günü (md. 56):** izin günü iş günüdür: aralıktaki (başlangıç ve bitiş dahil)
+  Pazartesi–Cuma günlerinden resmî tatil olmayanlar sayılır; Cumartesi ve Pazar hafta tatilidir
+  (karar: İbrahim Gürhan, IK adına, 2026-11-05; spec 0014). Resmî tatiller 2026–2027 için kodda
+  sabit listededir (`domain/workdays.py`: 1 Ocak, 23 Nisan, 1 Mayıs, 19 Mayıs, 15 Temmuz,
+  30 Ağustos, 29 Ekim; Ramazan ve Kurban Bayramı günleri). Arife yarım günleri tam iş günü sayılır
+  (OD-9). Liste dışındaki yıllarda yalnız hafta sonu düşülür (OD-10). Bakiye, Kullanılan,
+  Bekleyen, onay ve Talepler ekranının "Gun" sütunu aynı hesabı kullanır.
 - **BR-4 Kullanılan:** yalnızca `Onaylandi` durumundaki taleplerin izin günleri toplanır.
 - **BR-5 Kalan ve Bekleyen:** Kalan = Hak − Kullanılan. Bekleyen = personelin `Beklemede`
   durumundaki taleplerinin izin günleri toplamı, tarihe bakılmaz (geçmiş tarihli de sayılır).
@@ -44,8 +48,10 @@
 - **BR-7** Yeni talep her zaman `Beklemede` durumuyla oluşur.
 - **BR-8** Geçmiş tarihli talep kabul edilir (IK geriye dönük giriş yapıyor; *mevcut kod*, korunur).
 - **BR-9** Bitiş tarihi ≥ başlangıç tarihi. Talep oluşturulurken uygulanır (spec 0008); ters
-  tarihli talep oluşmaz ve kullanıcı mesaj görür. Gün sayısı hesabı (`calc_days`) ters aralıkta
-  hâlâ 0 ya da negatif döner (*mevcut kod*), ama bu değer artık bir talebe ulaşmıyor.
+  tarihli talep oluşmaz ve kullanıcı mesaj görür. Gün sayısı hesabı ters aralıkta 0 döner, ama bu
+  değer bir talebe ulaşmaz. **İş günü içermeyen talep** (yalnız hafta sonu ve/veya resmî tatil)
+  oluşmaz; kullanıcı "Seçilen tarihler arasında iş günü yok." mesajını görür (spec 0014). İhlal
+  sırası: bozuk girdi → personel → tarih aralığı → iş günü yok → bakiye.
 - **BR-10 Durum geçişleri** (spec 0010): bir talep yalnızca `Beklemede` iken sonuçlandırılır:
   `Beklemede → Onaylandi` ya da `Beklemede → Reddedildi`. `Onaylandi` ve `Reddedildi` son
   durumlardır; geri alınmaz, birbirine çevrilmez. Onayda bakiye yeniden kontrol edilir: Kalan ≥ talebin
@@ -70,9 +76,9 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
 - **OD-3** ~~Bekleyen talepler Kalan'dan düşülsün mü?~~ — **kapandı** (spec 0013, İbrahim Gürhan,
   IK adına, 2026-11-05): yeni talep kontrolünde düşülür, bakiye tablosunda ayrı sütun; Kalan ve
   onay kontrolü değişmez (BR-5, BR-6, BR-10).
-- **OD-4** İzin günü takvim günü mü, iş günü mü? Hafta tatili hangi gün(ler)? Resmî tatil
-  takvimi nereden gelecek? (BR-3) — öneri: iş günü, Cumartesi+Pazar hafta tatili, tatil listesi
-  yıllık IK girişi.
+- **OD-4** ~~İzin günü takvim günü mü, iş günü mü?~~ — **kapandı** (spec 0014, İbrahim Gürhan,
+  IK adına, 2026-11-05): iş günü; Cumartesi + Pazar hafta tatili; 2026–2027 resmî tatilleri kodda
+  sabit liste (BR-3). IK'nın tatil girdiği ekran kalıcılık (OD-8) sonrası ayrı iş.
 - **OD-5** 18 yaş ve altı ile 50 yaş ve üstü için en az 20 gün kuralı (md. 53) — doğum tarihi
   tutulmuyor. Öneri: kapsama alınsın, ayrı spec.
 - **OD-6** Devreden izin (yorum satırındaki "en fazla 5 gün" taslağı) — öneri: IK yazılı kural
@@ -80,3 +86,9 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
 - **OD-7** ~~Onay/red akışı yok~~ — **kapandı** (spec 0010, İbrahim Gürhan, 2026-11-04): bu
   sürümde IK onaylar (BR-10). Yönetici onayı ve "yalnızca IK" kısıtı auth spec'inde değerlendirilir.
 - **OD-8** Kalıcılık: bellekteki veri her yeniden başlatmada kayboluyor. Öneri: SQLite, ADR ile.
+- **OD-9** Arife yarım günleri (Ramazan ve Kurban Bayramı arifesi, 28 Ekim) bugün tam iş günü
+  sayılıyor (spec 0014 K-3). Yarım gün sayılması kesirli bakiye ister — öneri: IK isterse ayrı
+  spec.
+- **OD-10** Resmî tatil listesi yalnız 2026–2027'yi kapsıyor; sonraki yıllarda yalnız hafta sonu
+  düşülür (spec 0014 K-4). Öneri: 2027 sonundan önce liste güncellensin ya da IK girişi (OD-8
+  sonrası) yapılsın.
