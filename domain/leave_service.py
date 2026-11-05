@@ -48,7 +48,7 @@ class LeaveService:
     def get_used_days(self, emp_id):
         total = 0
         for r in self._storage.requests():
-            if r["employee_id"] == emp_id and r["status"] == "Onaylandi":
+            if r["employee_id"] == emp_id and r["status"] == APPROVED:
                 total += self.calc_days(r["start"], r["end"])
         return total
 
@@ -75,7 +75,7 @@ class LeaveService:
             pass  # gecmis tarih... IK bazen geriye donuk giriyor, dokunma
         self._storage.add_request({"id": self._storage.next_request_id(), "employee_id": emp_id,
                                    "start": start, "end": end, "reason": reason,
-                                   "status": "Beklemede"})
+                                   "status": PENDING})
         return True
 
     def _check_balance(self, emp, days):

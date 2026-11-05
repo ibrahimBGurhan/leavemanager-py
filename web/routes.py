@@ -46,11 +46,11 @@ td,th{border:1px solid #ccc;padding:6px 10px} .kutu{display:inline-block;border:
 def status_badge(status):
     # renkler: UI isi
     color = "#999"
-    if status == "Onaylandi":
+    if status == APPROVED:
         color = "green"
-    if status.lower() == "beklemede":
+    if status.lower() == PENDING.lower():  # harfe duyarsiz (karakterizasyon, 0012 PB-4)
         color = "orange"
-    if status == "Reddedildi":
+    if status == REJECTED:
         color = "red"
     return "<b style='color:%s'>%s</b>" % (color, status)
 
@@ -86,9 +86,9 @@ def register_routes(app, svc):
 
     @app.route("/")
     def dashboard():
-        bekleyen = len([r for r in svc.requests() if r["status"] == "Beklemede"])
-        onaylanan = len([r for r in svc.requests() if r["status"] == "Onaylandi"])
-        reddedilen = len([r for r in svc.requests() if r["status"] == "Reddedildi"])
+        bekleyen = len([r for r in svc.requests() if r["status"] == PENDING])
+        onaylanan = len([r for r in svc.requests() if r["status"] == APPROVED])
+        reddedilen = len([r for r in svc.requests() if r["status"] == REJECTED])
         body = "<div class='kutu'>Bekleyen: <b>%d</b></div><div class='kutu'>Onaylanan: <b>%d</b></div><div class='kutu'>Reddedilen: <b>%d</b></div>" % (bekleyen, onaylanan, reddedilen)
         body += "<h3>Personel Bakiyeleri</h3><table><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanilan</th><th>Kalan</th></tr>"
         for e in svc.employees():
