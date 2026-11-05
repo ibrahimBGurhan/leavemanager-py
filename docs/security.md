@@ -25,6 +25,10 @@
   başka oturumun token'ı → 400, hiçbir kayıt değişmez, Türkçe mesaj. Oturum çerezi `HttpOnly` ve
   `SameSite=Lax`; `Secure` zorlanmaz (iç ağ HTTP). Testlerin ortak istemcisi korumayı kapatır;
   korumayı `tests/test_csrf.py` açık olarak sınar.
+- **Form değerlerinin geri basılması:** Yeni Talep hata ekranında yalnız doğrulanmış değerler geri
+  basılır: personel yalnız seçenek listesiyle tamsayı eşleşmesi, tarihler yalnız ayrıştırılmış
+  `YYYY-MM-DD`, neden kaçışlı (`escape`) öznitelik değeri. Ham girdi sayfaya ulaşmaz. CSRF
+  hatasında hiçbir değer geri basılmaz: isteğin kaynağı belirsizdir (spec 0015).
 - **Hata mesajları:** stack trace, istisna metni ve iç kodlar kullanıcıya sızmaz (`docs/conventions.md`).
 - **Debug:** `debug=True` koda yazılmaz. Debug yalnızca yerelde bir ortam değişkeniyle açılır.
   Werkzeug debugger ağdan erişilebilir olduğunda uzaktan kod çalıştırmaya izin verir.
