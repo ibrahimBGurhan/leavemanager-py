@@ -32,7 +32,7 @@ Bunlar ayrı işlerle kapatılır.
 |---|---|---|
 | `web` | HTTP: route'lar, form girdisinin ayrıştırılması/doğrulanması, Jinja şablonları, kullanıcı mesajları | Sunum (HTML, durum rozeti renkleri, Türkçe UI metinleri) |
 | `domain` | İş kuralları: kıdem, hak, kullanılan, kalan, talep oluşturma ve durum geçişleri | Kural ve kavramlar (`docs/domain.md`); tipli domain istisnaları |
-| `storage` | Kalıcılık: repository arayüzü ve uygulaması (bugün bellek, sonra SQL) | Personel ve izin talebi kayıtları |
+| `storage` | Kalıcılık: repository arayüzü ve uygulaması (bugün bellek; hedef SQLite, [ADR-0001](decisions/0001-kalicilik-sqlite.md)) | Personel ve izin talebi kayıtları |
 
 ## Communication rules
 - `web` yalnızca `domain`'in public servis fonksiyonlarını çağırır.
