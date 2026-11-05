@@ -16,10 +16,14 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
   (`storage/demo.py`). Hangi deponun kullanılacağını `app.py` seçer (`LEAVEMANAGER_STORAGE=memory`
   yalnız test/geliştirme).
 - **`domain/leave_service.py`:** `LeaveService` saati ve depoyu kurulumda parametre olarak alır.
+- **`domain/accounts.py`:** `AccountService` kullanıcı hesabı kuralları (spec 0018); depoyu ve
+  şifre özetleyiciyi (`hasher`) kurulumda alır, Werkzeug import etmez (kural 1).
 - **`web/routes.py`:** route'lar, sayfa ve durum rozeti burada.
 - **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati
   (`SystemClock`), depoyu ve servisi kurup birbirine bağlar; `app`, `clock`, `storage`, `svc`
-  adları testlerin bağlantı noktalarıdır (spec 0005).
+  adları testlerin bağlantı noktalarıdır (spec 0005); spec 0018 ile `accounts` (hesap servisi)
+  eklendi. Şifre özetleyici `WerkzeugHasher` ve hesap açma komutu `hesap-ac` (Flask CLI) da
+  buradadır.
   Log yapılandırması da burada kurulur (spec 0009); katmanlar yalnızca
   `logging.getLogger(__name__)` kullanır.
 
@@ -36,7 +40,7 @@ geçer. Kalıcı depo SQLite olacak (ADR-0001).
 |---|---|---|
 | `web` | HTTP: route'lar, form girdisinin ayrıştırılması/doğrulanması, Jinja şablonları, kullanıcı mesajları | Sunum (HTML, durum rozeti renkleri, Türkçe UI metinleri) |
 | `domain` | İş kuralları: kıdem, hak, kullanılan, kalan, talep oluşturma ve durum geçişleri | Kural ve kavramlar (`docs/domain.md`); tipli domain istisnaları |
-| `storage` | Kalıcılık: repository arayüzü ve uygulaması (bugün bellek; hedef SQLite, [ADR-0001](decisions/0001-kalicilik-sqlite.md)) | Personel ve izin talebi kayıtları |
+| `storage` | Kalıcılık: repository arayüzü ve uygulaması (bugün bellek; hedef SQLite, [ADR-0001](decisions/0001-kalicilik-sqlite.md)) | Personel, izin talebi ve kullanıcı hesabı kayıtları (şema sürümü 2, spec 0018) |
 
 ## Communication rules
 - `web` yalnızca `domain`'in public servis fonksiyonlarını çağırır.
