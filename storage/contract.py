@@ -37,7 +37,8 @@ class LeaveStorage(Protocol):
 
     def next_request_id(self) -> int:
         """Yeni talep numarasi: bu depodan daha once verilmis tum numaralardan buyuk, her cagrida
-        artan; verilen bir numara (kullanilmasa da) yeniden verilmez."""
+        artan; ayni depo nesnesi icinde verilen bir numara (kullanilmasa da) yeniden verilmez.
+        Yeniden baslatmadan sonraki davranis kalici depo spec'inde (0017 K-4) belirlenir."""
         ...
 
     def set_request_status(self, request_id: int, status: str) -> None:
