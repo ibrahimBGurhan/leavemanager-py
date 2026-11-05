@@ -101,7 +101,9 @@ def test_unexpected_error_keeps_values(client, monkeypatch):
      (None, "2026-11-16", "2026-11-18", "x")),
     ({"employee_id": "2", "start": "16.11.2026", "end": "<b>", "reason": "x"},
      ("2", "", "", "x")),
-], ids=["bad-start", "bad-employee", "missing-employee", "raw-text-dates"])
+    ({"employee_id": "2", "start": "2026-13-01", "end": "2026-11-18", "reason": "  Aile  "},
+     ("2", "", "2026-11-18", "  Aile  ")),  # S-2: reason echoed as typed, spaces kept (F-1)
+], ids=["bad-start", "bad-employee", "missing-employee", "raw-text-dates", "reason-spaces"])
 def test_malformed_input_keeps_valid_fields(client, fields, expected):
     resp = client.post("/new", data=fields)
     assert resp.status_code == 400
