@@ -85,7 +85,9 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
   verene kadar kapsam dışı; ölü kod refactor ile silinsin.
 - **OD-7** ~~Onay/red akışı yok~~ — **kapandı** (spec 0010, İbrahim Gürhan, 2026-11-04): bu
   sürümde IK onaylar (BR-10). Yönetici onayı ve "yalnızca IK" kısıtı auth spec'inde değerlendirilir.
-- **OD-8** Kalıcılık: bellekteki veri her yeniden başlatmada kayboluyor. Öneri: SQLite, ADR ile.
+- **OD-8** ~~Kalıcılık: bellekteki veri her yeniden başlatmada kayboluyor.~~ — **karar verildi**
+  (ADR-0001, İbrahim Gürhan, 2026-11-05): SQLite, standart kütüphane `sqlite3`, storage katmanının
+  arkasında; üretimde demo verisi yüklenmez. Uygulama ayrı spec.
 - **OD-9** Arife yarım günleri (Ramazan ve Kurban Bayramı arifesi, 28 Ekim) bugün tam iş günü
   sayılıyor (spec 0014 K-3). Yarım gün sayılması kesirli bakiye ister — öneri: IK isterse ayrı
   spec.
