@@ -145,6 +145,15 @@ def test_demo_data_only_when_empty(tmp_path):
     assert rows(second[1][1]) == rows(first[2][1])
 
 
+def test_seeded_data_is_kept_without_a_write(tmp_path):
+    """Review F-3: a first start with SEED_DEMO_DATA=1 that only reads still stores the demo data."""
+    db = tmp_path / "leave.db"
+    run_app(tmp_path, db, [["get", "/"]], seed="1")
+    requests, home = run_app(tmp_path, db, [["get", "/requests"], ["get", "/"]])
+    assert len(rows(requests[1])) == 1 + 8
+    assert len(rows(home[1])) == 1 + 5
+
+
 @pytest.mark.parametrize("seed", ["0", "yes", "", None], ids=["zero", "yes", "empty", "unset"])
 def test_seed_flag_values(tmp_path, seed):
     db = tmp_path / "leave.db"
