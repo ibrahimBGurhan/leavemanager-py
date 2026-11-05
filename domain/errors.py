@@ -20,10 +20,12 @@ class InvalidDateRange(LeaveRequestError):
 
 
 class InsufficientBalance(LeaveRequestError):
-    def __init__(self, remaining, requested):
-        super().__init__(remaining, requested)
+    # pending: yeni talepte hesaba katilan bekleyen gunler; onayda 0 (spec 0013, K-2/K-4)
+    def __init__(self, remaining, requested, pending=0):
+        super().__init__(remaining, requested, pending)
         self.remaining = remaining
         self.requested = requested
+        self.pending = pending
 
 
 class RequestNotFound(LeaveRequestError):

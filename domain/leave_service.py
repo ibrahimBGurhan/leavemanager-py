@@ -52,12 +52,20 @@ class LeaveService:
                 total += self.calc_days(r["start"], r["end"])
         return total
 
+    def get_pending_days(self, emp_id):
+        # Bekleyen: Beklemede taleplerin gunleri, tarihe bakilmaz (BR-5, spec 0013 K-1)
+        total = 0
+        for r in self._storage.requests():
+            if r["employee_id"] == emp_id and r["status"] == PENDING:
+                total += self.calc_days(r["start"], r["end"])
+        return total
+
     def calc_days(self, start, end):
         # is gunu hesabi
         return (end - start).days + 1
 
     def get_remaining(self, emp):
-        # bekleyenler de dusulecek mi? simdilik hayir (2018'de konusuldu, karar yok)
+        # Kalan = Hak - Kullanilan; bekleyenler burada dusulmez, yeni talepte sayilir (OD-3, 0013)
         return self.get_entitlement(emp) - self.get_used_days(emp["id"])
 
     def create_request(self, emp_id, start, end, reason):
@@ -70,7 +78,7 @@ class LeaveService:
             raise EmployeeNotFound(emp_id)
         if end < start:
             raise InvalidDateRange(start, end)  # BR-9
-        self._check_balance(emp, self.calc_days(start, end))
+        self._check_balance(emp, self.calc_days(start, end), self.get_pending_days(emp_id))
         if start < self._clock.today():
             pass  # gecmis tarih... IK bazen geriye donuk giriyor, dokunma
         self._storage.add_request({"id": self._storage.next_request_id(), "employee_id": emp_id,
@@ -78,11 +86,12 @@ class LeaveService:
                                    "status": PENDING})
         return True
 
-    def _check_balance(self, emp, days):
-        # BR-6 tek yerde: talep olusturma ve onay ayni karari verir (spec 0010, AC-4)
+    def _check_balance(self, emp, days, pending=0):
+        # BR-6 tek yerde. Yeni talep bekleyenleri sayar (Kalan - Bekleyen >= gun); onay saymaz,
+        # pending=0 (spec 0013 K-2/K-4; onay siniri 0010 AC-4)
         remaining = self.get_remaining(emp)
-        if remaining < days:
-            raise InsufficientBalance(remaining, days)  # tam bakiye kabul
+        if remaining - pending < days:
+            raise InsufficientBalance(remaining, days, pending)  # tam bakiye kabul
 
     def _pending_request(self, request_id):
         # Sonuclandirilacak talep: var olmali ve Beklemede olmali (BR-10)
