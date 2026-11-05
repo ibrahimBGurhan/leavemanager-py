@@ -83,6 +83,21 @@ teyitli).
 - Açılış verisinin tarihlerini değiştirmek.
 - Hafta sonu çalışan birimler için farklı hafta tatili.
 
+## Review (2026-11-05, bağımsız reviewer subagent)
+- **Round 1** (HEAD `f19d10d`): üretim kodunda bulgu yok; `count_workdays` rastgele 20.000 aralıkta
+  gün gün sayan referansla 0 uyuşmazlık; 26 mutantın 24'ü kırmızı. Bulgular F-1…F-4 (yalnız testler).
+- **Round 2** (HEAD `706a18a`, fix diff'i): **clean**; F-1…F-4 düzeldi, hayatta kalan iki mutant
+  artık kırmızı.
+
+### Triage (İbrahim Gürhan, 2026-11-05)
+- **F-1 — real → fix-1 (`a302abb`):** "iş günü yok → bakiye" sırası Elif ile (0 − 0 < 0 yanlış)
+  kanıtlanmıyordu; test negatif kullanılabilir bakiyeyle (Zeynep, Kalan 14, Bekleyen 15) servis +
+  ekran olarak kuruldu. Mutant `nwd_after_balance` kırmızı.
+- **F-2 — real → fix-1 (`ff932c7`):** ters aralık yalnız tek günle sınanıyordu; çok günlük ters
+  aralık (20 → 2 Kasım = 0) eklendi. Mutant `reverse_neg` kırmızı.
+- **F-3 — real → fix-1 (`a926bab`):** `end_after_workdays` n ≤ 0'da sonsuz döngü; `assert n >= 1`.
+- **F-4 — real → fix-1 (`706a18a`):** `intervening_approval` docstring'i 15 iş günü / 14 gün.
+
 ## Definition of Done
 - [ ] `scripts/check` green
 - [ ] Independent review done; real findings fixed, noise rejected with written rationale
