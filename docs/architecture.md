@@ -10,8 +10,11 @@ kuralları (kıdem, hak, bakiye) Flask olmadan test edilebilmeli ve 2016'dan ber
 veritabanı geçişi yalnızca storage katmanını değiştirmeli.
 
 **Bugünkü durum (spec 0006):** üç katman ayrı paketlerde:
-- **`storage/memory.py`:** `MemoryStorage` kayıtları bellekte tutar ve her başlatmada açılış
-  verisiyle kurulur.
+- **`storage/sqlite.py`:** `SqliteStorage` üretim deposu (ADR-0001, spec 0017): kayıtlar
+  `DATABASE_PATH` (varsayılan `instance/leavemanager.db`) dosyasında, yeniden başlatmada korunur.
+- **`storage/memory.py`:** `MemoryStorage` testlerin deposu; açılış (demo) verisiyle kurulur
+  (`storage/demo.py`). Hangi deponun kullanılacağını `app.py` seçer (`LEAVEMANAGER_STORAGE=memory`
+  yalnız test/geliştirme).
 - **`domain/leave_service.py`:** `LeaveService` saati ve depoyu kurulumda parametre olarak alır.
 - **`web/routes.py`:** route'lar, sayfa ve durum rozeti burada.
 - **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati

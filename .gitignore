@@ -12,6 +12,9 @@ Thumbs.db
 # Logs
 *.log
 
+# Veritabanı (KVKK kapsamında kişisel veri; spec 0017)
+instance/
+
 # Claude Code personal settings (shared settings.json IS committed after init)
 .claude/settings.local.json
 

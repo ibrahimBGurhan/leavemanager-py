@@ -13,6 +13,16 @@
   yazar; yeniden başlatmada açık formlar geçersizleşir. **Üretimde ve birden çok süreçte mutlaka
   tanımlanmalı** — her süreç farklı anahtar üretirse formlar rastgele reddedilir.
 
+## Veri ve yedekleme
+- Veritabanı dosyası (`DATABASE_PATH`, varsayılan `instance/leavemanager.db`) personel ve izin
+  verisi taşır: **KVKK kapsamında kişisel veri**, izin nedeni sağlık bilgisi içerebilir. Repoya
+  girmez (`instance/` gitignore'da); dosyayı ve yedeklerini yalnız uygulamayı işleten hesap
+  okuyabilmeli (dosya izinleri kodla zorlanmaz, kurulumda ayarlanır).
+- Yedekleme operasyonun işidir (ADR-0001, spec 0017 K-7): uygulama durdurulup dosya (ve varsa
+  `-wal`, `-shm` dosyaları) kopyalanır ya da uygulama çalışırken `sqlite3 <dosya> ".backup <hedef>"`
+  kullanılır. Yedekler aynı koruma altında saklanır; geri yükleme düzenli olarak denenir.
+- Demo verisi üretimde yüklenmez; yalnız `SEED_DEMO_DATA=1` ve boş veritabanında.
+
 ## Input & output
 - **Çıktı:** HTML yalnızca Jinja şablonlarında, otomatik kaçış (autoescape) açık olarak üretilir.
   Kullanıcı verisini içeren HTML'de string birleştirme ve `|safe` / `Markup` yasaktır.

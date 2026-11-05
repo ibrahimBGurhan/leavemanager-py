@@ -12,8 +12,10 @@ import datetime as dt
 import pytest
 
 from storage.memory import MemoryStorage
+from storage.sqlite import SqliteStorage
 
-FACTORIES = [pytest.param(MemoryStorage, id="memory")]
+FACTORIES = [pytest.param(MemoryStorage, id="memory"),
+             pytest.param(lambda: SqliteStorage(":memory:"), id="sqlite")]  # spec 0017
 
 D = dt.date
 
