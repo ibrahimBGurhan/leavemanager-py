@@ -110,6 +110,23 @@ Spec onayı: İbrahim Gürhan, 2026-11-05 (K-1…K-8 0016'da; S-1…S-5 önerild
   `.gitignore` `instance/`'ı içerir; yedekleme yöntemi ve KVKK notu yazılıdır;
   `docs/architecture.md` bugünkü durumu SQLite olarak anlatır.
 
+## Review (2026-11-05, bağımsız reviewer subagent)
+- **Round 1** (HEAD `0aed138`): plan uyumu, güvenlik (tüm SQL parametreli, `app.py` `sqlite3`
+  import etmiyor), S-4, kilit ve hata yolları temiz; 10 mutant kırmızı. Bulgular F-1 (orta),
+  F-2…F-5 (düşük); not: `DATABASE_PATH=:memory:`.
+- **Round 2** (HEAD `57fd736`, fix diff'i): **clean**; F-1…F-5 düzeldi, round 1'de yaşayan dört
+  mutantın dördü kırmızı.
+
+### Triage (İbrahim Gürhan, 2026-11-05)
+- **F-1 — real → fix-1 (`9ab9045`):** salt-okunur mevcut dosyada uygulama açılıyor, her yazma 500
+  veriyordu (R-3). Açılışta yazma yoklaması (`BEGIN IMMEDIATE` / `ROLLBACK`), yeni-şema
+  kontrolünden sonra; salt-okunur dosya testi.
+- **F-2 — real → fix-1 (`02afb0a`):** şema kurulumu tek işlem.
+- **F-3 — real → fix-1 (`d3da7d9`):** yalnız okuyan ilk açılışta demo verisinin kalıcılığı testi.
+- **F-4 — real → fix-1 (`da6afbe`):** yeni-şema ERROR'ında iki sürüm ifadesi tam olarak sınanır.
+- **F-5 — real → fix-1 (`57fd736`):** SQLite listeleri ekleme sırasını korur testi.
+- **Not `DATABASE_PATH=:memory:` — noise:** operatörün açık yapılandırması, sessiz geri dönüş değil.
+
 ## Definition of Done
 - [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
 - [ ] `scripts/check` green
