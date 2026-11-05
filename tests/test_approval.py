@@ -37,8 +37,8 @@ def add_pending(emp_id, start, days, reason="x"):
 def intervening_approval(svc):
     """AC-3 setup: Ayse (Kalan 17) gets a 15-day request approved → Kalan 2; #5 (3 days) pending.
     Spec 0014 T5: working days — Ayse's Kalan is 17 (her #1 is 9 working days).
-    Spec 0013 K-6 (T1): the 12-day request goes straight into storage — with #5 pending, a new
-    request may use only 11 days, so this state now only arises from pre-0013 data."""
+    Spec 0013 K-6 (T1): the 15-working-day request goes straight into storage — with #5 pending,
+    a new request may use only 14 days, so this state now only arises from pre-0013 data."""
     assert add_pending(1, dt.date(2026, 11, 16), 15) == 9
     svc.approve_request(9)
     assert svc.get_remaining(by_name("Ayse Yilmaz")) == 2
