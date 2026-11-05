@@ -57,6 +57,7 @@ def assert_refused(resp, message):
     (D(2026, 10, 29), D(2026, 10, 29), 0),   # yalnız tatil
     (D(2026, 5, 30), D(2026, 5, 30), 0),     # Cumartesiye denk gelen bayram günü
     (D(2026, 11, 2), D(2026, 11, 1), 0),     # ters aralık (BR-9 önce yakalar)
+    (D(2026, 11, 20), D(2026, 11, 2), 0),    # çok günlük ters aralık da 0, negatif değil (F-2)
     (D(2028, 1, 3), D(2028, 1, 7), 5),       # liste dışı yıl: yalnız hafta sonu (K-4)
 ])
 def test_count_workdays(svc, start, end, days):
