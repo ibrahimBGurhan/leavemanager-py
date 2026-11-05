@@ -42,19 +42,19 @@ def assert_redirects_to_requests(resp):
 # --- AC-7 -----------------------------------------------------------------------------------
 
 def test_dashboard_counts_and_balances(client):
-    """AC-7: sayaçlar ve personel bakiyeleri."""
+    """AC-7: sayaçlar ve personel bakiyeleri. Spec 0013 CB-3 (T2): en sağda Bekleyen sütunu."""
     html = client.get("/").get_data(as_text=True)
     text = visible_text(html)
     assert "Bekleyen: 4" in text
     assert "Onaylanan: 1" in text
     assert "Reddedilen: 3" in text
     assert table_rows(html) == [
-        ["Ad", "Birim", "Hak", "Kullanilan", "Kalan"],
-        ["Ayse Yilmaz", "IT", "26", "12", "14"],
-        ["Mehmet Demir", "Muhasebe", "20", "0", "20"],
-        ["Zeynep Kaya", "IK", "14", "0", "14"],
-        ["Ahmet Celik", "IT", "20", "0", "20"],
-        ["Elif Sahin", "Satis", "0", "0", "0"],
+        ["Ad", "Birim", "Hak", "Kullanilan", "Kalan", "Bekleyen"],
+        ["Ayse Yilmaz", "IT", "26", "12", "14", "3"],
+        ["Mehmet Demir", "Muhasebe", "20", "0", "20", "3"],
+        ["Zeynep Kaya", "IK", "14", "0", "14", "1"],
+        ["Ahmet Celik", "IT", "20", "0", "20", "5"],
+        ["Elif Sahin", "Satis", "0", "0", "0", "0"],
     ]
 
 
@@ -121,7 +121,7 @@ def test_post_insufficient_balance_shows_error(client):
     resp = post_new(client, 5, "2026-11-16", "2026-11-16")  # Elif: kalan 0
     assert resp.status_code == 400
     text = visible_text(resp.get_data(as_text=True))
-    assert "Kalan izin bakiyeniz yetersiz (kalan 0 gün, talep 1 gün)." in text
+    assert "Kalan izin bakiyeniz yetersiz (kalan 0 gün, bekleyen 0 gün, talep 1 gün)." in text  # 0013 T4
     for leak in ("ERR-", "4127", "IT'ye"):
         assert leak not in text
     assert "Kaydet" in resp.get_data(as_text=True)
@@ -129,11 +129,12 @@ def test_post_insufficient_balance_shows_error(client):
 
 
 def test_post_remaining_equals_days_is_saved(client):
-    """Spec 0008 CB-1 (BR-6 kararı; supersedes 0001/AC-10): bakiyeyi tam kullanan talep kaydedilir."""
-    resp = post_new(client, 3, "2026-12-01", "2026-12-14")  # Zeynep: kalan 14, 14 gün
+    """Spec 0008 CB-1 (BR-6 kararı; supersedes 0001/AC-10): bakiyeyi tam kullanan talep kaydedilir.
+    Spec 0013 K-2 (T3): sınır Kalan − Bekleyen."""
+    resp = post_new(client, 3, "2026-12-01", "2026-12-13")  # Zeynep: kalan 14, bekleyen 1, 13 gün
     assert_redirects_to_requests(resp)
     assert request_rows(client)[8:] == [
-        ["Zeynep Kaya", "2026-12-01", "2026-12-14", "14", "Test", "Beklemede"],
+        ["Zeynep Kaya", "2026-12-01", "2026-12-13", "13", "Test", "Beklemede"],
     ]
 
 

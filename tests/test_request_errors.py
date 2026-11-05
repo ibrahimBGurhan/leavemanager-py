@@ -72,9 +72,10 @@ def test_violations_are_reported_in_order(svc, name, expected):
 
 # --- screen (CB-1..CB-5) --------------------------------------------------------------------
 
-@pytest.mark.parametrize("days, saved", [(13, True), (14, True), (15, False)])
+@pytest.mark.parametrize("days, saved", [(12, True), (13, True), (14, False)])
 def test_screen_and_service_agree_on_balance(client, svc, days, saved):
-    """CB-1: Zeynep, kalan 14. Ekran ve servis kalan - 1, kalan, kalan + 1 için aynı karar."""
+    """CB-1: Zeynep, kalan 14. Ekran ve servis aynı kararı verir. Spec 0013 K-2 (T6): bekleyen 1
+    (#3), sınır kalan − bekleyen = 13 → 12, 13, 14."""
     start = dt.date(2026, 12, 1)
     end = start + dt.timedelta(days=days - 1)
     resp = client.post("/new", data={
@@ -82,7 +83,7 @@ def test_screen_and_service_agree_on_balance(client, svc, days, saved):
     if saved:
         assert resp.status_code == 302
     else:
-        assert_shown_not_saved(resp, 400, "Kalan izin bakiyeniz yetersiz (kalan 14 gün, talep 15 gün).")
+        assert_shown_not_saved(resp, 400, "Kalan izin bakiyeniz yetersiz (kalan 14 gün, bekleyen 1 gün, talep 14 gün).")
     leave_app.storage.reset()
     try:
         service_saved = svc.create_request(3, start, end, "x") is True

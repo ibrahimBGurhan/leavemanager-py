@@ -134,9 +134,10 @@ def test_create_request_accepts_past_dates(svc):
 
 
 def test_create_request_accepts_when_remaining_equals_days(svc):
-    """Spec 0008 CB-1 (BR-6 kararı; supersedes 0001/AC-5): bakiyeyi tam kullanan talep kaydedilir."""
-    zeynep = by_name("Zeynep Kaya")  # kalan 14
-    ok = svc.create_request(zeynep["id"], dt.date(2026, 12, 1), dt.date(2026, 12, 14), "Uzun")
+    """Spec 0008 CB-1 (BR-6 kararı; supersedes 0001/AC-5): bakiyeyi tam kullanan talep kaydedilir.
+    Spec 0013 K-2 (T5): sınır Kalan − Bekleyen."""
+    zeynep = by_name("Zeynep Kaya")  # kalan 14, bekleyen 1 (#3)
+    ok = svc.create_request(zeynep["id"], dt.date(2026, 12, 1), dt.date(2026, 12, 13), "Uzun")
     assert ok is True
     assert len(leave_app.storage.requests()) == 9
 
