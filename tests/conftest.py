@@ -48,6 +48,7 @@ def end_after_workdays(start, n):
     """End date of a range starting at `start` that holds n weekdays (Mon-Fri), spec 0014. Skips
     only Saturday/Sunday and does not call production code: pick dates without public holidays
     (e.g. Nov-Dec 2026). Holiday cases are written with explicit dates in test_workdays.py."""
+    assert n >= 1, "n >= 1 (review F-3: n <= 0 would loop forever)"
     day, left = start, n
     while True:
         if day.weekday() < 5:
