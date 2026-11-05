@@ -164,7 +164,8 @@ def dashboard(client):
     text = visible_text(html)
     counts = tuple(int(text.split(label + ": ")[1].split()[0])
                    for label in ("Bekleyen", "Onaylanan", "Reddedilen"))
-    return counts, {row[0]: row[1:] for row in table_rows(html)[1:]}
+    # Birim, Hak, Kullanilan, Kalan; Bekleyen sutunu tests/test_pending_balance.py'de (0013 T7)
+    return counts, {row[0]: row[1:5] for row in table_rows(html)[1:]}
 
 
 def assert_message_above_list(resp, status, message):
