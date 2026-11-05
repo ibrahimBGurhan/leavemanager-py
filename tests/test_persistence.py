@@ -224,7 +224,8 @@ def test_newer_schema_stops_the_app(tmp_path):
     proc = start_app(tmp_path, db)
     assert proc.returncode != 0
     errors = [line for line in proc.stderr.splitlines() if " ERROR app.storage: " in line]
-    assert len(errors) == 1 and "99" in errors[0] and "1" in errors[0]
+    assert len(errors) == 1
+    assert "şema sürümü 99" in errors[0] and "bu uygulama 1" in errors[0]  # review F-4
     assert hashlib.sha256(db.read_bytes()).hexdigest() == before
 
 
