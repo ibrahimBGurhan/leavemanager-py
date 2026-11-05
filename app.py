@@ -15,7 +15,9 @@ from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 
 from domain.leave_service import LeaveService
+from storage.demo import demo_employees, demo_requests
 from storage.memory import MemoryStorage
+from storage.sqlite import SqliteStorage, StorageUnavailable
 from web.routes import register_routes
 
 # ---------------------------------------------------------------
@@ -76,7 +78,35 @@ class SystemClock:
 
 clock = SystemClock()
 
-storage = MemoryStorage()
+# ---------------------------------------------------------------
+# Kalici depo (ADR-0001, spec 0017): SQLite dosyasi DATABASE_PATH'ten, yoksa uygulama
+# klasorunde instance/leavemanager.db. Demo verisi yalniz SEED_DEMO_DATA=1 ve bos veritabaninda.
+# LEAVEMANAGER_STORAGE=memory yalniz test/gelistirme: veri kalici degildir, her acilista WARNING.
+# Veritabani acilamazsa uygulama acilmaz (K-5); bellege sessiz donus yok.
+# ---------------------------------------------------------------
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def database_path(environ):
+    return environ.get("DATABASE_PATH") or os.path.join(APP_DIR, "instance", "leavemanager.db")
+
+
+def build_storage(environ):
+    log = logging.getLogger("app.storage")
+    if environ.get("LEAVEMANAGER_STORAGE") == "memory":
+        log.warning("bellek deposu: veri kalıcı değil (yalnız test/geliştirme)")
+        return MemoryStorage()
+    path = database_path(environ)
+    seed = (demo_employees(), demo_requests()) if environ.get("SEED_DEMO_DATA") == "1" else None
+    try:
+        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        return SqliteStorage(path, seed_records=seed)
+    except (OSError, StorageUnavailable) as e:
+        log.error("veritabanı açılamadı: %s (%s)", path, e)
+        raise SystemExit(1)
+
+
+storage = build_storage(os.environ)
 
 svc = LeaveService(clock, storage)
 
