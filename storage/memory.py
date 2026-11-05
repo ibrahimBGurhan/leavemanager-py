@@ -5,7 +5,7 @@ from storage.demo import demo_employees, demo_requests
 class MemoryStorage:
     # storage/contract.py LeaveStorage sozlesmesini uygular (spec 0016).
     # Kayitlar sozluk: personel {id, name, department, hire_date};
-    # talep {id, employee_id, start, end, reason, status}
+    # talep {id, employee_id, start, end, reason, status}; hesap (spec 0018) contract.py'de
     def __init__(self):
         self.reset()
 
@@ -33,8 +33,16 @@ class MemoryStorage:
         self._next_id += 1
         return request_id
 
+    def accounts(self):
+        return self._accounts
+
+    def add_account(self, record):
+        self._accounts.append(record)
+
     def reset(self):
-        # acilis verisi (storage/demo.py, SEED_DEMO_DATA ile ayni kayitlar)
+        # acilis verisi (storage/demo.py, SEED_DEMO_DATA ile ayni kayitlar); demo verisinde
+        # hesap yok (spec 0018 AC-9)
         self._employees = demo_employees()
         self._requests = demo_requests()
+        self._accounts = []
         self._next_id = 9

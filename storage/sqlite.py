@@ -5,11 +5,11 @@
 # sqlite3 import etmez.
 import sqlite3
 import threading
-from datetime import date
+from datetime import date, datetime
 
-SCHEMA_VERSION = 1
-
-_SCHEMA = """
+# Sema adimlari: _MIGRATIONS[n], surum n-1'den n'ye gecer. Eksik adimlar acilista tek islemde
+# uygulanir; yarida kalan gecis veritabanini eski surumunde birakir (spec 0018 G-5).
+_SCHEMA_V1 = """
 CREATE TABLE employees (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
     id INTEGER NOT NULL UNIQUE,
@@ -27,6 +27,22 @@ CREATE TABLE requests (
     status TEXT NOT NULL
 );
 """
+
+_SCHEMA_V2 = """
+CREATE TABLE accounts (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    employee_id INTEGER,
+    active INTEGER NOT NULL,
+    failed_attempts INTEGER NOT NULL,
+    locked_until TEXT
+);
+"""
+
+_MIGRATIONS = {1: _SCHEMA_V1, 2: _SCHEMA_V2}
+SCHEMA_VERSION = max(_MIGRATIONS)
 
 
 class StorageUnavailable(Exception):
@@ -55,9 +71,11 @@ class SqliteStorage:
             self._db.rollback()
             self._db.execute("PRAGMA journal_mode=WAL")
             if version < SCHEMA_VERSION:
-                # Tek islem: tablolar ve surum birlikte ya da hic (review F-2; executescript
-                # kendi BEGIN/COMMIT'ini calistirir, disaridaki "with" onu sarmaz)
-                self._db.executescript("BEGIN;" + _SCHEMA + "PRAGMA user_version = %d; COMMIT;"
+                # Tek islem: eksik adimlar ve surum birlikte ya da hic (0017 review F-2, 0018 G-5;
+                # executescript kendi BEGIN/COMMIT'ini calistirir, disaridaki "with" onu sarmaz).
+                # Hata olursa COMMIT calismaz; baglanti asagida kapanir ve islem geri alinir.
+                steps = "".join(_MIGRATIONS[n] for n in range(version + 1, SCHEMA_VERSION + 1))
+                self._db.executescript("BEGIN;" + steps + "PRAGMA user_version = %d; COMMIT;"
                                        % SCHEMA_VERSION)
             if seed_records is not None and self._is_empty():
                 employees, requests = seed_records
@@ -123,6 +141,26 @@ class SqliteStorage:
         # is kurali bilmez; bilinmeyen numarada hicbir satir degismez (0016 sozlesmesi)
         with self._lock, self._db:
             self._db.execute("UPDATE requests SET status = ? WHERE id = ?", (status, request_id))
+
+    def accounts(self):
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT email, password_hash, role, employee_id, active, failed_attempts, "
+                "locked_until FROM accounts ORDER BY seq").fetchall()
+        return [{"email": r[0], "password_hash": r[1], "role": r[2], "employee_id": r[3],
+                 "active": bool(r[4]), "failed_attempts": r[5],
+                 "locked_until": datetime.fromisoformat(r[6]) if r[6] is not None else None}
+                for r in rows]
+
+    def add_account(self, record):
+        locked_until = record["locked_until"]
+        with self._lock, self._db:
+            self._db.execute(
+                "INSERT INTO accounts (email, password_hash, role, employee_id, active, "
+                "failed_attempts, locked_until) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (record["email"], record["password_hash"], record["role"], record["employee_id"],
+                 1 if record["active"] else 0, record["failed_attempts"],
+                 locked_until.isoformat() if locked_until is not None else None))
 
     def next_request_id(self):
         with self._lock:

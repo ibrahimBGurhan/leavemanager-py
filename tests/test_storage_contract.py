@@ -122,6 +122,38 @@ def test_status_change_is_visible_on_the_next_read(store):
     assert status_of(store, a) == "Reddedildi"  # stable across reads
 
 
+# --- accounts (spec 0018) ---------------------------------------------------------------------
+
+def account(email, employee_id=None, locked_until=None, active=True, failed_attempts=0):
+    return {"email": email, "password_hash": "scrypt:test$hash-" + email, "role": "IK",
+            "employee_id": employee_id, "active": active, "failed_attempts": failed_attempts,
+            "locked_until": locked_until}
+
+
+def test_added_account_is_listed_last_with_its_fields(store):
+    before = [a["email"] for a in store.accounts()]
+    first = account("ali@firma.com")
+    second = account("ayse@firma.com", employee_id=100, active=False, failed_attempts=3,
+                     locked_until=dt.datetime(2026, 11, 5, 14, 30, 15))
+    store.add_account(first)
+    store.add_account(second)
+    after = store.accounts()
+    assert [a["email"] for a in after] == before + ["ali@firma.com", "ayse@firma.com"]
+    assert after[-2] == first
+    assert after[-1] == second
+    assert after[-1]["active"] is False and after[-2]["active"] is True
+    assert isinstance(after[-1]["locked_until"], dt.datetime)
+    assert after[-2]["employee_id"] is None and after[-2]["locked_until"] is None
+
+
+def test_accounts_do_not_touch_employees_or_requests(store):
+    employees = [dict(e) for e in store.employees()]
+    requests = [dict(r) for r in store.requests()]
+    store.add_account(account("veli@firma.com"))
+    assert [dict(e) for e in store.employees()] == employees
+    assert [dict(r) for r in store.requests()] == requests
+
+
 # --- the written contract ---------------------------------------------------------------------
 
 def test_storage_implements_the_contract(store):
