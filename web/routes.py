@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 MSG_INVALID_INPUT = "Lütfen personeli ve geçerli başlangıç ve bitiş tarihlerini girin."
 MSG_EMPLOYEE_NOT_FOUND = "Seçilen personel bulunamadı."
 MSG_INVALID_DATE_RANGE = "Bitiş tarihi başlangıç tarihinden önce olamaz."
-MSG_INSUFFICIENT_BALANCE = "Kalan izin bakiyeniz yetersiz (kalan %d gün, talep %d gün)."
+MSG_INSUFFICIENT_BALANCE = "Kalan izin bakiyeniz yetersiz (kalan %d gün, bekleyen %d gün, talep %d gün)."  # 0013
 MSG_UNEXPECTED = "Talep kaydedilemedi. Lütfen daha sonra tekrar deneyin."
 # Onay / red (spec 0010)
 MSG_APPROVED = "Talep #%d onaylandı."
@@ -90,10 +90,11 @@ def register_routes(app, svc):
         onaylanan = len([r for r in svc.requests() if r["status"] == APPROVED])
         reddedilen = len([r for r in svc.requests() if r["status"] == REJECTED])
         body = "<div class='kutu'>Bekleyen: <b>%d</b></div><div class='kutu'>Onaylanan: <b>%d</b></div><div class='kutu'>Reddedilen: <b>%d</b></div>" % (bekleyen, onaylanan, reddedilen)
-        body += "<h3>Personel Bakiyeleri</h3><table><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanilan</th><th>Kalan</th></tr>"
+        body += "<h3>Personel Bakiyeleri</h3><table><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanilan</th><th>Kalan</th><th>Bekleyen</th></tr>"
         for e in svc.employees():
-            body += "<tr><td>%s</td><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>" % (
-                escape(e["name"]), escape(e["department"]), svc.get_entitlement(e), svc.get_used_days(e["id"]), svc.get_remaining(e))
+            body += "<tr><td>%s</td><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>" % (
+                escape(e["name"]), escape(e["department"]), svc.get_entitlement(e), svc.get_used_days(e["id"]), svc.get_remaining(e),
+                svc.get_pending_days(e["id"]))
         body += "</table>"
         return render_template_string(PAGE, body=body)
 
@@ -181,7 +182,7 @@ def register_routes(app, svc):
             except InvalidDateRange:
                 return new_request_form(MSG_INVALID_DATE_RANGE), 400
             except InsufficientBalance as e:
-                return new_request_form(MSG_INSUFFICIENT_BALANCE % (e.remaining, e.requested)), 400
+                return new_request_form(MSG_INSUFFICIENT_BALANCE % (e.remaining, e.pending, e.requested)), 400
             except Exception:
                 # beklenmeyen hata: ayrinti loga, kullaniciya genel mesaj (docs/conventions.md)
                 logger.exception("izin talebi kaydedilemedi")
