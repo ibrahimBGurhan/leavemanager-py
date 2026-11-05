@@ -31,14 +31,16 @@ class LeaveStorage(Protocol):
 
     def add_request(self, record: dict) -> None:
         """Talep kaydini verilen numarayla listenin sonuna ekler. Numarayi depo atamaz: cagiran
-        onu next_request_id()'den alir. Numaralar tekildir (cagiranin sorumlulugu); elle
-        numaralanmis kayitlarda sayacin davranisi tanimsizdir."""
+        onu next_request_id()'den alir. Numaralar tekildir (cagiranin sorumlulugu). Depo
+        acildiktan sonra next_request_id() disindan numara verilen kayitlarda sayacin davranisi
+        tanimsizdir."""
         ...
 
     def next_request_id(self) -> int:
-        """Yeni talep numarasi: bu depodan daha once verilmis tum numaralardan buyuk, her cagrida
-        artan; ayni depo nesnesi icinde verilen bir numara (kullanilmasa da) yeniden verilmez.
-        Yeniden baslatmadan sonraki davranis kalici depo spec'inde (0017 K-4) belirlenir."""
+        """Yeni talep numarasi: depo acildiginda var olan ve bu depodan daha once verilmis tum
+        numaralardan buyuk (var olan kayitlarla cakismaz), her cagrida artan; ayni depo nesnesi
+        icinde verilen bir numara (kullanilmasa da) yeniden verilmez. Yeniden baslatmadan sonraki
+        davranis kalici depo spec'inde (0017 K-4) belirlenir."""
         ...
 
     def set_request_status(self, request_id: int, status: str) -> None:
