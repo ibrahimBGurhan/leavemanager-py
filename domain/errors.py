@@ -28,6 +28,14 @@ class InsufficientBalance(LeaveRequestError):
         self.pending = pending
 
 
+class NoWorkingDays(LeaveRequestError):
+    # Aralikta is gunu yok: yalniz hafta sonu ve/veya resmi tatil (spec 0014, K-5)
+    def __init__(self, start, end):
+        super().__init__(start, end)
+        self.start = start
+        self.end = end
+
+
 class RequestNotFound(LeaveRequestError):
     def __init__(self, request_id):
         super().__init__(request_id)

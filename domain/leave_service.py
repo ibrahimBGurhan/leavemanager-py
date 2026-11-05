@@ -3,7 +3,8 @@
 import logging
 
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
-                           RequestAlreadyDecided, RequestNotFound)
+                           NoWorkingDays, RequestAlreadyDecided, RequestNotFound)
+from domain.workdays import count_workdays
 
 logger = logging.getLogger(__name__)
 
@@ -61,15 +62,15 @@ class LeaveService:
         return total
 
     def calc_days(self, start, end):
-        # is gunu hesabi
-        return (end - start).days + 1
+        # Izin gunu = is gunu: hafta sonu ve resmi tatil sayilmaz (BR-3, spec 0014)
+        return count_workdays(start, end)
 
     def get_remaining(self, emp):
         # Kalan = Hak - Kullanilan; bekleyenler burada dusulmez, yeni talepte sayilir (OD-3, 0013)
         return self.get_entitlement(emp) - self.get_used_days(emp["id"])
 
     def create_request(self, emp_id, start, end, reason):
-        # Ihlal sirasi: personel -> tarih araligi -> bakiye (spec 0008, S-4)
+        # Ihlal sirasi: personel -> tarih araligi -> is gunu yok -> bakiye (0008 S-4, 0014 K-5)
         emp = None
         for e in self._storage.employees():
             if e["id"] == emp_id:
@@ -78,7 +79,10 @@ class LeaveService:
             raise EmployeeNotFound(emp_id)
         if end < start:
             raise InvalidDateRange(start, end)  # BR-9
-        self._check_balance(emp, self.calc_days(start, end), self.get_pending_days(emp_id))
+        days = self.calc_days(start, end)
+        if days == 0:
+            raise NoWorkingDays(start, end)
+        self._check_balance(emp, days, self.get_pending_days(emp_id))
         if start < self._clock.today():
             pass  # gecmis tarih... IK bazen geriye donuk giriyor, dokunma
         self._storage.add_request({"id": self._storage.next_request_id(), "employee_id": emp_id,
