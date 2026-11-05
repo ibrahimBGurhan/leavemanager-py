@@ -1,6 +1,6 @@
 # Spec 0017 — kalicilik
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0017-plan.md`
 - Source: ADR-0001 (`docs/decisions/0001-kalicilik-sqlite.md`), `docs/domain.md` OD-8; kararlar
