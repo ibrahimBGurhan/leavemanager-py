@@ -77,6 +77,21 @@ Spec onayı: İbrahim Gürhan, 2026-11-05 (K-1…K-6, S-1 önerildiği gibi).
 - Açılış verisinde kuralı zaten aşan bekleyen talepleri temizlemek (açılış verisinde yok).
 - İş günü hesabı (OD-4), yetkilendirme, Talepler ekranında bakiye göstermek.
 
+## Review (2026-11-05, HEAD `67e7f5a`, bağımsız reviewer subagent)
+Round 1: **clean** — engelleyici / yüksek / orta / düşük bulgu yok; 14/14 mutant kırmızı (onayda
+bekleyen sayma M1/M1b dahil); T1–T8 eşit ya da daha sıkı; plan dışı dosya yok. Repo dışında
+`git archive` kopyasında: `203 passed, 5 skipped`, ruff temiz.
+
+### Triage (İbrahim Gürhan, 2026-11-05)
+- **I-1 — noise:** Mehmet sınır testi (`test_no_pending_boundary_unchanged`) yalnız ekranı sınar.
+  Karar tek fonksiyonda (`_check_balance`); ekran + servis uyumu Zeynep testinde, "bekleyen 0 gün"
+  biçimi T4'te sınanıyor.
+- **I-2 — noise:** `"-1" not in text` dar; asıl koruma aynı testteki tam mesaj eşleşmesi, negatif
+  sayı hangi biçimde yazılsa bozulur.
+- **I-3 — noise:** T7 (`row[1:5]`) üç onay ekranı testinde fazladan sütun kontrolünü bırakır; tam
+  satır ve başlık T2 ile `test_balance_table_shows_pending`'de, sütun yer değişimi (M6) T7'nin üç
+  testini de kırdı.
+
 ## Definition of Done
 - [ ] `scripts/check` green
 - [ ] Independent review done; real findings fixed, noise rejected with written rationale
