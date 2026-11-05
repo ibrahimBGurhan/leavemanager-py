@@ -11,7 +11,7 @@ from html.parser import HTMLParser
 import pytest
 
 import app as leave_app
-from conftest import table_rows, visible_text
+from conftest import end_after_workdays, table_rows, visible_text
 from domain.errors import InsufficientBalance, RequestAlreadyDecided, RequestNotFound
 
 
@@ -28,16 +28,18 @@ def add_pending(emp_id, start, days, reason="x"):
     request_id = leave_app.storage.next_request_id()
     leave_app.storage.add_request({
         "id": request_id, "employee_id": emp_id, "start": start,
-        "end": start + dt.timedelta(days=days - 1), "reason": reason, "status": "Beklemede",
+        "end": end_after_workdays(start, days), "reason": reason,  # 0014 T5: iş günü
+        "status": "Beklemede",
     })
     return request_id
 
 
 def intervening_approval(svc):
-    """AC-3 setup: Ayse (Kalan 14) gets a 12-day request approved → Kalan 2; #5 (3 days) pending.
+    """AC-3 setup: Ayse (Kalan 17) gets a 15-day request approved → Kalan 2; #5 (3 days) pending.
+    Spec 0014 T5: working days — Ayse's Kalan is 17 (her #1 is 9 working days).
     Spec 0013 K-6 (T1): the 12-day request goes straight into storage — with #5 pending, a new
     request may use only 11 days, so this state now only arises from pre-0013 data."""
-    assert add_pending(1, dt.date(2026, 11, 16), 12) == 9
+    assert add_pending(1, dt.date(2026, 11, 16), 15) == 9
     svc.approve_request(9)
     assert svc.get_remaining(by_name("Ayse Yilmaz")) == 2
 
@@ -71,20 +73,20 @@ def test_approve_after_intervening_approval_is_refused(svc):
     assert svc.get_remaining(by_name("Ayse Yilmaz")) == 2
 
 
-@pytest.mark.parametrize("days, approved", [(13, True), (14, True), (15, False)],
+@pytest.mark.parametrize("days, approved", [(16, True), (17, True), (18, False)],
                          ids=["K-1", "K", "K+1"])
 def test_approve_balance_boundary(svc, days, approved):
     ayse = by_name("Ayse Yilmaz")
-    assert svc.get_remaining(ayse) == 14
+    assert svc.get_remaining(ayse) == 17  # 0014 T5
     request_id = add_pending(ayse["id"], dt.date(2026, 11, 2), days)
     if approved:
         svc.approve_request(request_id)
         assert status_of(request_id) == "Onaylandi"
-        assert svc.get_remaining(ayse) == 14 - days
+        assert svc.get_remaining(ayse) == 17 - days
     else:
         with pytest.raises(InsufficientBalance) as exc:
             svc.approve_request(request_id)
-        assert (exc.value.remaining, exc.value.requested) == (14, 15)
+        assert (exc.value.remaining, exc.value.requested) == (17, 18)
         assert status_of(request_id) == "Beklemede"
 
 
@@ -218,8 +220,8 @@ def test_screen_approve_insufficient_shows_message(client, svc):
     assert statuses() == before
 
 
-@pytest.mark.parametrize("days, approved", [(13, True), (14, True), (15, False)],
-                         ids=["K-1", "K", "K+1"])
+@pytest.mark.parametrize("days, approved", [(16, True), (17, True), (18, False)],
+                         ids=["K-1", "K", "K+1"])  # 0014 T5: Ayse Kalan 17
 def test_screen_and_service_agree_on_approval(client, days, approved):
     request_id = add_pending(1, dt.date(2026, 11, 2), days)
     resp = client.post(f"/requests/{request_id}/approve")

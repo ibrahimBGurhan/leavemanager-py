@@ -3,13 +3,14 @@
 Kalan stays Hak − Kullanilan. A new request is saved only if Kalan − Bekleyen >= its days
 (K-2); approval keeps checking Kalan alone (K-4). Opening data, today = 2026-10-23 (conftest):
 Bekleyen is Ayse 3 (#5), Mehmet 3 (#2), Zeynep 1 (#3), Ahmet 5 (#4), Elif 0.
+Spec 0014 T6: day counts are working days (helpers use end_after_workdays); Ayse's Kalan is 17.
 """
 import datetime as dt
 
 import pytest
 
 import app as leave_app
-from conftest import table_rows, visible_text
+from conftest import end_after_workdays, table_rows, visible_text
 from domain.errors import InsufficientBalance
 
 START = dt.date(2026, 12, 1)
@@ -25,13 +26,13 @@ def add_pending(emp_id, start, days):
     request_id = leave_app.storage.next_request_id()
     leave_app.storage.add_request({
         "id": request_id, "employee_id": emp_id, "start": start,
-        "end": start + dt.timedelta(days=days - 1), "reason": "x", "status": "Beklemede",
+        "end": end_after_workdays(start, days), "reason": "x", "status": "Beklemede",
     })
     return request_id
 
 
 def form(emp_id, days, start=START):
-    end = start + dt.timedelta(days=days - 1)
+    end = end_after_workdays(start, days)
     return {"employee_id": str(emp_id), "start": start.isoformat(), "end": end.isoformat(),
             "reason": "x"}
 
@@ -39,7 +40,7 @@ def form(emp_id, days, start=START):
 def service_saves(svc, emp_id, days):
     leave_app.storage.reset()
     try:
-        return svc.create_request(emp_id, START, START + dt.timedelta(days=days - 1), "x") is True
+        return svc.create_request(emp_id, START, end_after_workdays(START, days), "x") is True
     except InsufficientBalance:
         return False
 
@@ -86,9 +87,9 @@ def test_past_dated_pending_counts(svc):
     """K-1: a pending request in the past counts too (BR-8)."""
     add_pending(3, dt.date(2026, 9, 1), 2)  # Zeynep: Bekleyen 1 + 2 = 3 → 11 available
     with pytest.raises(InsufficientBalance) as exc:
-        svc.create_request(3, START, START + dt.timedelta(days=11), "x")
+        svc.create_request(3, START, end_after_workdays(START, 12), "x")
     assert (exc.value.remaining, exc.value.pending, exc.value.requested) == (14, 3, 12)
-    assert svc.create_request(3, START, START + dt.timedelta(days=10), "x") is True
+    assert svc.create_request(3, START, end_after_workdays(START, 11), "x") is True
 
 
 # --- CB-2 -----------------------------------------------------------------------------------
@@ -97,7 +98,7 @@ def test_balance_message_names_pending(client, svc):
     resp = client.post("/new", data=form(3, 14))
     assert_refused(resp, "Kalan izin bakiyeniz yetersiz (kalan 14 gün, bekleyen 1 gün, talep 14 gün).")
     with pytest.raises(InsufficientBalance) as exc:
-        svc.create_request(3, START, START + dt.timedelta(days=13), "x")
+        svc.create_request(3, START, end_after_workdays(START, 14), "x")
     assert (exc.value.remaining, exc.value.pending, exc.value.requested) == (14, 1, 14)
 
 
@@ -119,7 +120,7 @@ def test_balance_table_shows_pending(client):
     rows = table_rows(client.get("/").get_data(as_text=True))
     assert rows[0] == BALANCE_HEADER
     assert [(r[0], r[2], r[3], r[4], r[5]) for r in rows[1:]] == [
-        ("Ayse Yilmaz", "26", "12", "14", "3"),
+        ("Ayse Yilmaz", "26", "9", "17", "3"),
         ("Mehmet Demir", "20", "0", "20", "3"),
         ("Zeynep Kaya", "14", "0", "14", "1"),
         ("Ahmet Celik", "20", "0", "20", "5"),
@@ -147,10 +148,10 @@ def test_transitions_move_days(client, svc, action, name, expected):
 # --- PB-1 -----------------------------------------------------------------------------------
 
 def test_other_pending_do_not_block_approval(svc):
-    """K-4: approval checks Kalan alone. Ayse: Kalan 14, #5 (3 days) pending; a 14-day pending
+    """K-4: approval checks Kalan alone. Ayse: Kalan 17, #5 (3 days) pending; a 17-day pending
     request is approved anyway, and #5 then hits the approval check as in 0010."""
     ayse = by_name("Ayse Yilmaz")
-    request_id = add_pending(ayse["id"], dt.date(2026, 11, 16), 14)
+    request_id = add_pending(ayse["id"], dt.date(2026, 11, 16), 17)
     svc.approve_request(request_id)
     assert svc.get_remaining(ayse) == 0
     with pytest.raises(InsufficientBalance) as exc:
