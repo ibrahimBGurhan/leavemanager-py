@@ -55,9 +55,10 @@ class SqliteStorage:
             self._db.rollback()
             self._db.execute("PRAGMA journal_mode=WAL")
             if version < SCHEMA_VERSION:
-                with self._db:
-                    self._db.executescript(_SCHEMA)
-                    self._db.execute("PRAGMA user_version = %d" % SCHEMA_VERSION)
+                # Tek islem: tablolar ve surum birlikte ya da hic (review F-2; executescript
+                # kendi BEGIN/COMMIT'ini calistirir, disaridaki "with" onu sarmaz)
+                self._db.executescript("BEGIN;" + _SCHEMA + "PRAGMA user_version = %d; COMMIT;"
+                                       % SCHEMA_VERSION)
             if seed_records is not None and self._is_empty():
                 employees, requests = seed_records
                 for record in employees:
