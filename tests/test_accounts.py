@@ -217,6 +217,30 @@ def test_role_spelling_is_normalized(db):
     assert [a["role"] for a in stored_accounts()] == ["IK", "Yonetici"]
 
 
+@pytest.mark.parametrize("first, second", [
+    (("ik@firma.com", None), ("ik@firma.com", None)),
+    (("ayse@firma.com", 1), ("ayse2@firma.com", 1)),
+], ids=["same-email", "same-employee"])
+def test_concurrent_tool_runs_create_one_account(db, monkeypatch, first, second):
+    """Review F-1: another `hesap-ac` saves the same email / employee after this run checked.
+    The database refuses the second one; the tool says so in Turkish, exits 1, no traceback."""
+    store = leave_app.storage
+    store.add_account({"email": first[0], "password_hash": "h", "role": "Personel",
+                       "employee_id": first[1], "active": True, "failed_attempts": 0,
+                       "locked_until": None})
+    monkeypatch.setattr(store, "accounts", lambda: [])   # this run's checks saw no account yet
+    role = "Personel" if second[1] else "IK"
+    args = ["--eposta", second[0], "--rol", role] + (["--personel", "1"] if second[1] else [])
+    result = run_tool(*args)
+    assert result.exit_code == 1
+    assert "Hesap kaydedilemedi (veritabanı:" in result.output
+    assert "Hesap oluşturulmadı." in result.output
+    assert "Traceback" not in result.output and not isinstance(result.exception, AssertionError)
+    assert PASSWORD not in result.output
+    assert [a["email"] for a in reopen(db)] == [first[0]]   # a fresh read of the file
+
+
+# --- AC-7 -----------------------------------------------------------------------------------
 # --- AC-7 -----------------------------------------------------------------------------------
 
 def test_cli_success_output_and_single_info_log(db, caplog):

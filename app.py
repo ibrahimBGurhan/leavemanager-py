@@ -191,6 +191,9 @@ def create_account_command(eposta, rol, personel):
     except (InvalidEmail, EmailTaken, UnknownRole, EmployeeRequired, AccountEmployeeNotFound,
             EmployeeAlreadyHasAccount, PasswordMismatch, PasswordTooShort) as e:
         fail(account_error_message(e))
+    except StorageUnavailable as e:
+        # Ayni anda acilan bir hesapla cakisma ya da kilitli veritabani (review F-1)
+        fail("Hesap kaydedilemedi (veritabanı: %s)." % e)
     click.echo("Hesap oluşturuldu: %s (%s)" % (record["email"], record["role"]))
 
 if __name__ == "__main__":

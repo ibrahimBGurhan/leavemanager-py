@@ -34,7 +34,7 @@ CREATE TABLE accounts (
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL,
-    employee_id INTEGER,
+    employee_id INTEGER UNIQUE,
     active INTEGER NOT NULL,
     failed_attempts INTEGER NOT NULL,
     locked_until TEXT
@@ -153,14 +153,22 @@ class SqliteStorage:
                 for r in rows]
 
     def add_account(self, record):
+        # E-posta ve personel tekilligi veritabaninda da korunur (review F-1: ayni anda iki
+        # hesap-ac); ihlal ya da kilitli veritabani StorageUnavailable olarak cikar.
         locked_until = record["locked_until"]
-        with self._lock, self._db:
-            self._db.execute(
-                "INSERT INTO accounts (email, password_hash, role, employee_id, active, "
-                "failed_attempts, locked_until) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (record["email"], record["password_hash"], record["role"], record["employee_id"],
-                 1 if record["active"] else 0, record["failed_attempts"],
-                 locked_until.isoformat() if locked_until is not None else None))
+        try:
+            with self._lock, self._db:
+                self._insert_account(record, locked_until)
+        except sqlite3.Error as e:
+            raise StorageUnavailable(str(e)) from e
+
+    def _insert_account(self, record, locked_until):
+        self._db.execute(
+            "INSERT INTO accounts (email, password_hash, role, employee_id, active, "
+            "failed_attempts, locked_until) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (record["email"], record["password_hash"], record["role"], record["employee_id"],
+             1 if record["active"] else 0, record["failed_attempts"],
+             locked_until.isoformat() if locked_until is not None else None))
 
     def next_request_id(self):
         with self._lock:
