@@ -395,6 +395,22 @@ def test_expired_session_keeps_the_form_valid(csrf_client, account, now):
     assert logged_in_as(csrf_client)
 
 
+@pytest.mark.parametrize("change", ["expired", "inactive"])
+def test_ended_session_sends_no_more_cookies(client, account, now, change):
+    """Review 0019 round 2 F-1: once the gate ends a session, nothing of the login is left, and
+    later logged-out requests get no fresh 8-hour cookie."""
+    login(client)
+    if change == "expired":
+        now.current = T0 + dt.timedelta(hours=8)
+    else:
+        leave_app.storage.set_account_active(EMAIL, False)
+    assert client.get("/requests").status_code == 302
+    with client.session_transaction() as s:
+        assert dict(s) == {}
+    resp = client.get("/favicon.ico")
+    assert goes_to(resp, "/giris") and "Set-Cookie" not in resp.headers
+
+
 def test_logged_in_user_skips_login_page(client, account):
     login(client)
     assert goes_to(client.get("/giris"), "/")

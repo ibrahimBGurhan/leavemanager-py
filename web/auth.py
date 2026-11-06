@@ -12,8 +12,9 @@ MSG_LOGIN_FAILED = "E-posta ya da şifre hatalı."
 MSG_LOCK_NOTE = "Çok sayıda hatalı denemeden sonra hesap geçici olarak kilitlenir."
 MSG_EXPIRED = "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın."
 MSG_LOGGED_OUT = "Çıkış yapıldı."
-# Oturumdaki giris bilgisi; kapi yalniz bunlari siler, CSRF token'i kalir (review 0019 F-1)
-LOGIN_KEYS = ("hesap", "giris")
+# Oturumdaki giris bilgisi; kapi yalniz bunlari siler, CSRF token'i kalir (review 0019 F-1).
+# "_permanent" girisin session.permanent'i: kalirsa her istekte yeni 8 saatlik cerez gider (r2 F-1).
+LOGIN_KEYS = ("hesap", "giris", "_permanent")
 # ?durum= yalniz bu sabit eslemeden ileti secer; bilinmeyen deger yok sayilir (plan 0019 Risk 8)
 STATUS_MESSAGES = {"sure": MSG_EXPIRED, "cikis": MSG_LOGGED_OUT}
 
