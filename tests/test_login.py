@@ -371,6 +371,29 @@ def test_login_without_csrf_token_is_refused(csrf_client, account, token):
     assert goes_to(csrf_client.get("/"), "/giris")
 
 
+@pytest.mark.parametrize("between", ["/favicon.ico", "/yok-boyle-bir-sayfa", "/requests"])
+def test_request_between_login_page_and_submit_keeps_the_form_valid(csrf_client, account, between):
+    """Review 0019 F-1: the browser asks for /favicon.ico (or a second tab opens a page) after the
+    login page; the gate must not drop the login form's CSRF token on the way."""
+    token = TOKEN.search(csrf_client.get("/giris").get_data(as_text=True)).group(1)
+    assert goes_to(csrf_client.get(between), "/giris")
+    resp = csrf_client.post("/giris", data={"eposta": EMAIL, "sifre": PASSWORD,
+                                            "csrf_token": token})
+    assert goes_to(resp, "/")
+
+
+def test_expired_session_keeps_the_form_valid(csrf_client, account, now):
+    """Review 0019 F-1: an expired session sends the user to login; that login must still work."""
+    assert goes_to(csrf_login(csrf_client), "/")
+    now.current = T0 + dt.timedelta(hours=8)
+    token = TOKEN.search(csrf_client.get("/giris").get_data(as_text=True)).group(1)
+    assert goes_to(csrf_client.get("/requests"), "/giris?durum=sure")
+    resp = csrf_client.post("/giris", data={"eposta": EMAIL, "sifre": PASSWORD,
+                                            "csrf_token": token})
+    assert goes_to(resp, "/")
+    assert logged_in_as(csrf_client)
+
+
 def test_logged_in_user_skips_login_page(client, account):
     login(client)
     assert goes_to(client.get("/giris"), "/")

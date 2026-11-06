@@ -12,6 +12,8 @@ MSG_LOGIN_FAILED = "E-posta ya da şifre hatalı."
 MSG_LOCK_NOTE = "Çok sayıda hatalı denemeden sonra hesap geçici olarak kilitlenir."
 MSG_EXPIRED = "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın."
 MSG_LOGGED_OUT = "Çıkış yapıldı."
+# Oturumdaki giris bilgisi; kapi yalniz bunlari siler, CSRF token'i kalir (review 0019 F-1)
+LOGIN_KEYS = ("hesap", "giris")
 # ?durum= yalniz bu sabit eslemeden ileti secer; bilinmeyen deger yok sayilir (plan 0019 Risk 8)
 STATUS_MESSAGES = {"sure": MSG_EXPIRED, "cikis": MSG_LOGGED_OUT}
 
@@ -44,6 +46,13 @@ def register_auth(app, logins):
     def current_account():
         return logins.session_account(session.get("hesap"), session.get("giris"))
 
+    def drop_login():
+        # Oturumun tamami degil: giris formunun CSRF token'i silinirse araya giren bir istek
+        # (/favicon.ico, ikinci sekme) sonraki girisi "Form gecersiz" ile reddettirir (F-1).
+        for key in LOGIN_KEYS:
+            if key in session:
+                session.pop(key)
+
     @app.before_request
     def require_login():
         if request.endpoint in OPEN_ENDPOINTS:
@@ -51,12 +60,11 @@ def register_auth(app, logins):
         try:
             account = current_account()
         except SessionExpired:
-            session.clear()
+            drop_login()
             return redirect("/giris?durum=sure")
         if account is None:
             # Oturum yok, bozuk, hesap silinmis ya da pasif (R-8): hicbir sey degismez
-            if session:
-                session.clear()
+            drop_login()
             return redirect("/giris")
         g.account = account
         return None
