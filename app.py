@@ -80,7 +80,8 @@ app.config["SECRET_KEY"] = load_secret_key(os.environ)
 app.config["WTF_CSRF_TIME_LIMIT"] = None        # token tarayici oturumu boyunca gecerli (K-2)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"   # HttpOnly varsayilan (K-3)
 app.config["SESSION_COOKIE_SECURE"] = cookie_secure(os.environ)
-# Tarayici cerezi 8 saatte birakir; asil sinir sunucuda, giris zamanindan (spec 0019 R-7)
+# Cerez Expires'i her yanitta "simdi + 8 saat" yazilir (Flask SESSION_REFRESH_EACH_REQUEST);
+# asil sinir sunucuda: oturum giris zamanindan 8 saat sonra biter, islemle uzamaz (spec 0019 R-7)
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=SESSION_HOURS)
 
 # ---------------------------------------------------------------

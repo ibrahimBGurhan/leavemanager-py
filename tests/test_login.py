@@ -476,8 +476,9 @@ def test_session_cookie_flags(client, account, monkeypatch, secure):
 
 
 def test_session_cookie_expires_after_eight_hours(client, account):
-    """Review 0019 N-2: the browser drops the cookie after 8 hours (R-7). The server-side limit
-    is proven by test_session_lasts_eight_hours; this pins session.permanent and the lifetime."""
+    """Review 0019 N-2: the login response's cookie expires 8 hours later (Flask rewrites Expires
+    on each response; the real limit, 8 hours from login, is proven by
+    test_session_lasts_eight_hours). This pins session.permanent and the lifetime."""
     sent = dt.datetime.now(dt.timezone.utc)
     cookie = login(client).headers["Set-Cookie"]
     expires = [part for part in cookie.split("; ") if part.startswith("Expires=")]

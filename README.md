@@ -46,7 +46,8 @@ dağıtımda oturum çerezinin yalnız HTTPS'te gönderilmesi için:
 
     SESSION_COOKIE_SECURE=1 .venv/Scripts/python app.py
 
-Yalnız `1` değeri açar; değişken yoksa (yerel / iç ağ HTTP) kapalıdır.
+Yalnız `1` değeri açar; değişken yoksa (yerel / iç ağ HTTP) kapalıdır. Düz HTTP'de açılırsa
+tarayıcı çerezi geri göndermez ve giriş çalışmaz ("Form geçersiz").
 
 Doğrulama (lint + testler):
 
