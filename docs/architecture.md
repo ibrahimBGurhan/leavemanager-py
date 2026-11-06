@@ -22,8 +22,8 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
 - **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati
   (`SystemClock`), depoyu ve servisi kurup birbirine bağlar; `app`, `clock`, `storage`, `svc`
   adları testlerin bağlantı noktalarıdır (spec 0005); spec 0018 ile `accounts` (hesap servisi)
-  eklendi. Şifre özetleyici `WerkzeugHasher` ve hesap açma komutu `hesap-ac` (Flask CLI) da
-  buradadır.
+  ve `hasher` (şifre özetleyici) eklendi. Şifre özetleyici `WerkzeugHasher` ve hesap açma
+  komutu `hesap-ac` (Flask CLI) da buradadır.
   Log yapılandırması da burada kurulur (spec 0009); katmanlar yalnızca
   `logging.getLogger(__name__)` kullanır.
 
