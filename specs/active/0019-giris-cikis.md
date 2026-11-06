@@ -1,6 +1,6 @@
 # Spec 0019 — giris-cikis
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0019-plan.md`
 - Source: ADR-0002 (`docs/decisions/0002-kimlik-dogrulama-uygulama-ici-sifre.md`) D-4…D-6;
