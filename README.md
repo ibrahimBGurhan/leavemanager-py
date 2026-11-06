@@ -35,7 +35,18 @@ satırında ya da ortam değişkeninde verilmez:
 Roller: `Personel`, `Yonetici`, `IK`. Personel ve Yonetici hesabı bir personel numarasına bağlanır
 (bir personele en fazla bir hesap); IK için `--personel` isteğe bağlı. Komut uygulamanın
 veritabanını (`DATABASE_PATH`) kullanır; bellek deposunda (`LEAVEMANAGER_STORAGE=memory`) çalışmaz.
-Giriş ekranı henüz yok (spec 0019).
+
+Giriş (spec 0019). Giriş yapmamış kullanıcı her sayfadan giriş ekranına (`/giris`) yönlendirilir;
+e-posta ve şifreyle girilir, oturum en fazla 8 saat sürer, menüdeki "Çıkış" ile kapanır. Art arda
+5 hatalı denemede hesap 15 dakika kilitlenir. Oturumlar `SECRET_KEY` ile imzalanır: üretimde
+mutlaka tanımlayın, yoksa her yeniden başlatmada herkes yeniden giriş yapar.
+
+**Giriş sistemi yayına yalnız HTTPS ile çıkar** (ADR-0002 D-6; ters vekil sunucu). HTTPS'li
+dağıtımda oturum çerezinin yalnız HTTPS'te gönderilmesi için:
+
+    SESSION_COOKIE_SECURE=1 .venv/Scripts/python app.py
+
+Yalnız `1` değeri açar; değişken yoksa (yerel / iç ağ HTTP) kapalıdır.
 
 Doğrulama (lint + testler):
 

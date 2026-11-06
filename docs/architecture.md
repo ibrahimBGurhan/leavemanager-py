@@ -18,12 +18,20 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
 - **`domain/leave_service.py`:** `LeaveService` saati ve depoyu kurulumda parametre olarak alır.
 - **`domain/accounts.py`:** `AccountService` kullanıcı hesabı kuralları (spec 0018); depoyu ve
   şifre özetleyiciyi (`hasher`) kurulumda alır, Werkzeug import etmez (kural 1).
+- **`domain/auth.py`:** `LoginService` giriş ve oturum kuralları (spec 0019): genel ret, 5
+  denemede 15 dakika kilit, 8 saatlik oturum; saati (`clock.now()`), depoyu ve `hasher`'ı
+  kurulumda alır.
 - **`web/routes.py`:** route'lar, sayfa ve durum rozeti burada.
+- **`web/auth.py`:** giriş ekranı, çıkış ve her istekten önce çalışan kapı (varsayılan kapalı,
+  spec 0019); kurallar için yalnız `LoginService`'i çağırır.
 - **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati
   (`SystemClock`), depoyu ve servisi kurup birbirine bağlar; `app`, `clock`, `storage`, `svc`
   adları testlerin bağlantı noktalarıdır (spec 0005); spec 0018 ile `accounts` (hesap servisi)
-  ve `hasher` (şifre özetleyici) eklendi. Şifre özetleyici `WerkzeugHasher` ve hesap açma
-  komutu `hesap-ac` (Flask CLI) da buradadır.
+  ve `hasher` (şifre özetleyici), spec 0019 ile `logins` (giriş servisi) eklendi. Şifre
+  özetleyici `WerkzeugHasher` ve hesap açma komutu `hesap-ac` (Flask CLI) da buradadır. Giriş
+  kapısı (`register_auth`) `CSRFProtect`'ten önce kurulur (plan 0019 Risk 3). Testlerin
+  süreç içi istemcileri `tests/conftest.py`'deki `logged_in` fixture'ı ile girişli sayılır
+  (`LoginService.session_account` sınıf düzeyinde); üretim kodunda bunun için bayrak yok.
   Log yapılandırması da burada kurulur (spec 0009); katmanlar yalnızca
   `logging.getLogger(__name__)` kullanır.
 
@@ -45,7 +53,7 @@ geçer. Kalıcı depo SQLite olacak (ADR-0001).
 ## Communication rules
 - `web` yalnızca `domain`'in public servis fonksiyonlarını çağırır.
 - `domain`, `storage`'a yalnızca repository arayüzü üzerinden erişir; arayüz dışarıdan enjekte edilir.
-- "Bugün" (saat) de dışarıdan enjekte edilir; domain `datetime.now()` çağırmaz (`docs/conventions.md`).
+- "Bugün" ve "şimdi" (saat: `clock.today()`, `clock.now()`) de dışarıdan enjekte edilir; domain `datetime.now()` çağırmaz (`docs/conventions.md`).
 - Olay/mesaj altyapısı yok; tüm çağrılar senkron ve süreç içi.
 
 ## Forbidden dependencies (make them testable)
