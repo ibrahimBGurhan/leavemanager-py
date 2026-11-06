@@ -1,6 +1,6 @@
 # Spec 0018 — kullanici-hesaplari
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0018-plan.md`
 - Source: ADR-0002 (`docs/decisions/0002-kimlik-dogrulama-uygulama-ici-sifre.md`) D-1…D-3;
@@ -97,48 +97,81 @@ davranışı değişmez.
 Spec onayı: İbrahim Gürhan, 2026-11-05 (S-1…S-7 ve G-1…G-6 önerildiği gibi).
 
 ## Acceptance criteria
-- [ ] AC-1 — Araç geçerli girdiyle bir IK hesabı (personel bağlantısız) ve bir Personel hesabı
+- [x] AC-1 — Araç geçerli girdiyle bir IK hesabı (personel bağlantısız) ve bir Personel hesabı
   (var olan personele bağlı) açar; ikisi de yeniden başlatmadan sonra aynı e-posta, rol, personel,
   aktif durum, sıfır sayaç ve kilitsiz olarak okunur.
-- [ ] AC-2 — Şifre ekranda görünmeden ve iki kez sorulur; eşleşmeyen iki girişte "şifreler
+- [x] AC-2 — Şifre ekranda görünmeden ve iki kez sorulur; eşleşmeyen iki girişte "şifreler
   eşleşmiyor" anlamında ileti, çıkış ≠ 0, hesap yok. Araç şifreyi argüman ya da ortam değişkeni
   olarak kabul etmez.
-- [ ] AC-3 — 11 karakterlik şifre reddedilir (ileti en az 12 karakteri söyler, hesap yok); tam 12
+- [x] AC-3 — 11 karakterlik şifre reddedilir (ileti en az 12 karakteri söyler, hesap yok); tam 12
   karakterlik, yalnız küçük harfli şifre kabul edilir; baştaki / sondaki boşluk şifrenin parçası
   sayılır.
-- [ ] AC-4 — Saklanan veride, araç çıktısında ve log'da şifrenin açık metni geçmez; saklanan özet
+- [x] AC-4 — Saklanan veride, araç çıktısında ve log'da şifrenin açık metni geçmez; saklanan özet
   doğru şifreyle doğrulanır, yanlış şifreyle doğrulanmaz; aynı şifreli iki hesabın özetleri
   farklıdır.
-- [ ] AC-5 — `"  Ali.Veli@Firma.com "` `ali.veli@firma.com` olarak saklanır; ardından
+- [x] AC-5 — `"  Ali.Veli@Firma.com "` `ali.veli@firma.com` olarak saklanır; ardından
   `ali.veli@FIRMA.com` ile ikinci hesap reddedilir (hesap sayısı değişmez). `@` içermeyen, iki
   `@` içeren, bir yanı boş ya da içinde boşluk olan e-posta reddedilir.
-- [ ] AC-6 — Bilinmeyen rol; personel bağlantısı olmayan Personel / Yönetici; olmayan personel
+- [x] AC-6 — Bilinmeyen rol; personel bağlantısı olmayan Personel / Yönetici; olmayan personel
   numarası (her rolde); zaten bir hesaba bağlı personel → her biri ayrı Türkçe ileti, çıkış ≠ 0,
   hesap yok. `ik`, `YONETICI` gibi yazımlar kabul edilir ve `IK`, `Yonetici` olarak saklanır.
-- [ ] AC-7 — Başarıda çıktı e-postayı ve rolü söyler, çıkış 0; log'da tek bir INFO (e-posta, rol),
+- [x] AC-7 — Başarıda çıktı e-postayı ve rolü söyler, çıkış 0; log'da tek bir INFO (e-posta, rol),
   şifre ya da özet yok. Bellek modunda ve açılamayan veritabanında araç açıklayan iletiyle ≠ 0
   biter.
-- [ ] AC-8 — Hesap kayıtları için sözleşme testleri bellek ve SQLite deposunda geçer; spec 0017
+- [x] AC-8 — Hesap kayıtları için sözleşme testleri bellek ve SQLite deposunda geçer; spec 0017
   şemasıyla oluşturulmuş, personel ve talep içeren bir veritabanı açıldığında kayıtlar aynen
   korunur, şema sürümü yükselir ve hesap açılabilir; geçiş yarıda kesildiğinde (zorla hata)
   veritabanı eski sürüm ve verisiyle kalır.
-- [ ] AC-9 — Kodda, yapılandırmada ve demo verisinde varsayılan hesap ya da şifre yok; `SEED_DEMO_DATA=1`
+- [x] AC-9 — Kodda, yapılandırmada ve demo verisinde varsayılan hesap ya da şifre yok; `SEED_DEMO_DATA=1`
   hesap oluşturmaz. Uygulamanın ekranları değişmez; mevcut testler değişmeden geçer.
-- [ ] AC-10 — Belgeler: aracın kullanımı (ilk IK hesabı), `docs/architecture.md`,
+- [x] AC-10 — Belgeler: aracın kullanımı (ilk IK hesabı), `docs/architecture.md`,
   `docs/security.md`.
 
+## Verification (VERIFY, 2026-11-06, HEAD `27e33e2`, bağımsız QA subagent)
+Deneyler ve veritabanları repo dışında, scratch'teki `git archive` kopyalarında; hiçbiri
+commit'lenmedi. Suite: HEAD `322 passed, 5 skipped`, temiz kopyada `CHECK GREEN (full, 3 steps)`;
+`main` `277 passed, 5 skipped`. Ters kontrol: HEAD'in yeni / değişen testleri `main` kodunda 47
+kırmızı (45 yeni + onaylı 2 düzenleme), 0017'den kalan 31 test değişmeden yeşil. QA'nın 11 bozma
+denemesinin her biri ilgili testte kırmızı. Windows'ta `getpass` borudan okumadığı için başarılı
+hesap açma süreç içinde (`test_cli_runner`, gerçek `DATABASE_PATH`), şifreden önce biten hata
+yolları gerçek `flask --app app hesap-ac` süreciyle çalıştırıldı.
+
+| Kriter | Kanıt | Durum |
+|---|---|---|
+| AC-1 | `test_cli_creates_ik_and_personel_accounts_that_survive_reopen`. Gerçek veritabanında IK ve Personel hesabı; ayrı süreçte e-posta, rol, personel, aktif, 0, kilitsiz okundu | Pass |
+| AC-2 | `test_cli_password_prompts_are_hidden`, `test_cli_mismatched_passwords_create_nothing`, `test_cli_takes_no_password_option[×3]`, `test_cli_ignores_password_in_the_environment`; gerçek süreçte `--sifre` → çıkış 2. **Gerçek terminal (PowerShell): şifre yazılırken ekranda görünmedi** — İbrahim Gürhan, 2026-11-06 (plan Risk 5) | Pass |
+| AC-3 | `test_password_length_boundary[11/12-lowercase]`, `test_password_spaces_are_part_of_it`; boşluklu şifre kabul, boşluksuz hali doğrulanmadı | Pass |
+| AC-4 | `test_plain_password_is_nowhere`, `test_hash_verifies_only_the_right_password`, `test_same_password_different_hashes`; `.db` / `-wal` / `-shm` süreç açıkken ve kapalıyken açık metin yok; özet `scrypt:` | Pass |
+| AC-5 | `test_email_is_normalized_and_unique`, `test_malformed_emails_rejected[×9]`; gerçek süreçte biçimsiz e-postalar ve harf farklı tekrar reddedildi | Pass |
+| AC-6 | `test_role_and_employee_rules[×7]`, `test_employee_with_an_account_gets_no_second_one`, `test_role_spelling_is_normalized`, `test_concurrent_tool_runs_create_one_account[×2]`; gerçek süreçte her durumda Türkçe ileti, çıkış 1, hesap sayısı değişmedi | Pass |
+| AC-7 | `test_cli_success_output_and_single_info_log`, `test_cli_refuses_memory_storage`, `test_cli_stops_when_database_cannot_open`; gerçek süreçte bellek modu, klasör olan yol, bozuk dosya → çıkış 1 | Pass |
+| AC-8 | Sözleşme hesap testleri `[memory/sqlite]`, `test_version_1_database_is_upgraded`, `test_failed_upgrade_leaves_version_1`. `main` koduyla kurulan v1 dosyası (talep #9 dahil): `user_version` 1 → 2, satır özetleri aynı, hesap açıldı; `main` v2 dosyasını reddediyor (0017 R-3) | Pass |
+| AC-9 | `test_demo_seed_creates_no_accounts`, `test_no_default_account_or_password_in_code`; `/`, `/requests`, `/new` HTML'i `main` ile bayt bayt aynı (CSRF token maskeli) | Pass |
+| AC-10 | `README.md` "Kullanıcı hesabı açma", `docs/architecture.md`, `docs/security.md` okunarak | Pass |
+
+### VERIFY triage (İbrahim Gürhan, 2026-11-06)
+- **G-1 — kapandı:** gerçek terminal gözlemi yapıldı (AC-2). Kullanıcı yazarken geri bildirim
+  (yıldız) olmamasını sordu; karar: yıldız yok (uzunluğu gösterir, platforma özel kod), yerine
+  soru metni "Şifre (yazarken görünmez):" olur → spec 0019'a not.
+- **G-2 — kabul:** "…zaten var: <e-posta>" iletisi noktasız biter; 0019'da hesap iletileriyle
+  birlikte düzeltilir.
+- **G-3 — kabul:** `MemoryStorage.reset()` hesapları boşaltmasa test kırmızı olmuyor; araç bellek
+  deposunda çalışmadığı için etkisi yok.
+- **G-4 — kabul, 0018 dışı:** `test_default_database_path` 8.3 kısa yollu çalışma dizininden
+  başlatılınca kırılıyor; `main`'de de aynı, normal check'te yeşil.
+
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 0 |
+| Fix rounds | 2 (fix-1: review F-1 kod + test, F-3 ve N-1 belge; fix-2: F-6 test başlığı, F-7 docstring) |
+| Review findings: real / noise | 5 / 5 (round 1: F-1, F-3, N-1 gerçek (hepsi düşük); F-2, N-2…N-5 noise. Round 2: F-6, F-7 gerçek. Round 3 clean). VERIFY: G-1 kapandı, G-2…G-4 kabul |
+| Regressions introduced | 0 |
+| Bugs escaped to production | 0 (henüz yayında değil) |
