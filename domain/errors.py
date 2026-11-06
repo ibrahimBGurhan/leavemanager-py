@@ -101,3 +101,16 @@ class PasswordTooShort(AccountError):
     def __init__(self, minimum):
         super().__init__(minimum)
         self.minimum = minimum
+
+
+class LoginRefused(Exception):
+    # Giris reddi (spec 0019). reason yalniz log ve testler icin: bos, sinir, bilinmeyen, kilitli,
+    # pasif, sifre. Kullaniciya hangi neden olursa olsun ayni ileti gider (R-3).
+    def __init__(self, reason):
+        super().__init__(reason)
+        self.reason = reason
+
+
+class SessionExpired(Exception):
+    # Oturum girisinden 8 saat gecti (spec 0019 R-7)
+    pass
