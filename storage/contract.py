@@ -56,5 +56,7 @@ class LeaveStorage(Protocol):
 
     def add_account(self, record: dict) -> None:
         """Hesap kaydini listenin sonuna ekler. E-postanin tekil ve normallestirilmis olmasi,
-        rol ve personel kurallari cagiranin (domain) sorumlulugudur."""
+        rol ve personel kurallari cagiranin (domain) sorumlulugudur. Bir depo, ayni anda
+        eklenen cakisan bir kaydi (ayni e-posta ya da personel) reddedebilir; SqliteStorage bunu
+        StorageUnavailable ile yapar (spec 0018 review F-1)."""
         ...

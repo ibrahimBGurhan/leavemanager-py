@@ -46,7 +46,8 @@ SCHEMA_VERSION = max(_MIGRATIONS)
 
 
 class StorageUnavailable(Exception):
-    """Veritabani acilamadi ya da bu surum onu tanimiyor (spec 0017 R-3, S-4)."""
+    """Veritabani acilamadi ya da bu surum onu tanimiyor (spec 0017 R-3, S-4); ya da bir yazma
+    reddedildi: tekillik cakismasi ya da kilitli veritabani (add_account, spec 0018 review F-1)."""
 
 
 class SqliteStorage:
