@@ -40,7 +40,7 @@ geçer. Kalıcı depo SQLite olacak (ADR-0001).
 |---|---|---|
 | `web` | HTTP: route'lar, form girdisinin ayrıştırılması/doğrulanması, Jinja şablonları, kullanıcı mesajları | Sunum (HTML, durum rozeti renkleri, Türkçe UI metinleri) |
 | `domain` | İş kuralları: kıdem, hak, kullanılan, kalan, talep oluşturma ve durum geçişleri | Kural ve kavramlar (`docs/domain.md`); tipli domain istisnaları |
-| `storage` | Kalıcılık: repository arayüzü ve uygulaması (bugün bellek; hedef SQLite, [ADR-0001](decisions/0001-kalicilik-sqlite.md)) | Personel, izin talebi ve kullanıcı hesabı kayıtları (şema sürümü 2, spec 0018) |
+| `storage` | Kalıcılık: repository arayüzü ve uygulamaları (bugün SQLite, [ADR-0001](decisions/0001-kalicilik-sqlite.md); bellek deposu yalnız test/geliştirme) | Personel, izin talebi ve kullanıcı hesabı kayıtları (şema sürümü 2, spec 0018) |
 
 ## Communication rules
 - `web` yalnızca `domain`'in public servis fonksiyonlarını çağırır.
