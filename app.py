@@ -163,7 +163,7 @@ def account_error_message(error):
         return ("Geçersiz e-posta adresi: tek bir @ içermeli, iki yanı dolu olmalı ve boşluk "
                 "içermemeli.")
     if isinstance(error, EmailTaken):
-        return "Bu e-posta adresiyle bir hesap zaten var: %s" % error.email
+        return "Bu e-posta adresiyle bir hesap zaten var: %s." % error.email  # nokta: 0018 G-2
     if isinstance(error, UnknownRole):
         return "Bilinmeyen rol: '%s'. Geçerli roller: %s." % (error.role, ROLE_LIST)
     if isinstance(error, EmployeeRequired):
@@ -204,7 +204,7 @@ def create_account_command(eposta, rol, personel):
     try:
         # Sifre sorulmadan once diger girdiler dogrulanir (plan 0018 Risk 4)
         accounts.check_account_details(eposta, rol, employee_id)
-        password = click.prompt("Şifre", hide_input=True)
+        password = click.prompt("Şifre (yazarken görünmez)", hide_input=True)  # 0018 G-1
         password_again = click.prompt("Şifre (tekrar)", hide_input=True)
         record = accounts.create_account(eposta, rol, employee_id, password, password_again)
     except (InvalidEmail, EmailTaken, UnknownRole, EmployeeRequired, AccountEmployeeNotFound,

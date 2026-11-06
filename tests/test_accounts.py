@@ -73,7 +73,7 @@ def test_cli_creates_ik_and_personel_accounts_that_survive_reopen(db, monkeypatc
 def test_cli_password_prompts_are_hidden(db):
     result = run_tool("--eposta", "ik@firma.com", "--rol", "IK")
     assert result.exit_code == 0
-    assert "Şifre: " in result.output and "Şifre (tekrar): " in result.output
+    assert "Şifre (yazarken görünmez): " in result.output and "Şifre (tekrar): " in result.output
     assert PASSWORD not in result.output
 
 
@@ -165,6 +165,14 @@ def test_email_is_normalized_and_unique(db):
     assert again.exit_code != 0
     assert "Bu e-posta adresiyle bir hesap zaten var: ali.veli@firma.com" in again.output
     assert len(stored_accounts()) == 1
+
+
+def test_email_taken_message_ends_with_period(db):
+    """Spec 0019 R-13 (0018 VERIFY G-2)."""
+    run_tool("--eposta", "ali.veli@firma.com", "--rol", "IK")
+    again = run_tool("--eposta", "ali.veli@firma.com", "--rol", "IK")
+    assert ("Hata: Bu e-posta adresiyle bir hesap zaten var: ali.veli@firma.com. "
+            "Hesap oluşturulmadı.") in again.output
 
 
 @pytest.mark.parametrize("email", ["alifirma.com", "ali@@firma.com", "a@b@firma.com",
