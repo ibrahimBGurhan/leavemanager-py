@@ -16,6 +16,8 @@ from domain.errors import LoginRefused, SessionExpired
 from storage.memory import MemoryStorage
 from storage.sqlite import SqliteStorage
 
+pytestmark = pytest.mark.usefixtures("logged_out")    # the real session check (conftest)
+
 T0 = dt.datetime(2026, 11, 6, 9, 0, 0)
 EMAIL = "ali@firma.com"
 PASSWORD = "dogru parola 12"

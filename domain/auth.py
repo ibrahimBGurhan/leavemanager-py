@@ -103,5 +103,9 @@ class LoginService:
             return None
         return account
 
+    def session_start(self):
+        """Yeni oturumun baslangici (ISO); session_account'a geri verilir."""
+        return self._clock.now().isoformat()
+
     def logout(self, email):
         logger.info("çıkış: %s", email)

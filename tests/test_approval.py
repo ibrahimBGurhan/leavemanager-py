@@ -282,7 +282,7 @@ class _RowForms(HTMLParser):
         attrs = dict(attrs)
         if tag == "tr":
             self.rows.append([])
-        elif tag == "form" and self.rows:
+        elif tag == "form" and self.rows and attrs.get("action") != "/cikis":  # menu (0019)
             self._form = (attrs.get("method", "").lower(), attrs.get("action"), [])
             self.rows[-1].append(self._form)
         elif tag == "input" and self._form is not None and attrs.get("type") == "submit":

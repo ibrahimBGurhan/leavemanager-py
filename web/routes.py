@@ -9,6 +9,7 @@ from markupsafe import escape
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
                            NoWorkingDays, RequestAlreadyDecided, RequestNotFound)
 from domain.leave_service import APPROVED, PENDING, REJECTED
+from web.auth import login_page
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,9 @@ MSG_ACTION_UNEXPECTED = "İşlem tamamlanamadı. Lütfen daha sonra tekrar deney
 # CSRF (spec 0011)
 MSG_CSRF = "Form geçersiz ya da süresi dolmuş. Lütfen sayfayı yenileyip tekrar deneyin."
 
+# Menu (spec 0019): kullanicinin e-postasi Jinja kacisiyla (G-5); cikis formu sayfanin sonunda,
+# dugmesi menude (form= ozniteligi), boylece ekranlardaki formlarin sirasi degismez (plan 0019 Risk 2).
+
 # Basari parametresi (PRG): sonuc -> (beklenen gercek durum, mesaj)
 RESULTS = {"onaylandi": (APPROVED, MSG_APPROVED), "reddedildi": (REJECTED, MSG_REJECTED)}
 
@@ -38,8 +42,13 @@ PAGE = """
 td,th{border:1px solid #ccc;padding:6px 10px} .kutu{display:inline-block;border:1px solid #ccc;padding:10px 20px;margin-right:10px}</style>
 </head><body>
 <h2>LeaveManager</h2>
-<p><a href="/">Ana Sayfa</a> | <a href="/requests">Talepler</a> | <a href="/new">Yeni Talep</a></p>
+<p><a href="/">Ana Sayfa</a> | <a href="/requests">Talepler</a> | <a href="/new">Yeni Talep</a>
+{%- if g.account %} | {{ g.account.email }} <button type="submit" form="cikis-formu">Çıkış</button>{% endif %}</p>
 {{ body|safe }}
+{%- if g.account %}
+<form id="cikis-formu" method="post" action="/cikis">
+{%- if config.get("WTF_CSRF_ENABLED", True) %}<input type='hidden' name='csrf_token' value='{{ csrf_token() }}'>{% endif %}</form>
+{%- endif %}
 </body></html>
 """
 
@@ -227,4 +236,6 @@ def register_routes(app, svc):
         logger.warning("CSRF dogrulamasi basarisiz: %s %r", request.method, request.path)
         if request.path == "/new":
             return new_request_form(MSG_CSRF), 400  # degerler geri basilmaz (0015 K-2)
+        if request.path == "/giris":
+            return login_page(MSG_CSRF, error=True), 400  # kimse girmez (spec 0019 R-10)
         return requests_page(MSG_CSRF), 400
