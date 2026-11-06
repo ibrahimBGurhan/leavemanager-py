@@ -63,14 +63,16 @@
   kayıt değişmez (`web/auth.py`, `tests/test_login.py::test_every_route_is_closed`). Kapı
   `CSRFProtect`'ten önce çalışır: giriş yapmamış birinin token'sız POST'u CSRF hata sayfasına
   (Talepler, veriyle) ulaşmaz. Her ret nedeni (bilinmeyen e-posta, yanlış şifre, pasif, kilitli,
-  boş alan) aynı iletiyi ve 401'i alır; bilinmeyen e-postada da bir şifre doğrulaması yapılır
-  (yanıt süresi hesabın varlığını ele vermez). Art arda 5 hatalı denemede 15 dakika kilit; sayaç
-  veritabanında, aynı anda gelen denemelerde de kaybolmaz. E-posta en fazla 254, şifre en fazla
-  1024 karakter (uzun girdiyle özet hesaplatılamaz). Her başarısız deneme WARNING (var olan
-  hesapta e-posta ve sayı; bilinmeyen e-postada yazılan metin değil "bilinmeyen hesap"), kilit
-  ayrı WARNING, giriş ve çıkış INFO; şifre ve özet hiçbir kayıtta yok. Oturum girişten itibaren
-  en fazla 8 saat (işlemle uzamaz); girişte önceki oturum verisi temizlenir; hesap pasife alınır
-  ya da silinirse sonraki istekte oturum kapanır. Çıkış CSRF token'lı POST.
+  boş alan) aynı iletiyi ve 401'i alır; bilinmeyen e-postada da bir şifre doğrulaması yapılır:
+  asıl maliyet olan doğrulama işi iki yolda eşittir. Yanlış şifrede sayaç yazımı kadar küçük bir
+  süre farkı kalır (review 0019 F-2: yerelde medyan ~80 ms'ye ~85 ms); 5 denemede gelen kilit
+  bu farkın ağ gürültüsünden ayrılmasını zorlaştırır. Art arda 5 hatalı denemede 15 dakika
+  kilit; sayaç veritabanında, aynı anda gelen denemelerde de kaybolmaz. E-posta en fazla 254,
+  şifre en fazla 1024 karakter (uzun girdiyle özet hesaplatılamaz). Her başarısız deneme
+  WARNING (var olan hesapta e-posta ve sayı; bilinmeyen e-postada yazılan metin değil "bilinmeyen
+  hesap"), kilit ayrı WARNING, giriş ve çıkış INFO; şifre ve özet hiçbir kayıtta yok. Oturum
+  girişten itibaren en fazla 8 saat (işlemle uzamaz); girişte önceki oturum verisi temizlenir; hesap
+  pasife alınır ya da silinirse sonraki istekte oturum kapanır. Çıkış CSRF token'lı POST.
 - *Bilinen sınır (plan 0019 Risk 4, kabul):* Flask oturumu imzalı çerezde durur; sunucuda iptal
   listesi yok. Çıkış tarayıcıdaki çerezi siler, ama çıkıştan önce **kopyalanmış** bir çerez 8 saat
   dolana kadar geçerli kalır (pasif hesap ve süre yine kapıda sınanır). Çerezde e-posta ve giriş
