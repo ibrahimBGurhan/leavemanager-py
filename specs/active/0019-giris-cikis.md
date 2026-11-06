@@ -43,7 +43,8 @@ personel yönetim ekranları, şifre değiştirme ve sıfırlama.
 - **R-4b Eşzamanlı denemeler (G-4):** Aynı anda gelen denemeler sayacı kaybetmez; kilit en geç
   5. başarısız denemede başlar.
 - **R-5 Zamanlama (S-4):** Bilinmeyen e-postayla yapılan deneme, yanlış şifreyle yapılan deneme
-  kadar şifre doğrulama işi yapar; yanıt süresinden hesabın varlığı anlaşılmaz.
+  kadar şifre doğrulama işi yapar. Doğrulama işi her yolda eşittir; yanlış şifrede sayaç yazımı
+  kadar küçük bir süre farkı kabul edilmiştir (review 0019 F-2, İbrahim Gürhan, 2026-11-06).
 - **R-6 Log (D-4, S-3):** Her başarısız deneme log'a WARNING olarak yazılır. Var olan hesapta
   e-posta ve art arda deneme sayısı; bilinmeyen e-postada girilen metin değil yalnız "bilinmeyen
   hesap"; pasif ve kilitli hesapta e-posta ve durumu. Kilit başladığında ayrıca bir WARNING
