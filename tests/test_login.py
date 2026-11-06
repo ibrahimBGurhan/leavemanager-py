@@ -7,7 +7,10 @@ forward by the tests (G-6). CSRF is off in the shared `client` and on in `csrf_c
 import datetime as dt
 import logging
 import os
+import pathlib
 import re
+import subprocess
+import sys
 from email.utils import parsedate_to_datetime
 
 import pytest
@@ -481,6 +484,23 @@ def test_session_cookie_expires_after_eight_hours(client, account):
     assert len(expires) == 1
     at = parsedate_to_datetime(expires[0].removeprefix("Expires="))
     assert abs(at - sent - dt.timedelta(hours=8)) < dt.timedelta(minutes=1)
+
+
+@pytest.mark.parametrize("value, secure", [("1", True), (None, False)])
+def test_app_started_with_secure_setting_marks_the_cookie_secure(tmp_path, value, secure):
+    """VERIFY 0019 F-1: SESSION_COOKIE_SECURE=1 reaches app.py's config (R-11). app.py is loaded
+    in a child process, since the setting is read once at import."""
+    root = pathlib.Path(__file__).resolve().parent.parent
+    env = {k: v for k, v in os.environ.items() if k != "SESSION_COOKIE_SECURE"}
+    env.update(PYTHONPATH=str(root), PYTHONIOENCODING="utf-8", LEAVEMANAGER_STORAGE="memory")
+    if value is not None:
+        env["SESSION_COOKIE_SECURE"] = value
+    proc = subprocess.run([sys.executable, "-c",
+                           "import app; print(app.app.config['SESSION_COOKIE_SECURE'])"],
+                          cwd=tmp_path, env=env, capture_output=True, encoding="utf-8",
+                          timeout=60)
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip().splitlines()[-1] == str(secure)
 
 
 def test_app_reads_cookie_setting_from_environment():
