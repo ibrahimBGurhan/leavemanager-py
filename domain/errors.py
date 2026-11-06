@@ -48,3 +48,56 @@ class RequestAlreadyDecided(LeaveRequestError):
         super().__init__(request_id, status)
         self.request_id = request_id
         self.status = status
+
+
+# --- Kullanici hesaplari (spec 0018) ---------------------------------------------------------
+# Turkce iletiyi komut satiri araci (app.py) kurar; burada yalniz ihlalin turu ve verisi.
+
+class AccountError(Exception):
+    pass
+
+
+class InvalidEmail(AccountError):
+    pass
+
+
+class EmailTaken(AccountError):
+    def __init__(self, email):
+        super().__init__(email)
+        self.email = email
+
+
+class UnknownRole(AccountError):
+    def __init__(self, role):
+        super().__init__(role)
+        self.role = role
+
+
+class EmployeeRequired(AccountError):
+    # Personel ve Yonetici hesabi bir personel kaydina baglanmak zorunda (R-1)
+    def __init__(self, role):
+        super().__init__(role)
+        self.role = role
+
+
+class AccountEmployeeNotFound(AccountError):
+    def __init__(self, employee_id):
+        super().__init__(employee_id)
+        self.employee_id = employee_id
+
+
+class EmployeeAlreadyHasAccount(AccountError):
+    # Bir personele en fazla bir hesap (G-2)
+    def __init__(self, employee_id):
+        super().__init__(employee_id)
+        self.employee_id = employee_id
+
+
+class PasswordMismatch(AccountError):
+    pass
+
+
+class PasswordTooShort(AccountError):
+    def __init__(self, minimum):
+        super().__init__(minimum)
+        self.minimum = minimum

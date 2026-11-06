@@ -111,7 +111,7 @@ def test_fields_and_types_round_trip(tmp_path):
         tables = sorted(r[0] for r in raw.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"))
     raw.close()
-    assert tables == ["employees", "requests"]  # the quoted text did not touch the schema
+    assert tables == ["accounts", "employees", "requests"]  # the quoted text did not touch the schema
 
 
 def test_lists_keep_insertion_order_not_id_order(tmp_path):
@@ -239,8 +239,77 @@ def test_newer_schema_stops_the_app(tmp_path):
     assert proc.returncode != 0
     errors = [line for line in proc.stderr.splitlines() if " ERROR app.storage: " in line]
     assert len(errors) == 1
-    assert "şema sürümü 99" in errors[0] and "bu uygulama 1" in errors[0]  # review F-4
+    assert "şema sürümü 99" in errors[0] and "bu uygulama 2" in errors[0]  # review F-4
     assert hashlib.sha256(db.read_bytes()).hexdigest() == before
+
+
+# --- spec 0018: schema version 2 (accounts) -------------------------------------------------
+
+V1_SCHEMA = """
+CREATE TABLE employees (seq INTEGER PRIMARY KEY AUTOINCREMENT, id INTEGER NOT NULL UNIQUE,
+    name TEXT NOT NULL, department TEXT NOT NULL, hire_date TEXT NOT NULL);
+CREATE TABLE requests (seq INTEGER PRIMARY KEY AUTOINCREMENT, id INTEGER NOT NULL UNIQUE,
+    employee_id INTEGER NOT NULL, start TEXT NOT NULL, "end" TEXT NOT NULL,
+    reason TEXT NOT NULL, status TEXT NOT NULL);
+INSERT INTO employees (id, name, department, hire_date) VALUES (7, 'Şükrü Öztürk', 'İK', '2019-02-28');
+INSERT INTO requests (id, employee_id, start, "end", reason, status)
+    VALUES (3, 7, '2026-12-01', '2026-12-03', 'Tatil', 'Onaylandi');
+PRAGMA user_version = 1;
+"""
+
+
+def make_version_1_database(db):
+    """A database exactly as spec 0017 (schema version 1) left it, with one record of each."""
+    raw = sqlite3.connect(db)
+    raw.executescript(V1_SCHEMA)
+    raw.close()
+
+
+def schema_state(db):
+    raw = sqlite3.connect(db)
+    version = raw.execute("PRAGMA user_version").fetchone()[0]
+    tables = sorted(r[0] for r in raw.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"))
+    raw.close()
+    return version, tables
+
+
+def test_version_1_database_is_upgraded(tmp_path):
+    db = tmp_path / "leave.db"
+    make_version_1_database(db)
+    store = SqliteStorage(db, seed_records=([], []))
+    assert store.employees() == [{"id": 7, "name": "Şükrü Öztürk", "department": "İK",
+                                  "hire_date": D(2019, 2, 28)}]
+    assert store.requests() == [{"id": 3, "employee_id": 7, "start": D(2026, 12, 1),
+                                 "end": D(2026, 12, 3), "reason": "Tatil", "status": "Onaylandi"}]
+    assert store.accounts() == []
+    assert store.next_request_id() == 4
+    store.add_account({"email": "ik@firma.com", "password_hash": "h", "role": "IK",
+                       "employee_id": None, "active": True, "failed_attempts": 0,
+                       "locked_until": None})
+    store.close()
+    assert schema_state(db) == (2, ["accounts", "employees", "requests"])
+    reopened = SqliteStorage(db)
+    assert [a["email"] for a in reopened.accounts()] == ["ik@firma.com"]
+    reopened.close()
+
+
+def test_failed_upgrade_leaves_version_1(tmp_path, monkeypatch):
+    """Spec 0018 G-5: an upgrade that fails half-way leaves the database at version 1."""
+    import storage.sqlite as sqlite_module
+    db = tmp_path / "leave.db"
+    make_version_1_database(db)
+    before = schema_state(db)
+    broken = sqlite_module._MIGRATIONS[2] + "INSERT INTO no_such_table VALUES (1);"
+    monkeypatch.setitem(sqlite_module._MIGRATIONS, 2, broken)
+    with pytest.raises(sqlite_module.StorageUnavailable):
+        SqliteStorage(db)
+    assert schema_state(db) == before == (1, ["employees", "requests"])
+    monkeypatch.undo()
+    store = SqliteStorage(db)                     # the data is intact and upgrades normally
+    assert [e["id"] for e in store.employees()] == [7]
+    assert [r["id"] for r in store.requests()] == [3]
+    store.close()
 
 
 # --- AC-9 -----------------------------------------------------------------------------------

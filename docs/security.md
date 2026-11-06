@@ -53,6 +53,10 @@
   onaylar/reddeder) · **IK** (tüm personel, geriye dönük giriş).
 - Yetki kontrolü sunucu tarafında, domain'e girmeden önce web katmanında yapılır ve domain
   servisi çağıranın rolünü parametre olarak alır. UI'da bir butonu gizlemek yetkilendirme sayılmaz.
+- *Hesaplar (spec 0018):* kullanıcı hesapları `flask --app app hesap-ac` ile açılır; şifre
+  yalnız Werkzeug özeti (scrypt) olarak saklanır, açık metni veritabanına, log'a ya da çıktıya
+  yazılmaz; komut satırı argümanı ya da ortam değişkeni olarak alınmaz. Kodda varsayılan hesap ya
+  da şifre yok (`tests/test_accounts.py`). Hesaplar henüz girişte kullanılmıyor (spec 0019).
 - *Bugün:* kimlik doğrulama yok, herkes her şeyi görür, herkes adına talep girebilir ve
   bekleyen her talebi onaylayıp reddedebilir (spec 0010; bilinçli kabul edilen risk). Başka bir
   siteden gelen sahte form isteği ise CSRF koruması nedeniyle reddedilir (spec 0011). Giriş
