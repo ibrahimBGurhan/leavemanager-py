@@ -8,6 +8,7 @@ import datetime as dt
 import logging
 import os
 import re
+from email.utils import parsedate_to_datetime
 
 import pytest
 
@@ -424,6 +425,17 @@ def test_session_cookie_flags(client, account, monkeypatch, secure):
     assert cookie.startswith("session=")
     assert "HttpOnly" in cookie and "SameSite=Lax" in cookie
     assert ("Secure" in cookie.split("; ")) is secure
+
+
+def test_session_cookie_expires_after_eight_hours(client, account):
+    """Review 0019 N-2: the browser drops the cookie after 8 hours (R-7). The server-side limit
+    is proven by test_session_lasts_eight_hours; this pins session.permanent and the lifetime."""
+    sent = dt.datetime.now(dt.timezone.utc)
+    cookie = login(client).headers["Set-Cookie"]
+    expires = [part for part in cookie.split("; ") if part.startswith("Expires=")]
+    assert len(expires) == 1
+    at = parsedate_to_datetime(expires[0].removeprefix("Expires="))
+    assert abs(at - sent - dt.timedelta(hours=8)) < dt.timedelta(minutes=1)
 
 
 def test_app_reads_cookie_setting_from_environment():
