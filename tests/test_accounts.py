@@ -241,7 +241,6 @@ def test_concurrent_tool_runs_create_one_account(db, monkeypatch, first, second)
 
 
 # --- AC-7 -----------------------------------------------------------------------------------
-# --- AC-7 -----------------------------------------------------------------------------------
 
 def test_cli_success_output_and_single_info_log(db, caplog):
     caplog.set_level(logging.INFO)
