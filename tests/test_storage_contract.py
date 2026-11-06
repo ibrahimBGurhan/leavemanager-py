@@ -8,6 +8,7 @@ relies on is pinned; MemoryStorage-only details (a live list object, the opening
 (plan 0016 Risk 1).
 """
 import datetime as dt
+import threading
 
 import pytest
 
@@ -152,6 +153,69 @@ def test_accounts_do_not_touch_employees_or_requests(store):
     store.add_account(account("veli@firma.com"))
     assert [dict(e) for e in store.employees()] == employees
     assert [dict(r) for r in store.requests()] == requests
+
+
+# --- login state (spec 0019) -------------------------------------------------------------------
+
+def state(store, email):
+    a = next(a for a in store.accounts() if a["email"] == email)
+    return a["failed_attempts"], a["locked_until"], a["active"]
+
+
+def test_login_failure_counts_up_and_returns_the_new_value(store):
+    store.add_account(account("ali@firma.com"))
+    store.add_account(account("veli@firma.com"))
+    assert [store.record_login_failure("ali@firma.com") for _ in range(3)] == [1, 2, 3]
+    assert state(store, "ali@firma.com") == (3, None, True)
+    assert state(store, "veli@firma.com") == (0, None, True)
+
+
+def test_lock_and_clear(store):
+    until = dt.datetime(2026, 11, 6, 9, 15, 30)
+    store.add_account(account("ali@firma.com"))
+    store.record_login_failure("ali@firma.com")
+    store.lock_account("ali@firma.com", until)
+    assert state(store, "ali@firma.com") == (1, until, True)
+    store.clear_login_failures("ali@firma.com")
+    assert state(store, "ali@firma.com") == (0, None, True)
+
+
+def test_set_account_active(store):
+    store.add_account(account("ali@firma.com"))
+    store.set_account_active("ali@firma.com", False)
+    assert state(store, "ali@firma.com") == (0, None, False)
+    store.set_account_active("ali@firma.com", True)
+    assert state(store, "ali@firma.com") == (0, None, True)
+
+
+def test_login_state_on_unknown_email_changes_nothing(store):
+    store.add_account(account("ali@firma.com"))
+    before = [dict(a) for a in store.accounts()]
+    assert store.record_login_failure("yok@firma.com") == 0
+    store.lock_account("yok@firma.com", dt.datetime(2026, 11, 6, 9, 0))
+    store.clear_login_failures("yok@firma.com")
+    store.set_account_active("yok@firma.com", False)
+    assert [dict(a) for a in store.accounts()] == before
+
+
+def test_concurrent_login_failures_are_all_counted(store):
+    """G-4: increments that arrive at the same time are not lost."""
+    store.add_account(account("ali@firma.com"))
+    start = threading.Barrier(8)
+    seen = []
+
+    def worker():
+        start.wait()
+        for _ in range(25):
+            seen.append(store.record_login_failure("ali@firma.com"))
+
+    threads = [threading.Thread(target=worker) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert state(store, "ali@firma.com")[0] == 200
+    assert sorted(seen) == list(range(1, 201))
 
 
 # --- the written contract ---------------------------------------------------------------------
