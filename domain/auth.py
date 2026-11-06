@@ -29,8 +29,8 @@ class LoginService:
         return next((a for a in self._storage.accounts() if a["email"] == email), None)
 
     def _spend_a_verify(self, password_hash, password):
-        # Reddedilecek denemede de bir dogrulama yapilir: yanit suresi hesabin varligini,
-        # kilidi ya da pasif durumu ele vermez (R-5)
+        # Reddedilecek denemede de bir dogrulama yapilir: asil maliyet olan dogrulama isi her
+        # yolda esittir; yanlis sifrede sayac yazimi kadar kucuk bir fark kalir (R-5, review F-2)
         self._hasher.verify(password_hash, password)
 
     def _dummy(self):
