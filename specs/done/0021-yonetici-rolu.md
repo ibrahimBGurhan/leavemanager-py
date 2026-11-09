@@ -1,6 +1,6 @@
 # Spec 0021 — yonetici-rolu
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0021-plan.md`
 - Source: ADR-0002 (`docs/decisions/0002-kimlik-dogrulama-uygulama-ici-sifre.md`) rol hedefi
@@ -99,48 +99,48 @@ onay, birim ve yönetici yönetim ekranları, Yönetici'nin başkası adına tal
 ## Acceptance criteria
 <!-- Test verisi: IT biriminden iki personel (A, M) ve Muhasebe'den B; M'ye bağlı Yonetici hesabı;
      her birinin Beklemede / Onaylandi / Reddedildi talepleri; İK ve A'ya bağlı Personel hesabı. -->
-- [ ] AC-1 — İK hesabı spec 0020 AC-1'deki gibi her şeyi görür ve Yönetici'nin (M'nin) bekleyen
+- [x] AC-1 — İK hesabı spec 0020 AC-1'deki gibi her şeyi görür ve Yönetici'nin (M'nin) bekleyen
   talebi dahil her talebi sonuçlandırır; A'ya bağlı Personel hesabı spec 0020 AC-2…AC-6'daki gibi
   yalnız kendi verisini görür ve hiçbir talebi sonuçlandıramaz.
-- [ ] AC-2 — Yönetici Ana Sayfa'da IT taleplerinin sayılarını ve IT'deki her personelin satırını
+- [x] AC-2 — Yönetici Ana Sayfa'da IT taleplerinin sayılarını ve IT'deki her personelin satırını
   (doğru Hak, Kullanılan, Kalan, Bekleyen) görür; B'nin adı ve Muhasebe sayfada yoktur.
-- [ ] AC-3 — Yönetici Talepler'de IT'nin tüm taleplerini görür; A'nın bekleyen talebinde Onayla /
+- [x] AC-3 — Yönetici Talepler'de IT'nin tüm taleplerini görür; A'nın bekleyen talebinde Onayla /
   Reddet vardır; M'nin kendi talebinde ve sonuçlanmış taleplerde yoktur; B'nin adı ve nedenleri
   sayfada yoktur.
-- [ ] AC-4 — Yönetici A'nın bekleyen talebini onaylar (durum `Onaylandi`, "Talep #N onaylandı.")
+- [x] AC-4 — Yönetici A'nın bekleyen talebini onaylar (durum `Onaylandi`, "Talep #N onaylandı.")
   ve başka bir bekleyen talebini reddeder; bakiyesi yetmeyen bir talepte onay bugünkü iletiyi verir
   ve talep `Beklemede` kalır.
-- [ ] AC-5 — Yönetici'nin onay ve red istekleri — M'nin kendi bekleyen talebi, B'nin bekleyen
+- [x] AC-5 — Yönetici'nin onay ve red istekleri — M'nin kendi bekleyen talebi, B'nin bekleyen
   talebi, IT'de sonuçlanmış bir talep, olmayan bir talep ve sayısal olmayan numara — 403 ve
   "Bu işlem için yetkiniz yok." alır; hiçbir talep değişmez; yanıtta B'ye ait veri yoktur; her
   deneme için log'da bir WARNING vardır. Başarı iletisi parametreleriyle B'nin bir talebini
   gösteren adres hiçbir ileti göstermez (G-6).
-- [ ] AC-6 — Yönetici Yeni Talep'te kendi adını sabit görür ve kendi adına talep açar; A adına ve
+- [x] AC-6 — Yönetici Yeni Talep'te kendi adını sabit görür ve kendi adına talep açar; A adına ve
   B adına gönderim 403 alır, hiçbir talep oluşmaz.
-- [ ] AC-7 — Birim kuralı: IT'ye bağlı ikinci bir Yönetici A'nın ve M'nin bekleyen talebini
+- [x] AC-7 — Birim kuralı: IT'ye bağlı ikinci bir Yönetici A'nın ve M'nin bekleyen talebini
   sonuçlandırabilir (G-1); Birim değeri farklı yazılmış ("It", " IT") bir personel IT yöneticisinin
   ekranında görünmez ve talebi sonuçlandırılamaz (G-3); Birim değeri boş bir personele bağlı
   Yönetici yalnız kendi verisini görür ve hiçbir talebi sonuçlandıramaz (G-2).
-- [ ] AC-8 — Bağlı personel kaydı olmayan Yönetici hesabı spec 0020 AC-8'deki gibi boş ekran görür,
+- [x] AC-8 — Bağlı personel kaydı olmayan Yönetici hesabı spec 0020 AC-8'deki gibi boş ekran görür,
   talep açamaz ve bir onay isteği 403 alır.
-- [ ] AC-9 — Yönetici'nin ve İK'nın her onay ve red kararı için log'da
+- [x] AC-9 — Yönetici'nin ve İK'nın her onay ve red kararı için log'da
   `izin talebi #<N>: <durum>, karar: <e-posta> (<rol>)` biçiminde bir INFO satırı vardır (G-4); talebin nedeni, tarihleri ve personelin adı log'da yoktur.
-- [ ] AC-10 — Mevcut testler değişmeden geçer (spec 0020 Yönetici testleri planda onaylı
+- [x] AC-10 — Mevcut testler değişmeden geçer (spec 0020 Yönetici testleri planda onaylı
   satırlarla); `docs/security.md`, `docs/domain.md` (BR-10, OD-7) ve `README.md` bugünkü durumu
   anlatır.
 
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 0 |
+| Fix rounds | 1 (fix-1: review round 1 F-1 numara kuralı tek yerde — 4300+ haneli numara 500 yerine 403, F-2 belge, F-3 CSRF ekranı testi, F-4 okunabilirlik) |
+| Review findings: real / noise | 4 / 0 (round 1: F-1 orta gerileme, F-2…F-4 düşük; round 2 clean). Build sapmaları (adım 1+2 tek commit, `PENDING` tekrarı) kabul. VERIFY: 10/10 Pass, 13 mutant kırmızı (M5 eşdeğer); G-A ekran görüntüleri PR'da, G-B/G-E takip işi, G-C/G-D aksiyon yok |
+| Regressions introduced | 1 bulundu ve ship öncesi düzeltildi (review F-1: Personel için 4300+ haneli numara 403 yerine 500) |
+| Bugs escaped to production | 0 (henüz yayında değil) |
