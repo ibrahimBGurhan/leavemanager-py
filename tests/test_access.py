@@ -60,6 +60,28 @@ def test_unlinked_or_missing_employee_sees_nothing(employee_id):
     assert v.employees() == [] and v.requests() == []
 
 
+def employee(emp_id):
+    return next(e for e in leave_app.storage.employees() if e["id"] == emp_id)
+
+
+def test_balance_is_the_service_calculation():
+    svc, emp = leave_app.svc, employee(A)
+    expected = (svc.get_entitlement(emp), svc.get_used_days(A), svc.get_remaining(emp),
+                svc.get_pending_days(A))
+    assert view(account("Personel")).balance(emp) == expected
+    assert view(account("IK")).balance(employee(B))[0] == svc.get_entitlement(employee(B))
+
+
+@pytest.mark.parametrize("employee_id", [A, None])
+def test_staff_cannot_read_another_balance(employee_id):
+    with pytest.raises(NotAuthorized):
+        view(account("Personel", employee_id)).balance(employee(B))
+
+
+def test_calc_days_is_the_workday_count():
+    assert view(account("Personel")).calc_days(DAY, DAY + dt.timedelta(days=6)) == 5
+
+
 def test_staff_creates_own_request():
     before = len(leave_app.storage.requests())
     view(account("Personel")).create_request(A, DAY, DAY, "x")

@@ -16,6 +16,7 @@ ROLE_HR = "IK"
 ACTION_APPROVE = "onay"
 ACTION_REJECT = "red"
 ACTION_CREATE_FOR_OTHER = "baskasi adina talep"
+ACTION_BALANCE = "bakiye"
 
 
 class AccountView:
@@ -51,6 +52,20 @@ class AccountView:
         if own is None:
             return []
         return [r for r in self._svc.requests() if r["employee_id"] == own["id"]]
+
+    def balance(self, emp):
+        """(Hak, Kullanilan, Kalan, Bekleyen) — yalniz gorunur bir personel icin (R-2; plan 0020
+        R-07 eki). Hesap LeaveService'te kalir; burada yalniz kapsam denetlenir."""
+        if not self.sees_everyone():
+            own = self.own_employee()
+            if own is None or emp["id"] != own["id"]:
+                self._refuse(ACTION_BALANCE, emp["id"])
+        return (self._svc.get_entitlement(emp), self._svc.get_used_days(emp["id"]),
+                self._svc.get_remaining(emp), self._svc.get_pending_days(emp["id"]))
+
+    def calc_days(self, start, end):
+        # Is gunu sayisi; kisiye bagli veri yok (BR-3)
+        return self._svc.calc_days(start, end)
 
     def create_request(self, emp_id, start, end, reason):
         if not self.sees_everyone():
