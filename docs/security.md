@@ -54,7 +54,8 @@
   talepleri onaylar / reddeder (kendi talebi dahil; görev ayrılığı yok). **Yönetici** kendi
   biriminin (bağlı personelin Birim değeriyle tam eşleşen personel) bakiyelerini ve taleplerini
   görür, birimindeki başka bir personelin bekleyen talebini onaylar / reddeder (başka bir
-  yöneticininki dahil; kendi talebini İK sonuçlandırır), yalnız kendi adına talep açar; Birim
+  yöneticininki dahil; kendi talebini İK ya da birimdeki başka bir Yönetici sonuçlandırır),
+  yalnız kendi adına talep açar; Birim
   değeri boş Yönetici Personel gibidir. Onay tek aşamalıdır. **Personel** yalnız bağlı olduğu
   personel kaydının bakiyesini ve taleplerini görür, yalnız kendi adına talep açar, hiçbir talebi
   sonuçlandıramaz. Bilinmeyen ya da bozuk rol Personel kapsamına düşer (fail-closed). Bağlı
