@@ -67,21 +67,29 @@ class AccountView:
         # Is gunu sayisi; kisiye bagli veri yok (BR-3)
         return self._svc.calc_days(start, end)
 
+    # Yalniz denetleyen iki fonksiyon: kural burada tek yerde, islemler ve web ayni kontrolu
+    # kullanir (review 0020 F-1). Yetki yoksa log + NotAuthorized; varsa hicbir sey yapmaz.
+    def authorize_create(self, emp_id):
+        if self.sees_everyone():
+            return
+        own = self.own_employee()
+        if own is None or emp_id != own["id"]:
+            self._refuse(ACTION_CREATE_FOR_OTHER, emp_id)
+
+    def authorize_decide(self, action, target):
+        if not self.can_decide():
+            self._refuse(action, target)
+
     def create_request(self, emp_id, start, end, reason):
-        if not self.sees_everyone():
-            own = self.own_employee()
-            if own is None or emp_id != own["id"]:
-                self._refuse(ACTION_CREATE_FOR_OTHER, emp_id)
+        self.authorize_create(emp_id)
         return self._svc.create_request(emp_id, start, end, reason)
 
     def approve_request(self, request_id):
-        if not self.can_decide():
-            self._refuse(ACTION_APPROVE, request_id)
+        self.authorize_decide(ACTION_APPROVE, request_id)
         return self._svc.approve_request(request_id)
 
     def reject_request(self, request_id):
-        if not self.can_decide():
-            self._refuse(ACTION_REJECT, request_id)
+        self.authorize_decide(ACTION_REJECT, request_id)
         return self._svc.reject_request(request_id)
 
     def _refuse(self, action, target):

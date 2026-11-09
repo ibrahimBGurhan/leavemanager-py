@@ -8,6 +8,7 @@ from markupsafe import escape
 
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
                            NoWorkingDays, NotAuthorized, RequestAlreadyDecided, RequestNotFound)
+from domain.access import ACTION_APPROVE, ACTION_REJECT
 from domain.leave_service import APPROVED, PENDING, REJECTED
 from web.auth import login_page
 
@@ -176,10 +177,9 @@ def register_routes(app, svc):
         v = view()
         action = getattr(v, action_name)
         try:
-            if not v.can_decide():
-                # Yetki her seyden once: numara ayristirilmadan, ham degerle reddedilir; olmayan
-                # ya da sonuclanmis talep de ayni iletiyi alir (R-6; plan 0020 Risk 4)
-                action(request_id)
+            # Yetki her seyden once: numara ayristirilmadan, ham degerle; olmayan ya da
+            # sonuclanmis talep de ayni iletiyi alir (R-6; plan 0020 Risk 4, review F-1)
+            v.authorize_decide(ACTION_LABELS[action_name], request_id)
             rid = parse_request_id(request_id)
             if rid is None:
                 return requests_page(MSG_REQUEST_NOT_FOUND), 404
@@ -196,6 +196,8 @@ def register_routes(app, svc):
             logger.exception("izin talebi sonuclandirilamadi")
             return requests_page(MSG_ACTION_UNEXPECTED), 500
         return redirect("/requests?sonuc=%s&talep=%d" % (result, rid))
+
+    ACTION_LABELS = {"approve_request": ACTION_APPROVE, "reject_request": ACTION_REJECT}
 
     @app.route("/requests/<request_id>/approve", methods=["POST"])
     def approve_request(request_id):
@@ -254,11 +256,10 @@ def register_routes(app, svc):
                         emp_id = int(raw)
                     except (TypeError, ValueError):
                         emp_id = raw
-                if own is None or emp_id != own["id"]:
-                    try:
-                        acc.create_request(emp_id, None, None, "")  # her zaman reddeder, kayit yok
-                    except NotAuthorized:
-                        return new_request_form(MSG_FORBIDDEN, values), 403
+                try:
+                    acc.authorize_create(emp_id)  # kural domain'de, tek yerde (review F-1)
+                except NotAuthorized:
+                    return new_request_form(MSG_FORBIDDEN, values), 403
             # Ihlal sirasi: bozuk girdi -> personel -> tarih araligi -> is gunu yok -> bakiye
             # (spec 0008 S-4, spec 0014 K-5)
             try:
