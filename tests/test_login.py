@@ -391,7 +391,7 @@ def test_expired_session_keeps_the_form_valid(csrf_client, account, now):
     assert goes_to(csrf_login(csrf_client), "/")
     now.current = T0 + dt.timedelta(hours=8)
     token = TOKEN.search(csrf_client.get("/giris").get_data(as_text=True)).group(1)
-    assert goes_to(csrf_client.get("/requests"), "/giris?durum=sure")
+    assert goes_to(csrf_client.get("/requests"), "/giris")  # /giris oturumu zaten kapattı (issue #40)
     resp = csrf_client.post("/giris", data={"eposta": EMAIL, "sifre": PASSWORD,
                                             "csrf_token": token})
     assert goes_to(resp, "/")
@@ -402,10 +402,11 @@ STALE = {"only-hesap": {"hesap": EMAIL}, "only-giris": {"giris": T0.isoformat()}
          "broken-giris": {"hesap": EMAIL, "giris": "xx"}}
 
 
-@pytest.mark.parametrize("change", ["inactive", "deleted", *STALE])
-def test_session_with_login_keys_keeps_the_form_valid(csrf_client, account, change):
+@pytest.mark.parametrize("change", ["inactive", "deleted", "expired", *STALE])
+def test_session_with_login_keys_keeps_the_form_valid(csrf_client, account, now, change):
     """Review 0019 round 2 F-2: the gate ends a session that still carries login keys (inactive,
-    deleted, broken) without dropping the CSRF token of the login form opened before it."""
+    deleted, broken) without dropping the CSRF token of the login form opened before it. "expired"
+    (issue #40 review F-1): the gate's own expiry branch, no longer reached by the test above."""
     if change in STALE:
         token = TOKEN.search(csrf_client.get("/giris").get_data(as_text=True)).group(1)
         with csrf_client.session_transaction() as s:
@@ -415,9 +416,12 @@ def test_session_with_login_keys_keeps_the_form_valid(csrf_client, account, chan
         token = TOKEN.search(csrf_client.get("/").get_data(as_text=True)).group(1)
         if change == "inactive":
             leave_app.storage.set_account_active(EMAIL, False)
+        elif change == "expired":
+            now.current = T0 + dt.timedelta(hours=8)
         else:
             leave_app.storage._accounts.clear()           # no delete in the contract yet (G-2)
-    assert goes_to(csrf_client.get("/favicon.ico"), "/giris")
+    expected = "/giris?durum=sure" if change == "expired" else "/giris"
+    assert goes_to(csrf_client.get("/favicon.ico"), expected)
     if change == "inactive":                               # the account is back; so is login
         leave_app.storage.set_account_active(EMAIL, True)
     elif change == "deleted":
@@ -441,6 +445,48 @@ def test_ended_session_sends_no_more_cookies(client, account, now, change):
         assert dict(s) == {}
     resp = client.get("/favicon.ico")
     assert goes_to(resp, "/giris") and "Set-Cookie" not in resp.headers
+
+
+@pytest.mark.parametrize("change", ["expired", "inactive", "deleted"])
+def test_ended_session_closes_on_the_login_page(client, account, now, change):
+    """Issue #40 (review 0019 round 3 Not-1): /giris is open, so the gate never sees it; an ended
+    session that lands there directly is still closed (R-7, R-8) — no login keys left, no fresh
+    8-hour cookie on the next visit, and an expired one still shows the expiry message."""
+    login(client)
+    if change == "expired":
+        now.current = T0 + dt.timedelta(hours=8)
+    elif change == "inactive":
+        leave_app.storage.set_account_active(EMAIL, False)
+    else:
+        leave_app.storage._accounts.clear()           # no delete in the contract yet (G-2)
+    page = client.get("/giris", follow_redirects=True)
+    assert page.status_code == 200
+    assert (MSG_EXPIRED in visible_text(page.get_data(as_text=True))) == (change == "expired")
+    with client.session_transaction() as s:
+        assert not {"hesap", "giris", "_permanent"} & set(s)
+    assert "Set-Cookie" not in client.get("/giris").headers
+    if change == "inactive":
+        leave_app.storage.set_account_active(EMAIL, True)
+
+
+@pytest.mark.parametrize("change", ["expired", "inactive", "deleted"])
+def test_ended_session_closes_on_a_failed_login(client, account, now, change):
+    """Issue #40, same cause on POST: a wrong password sent with an ended session gets the usual
+    refusal (R-3) and the session is still closed — no login keys left, no fresh cookie after."""
+    login(client)
+    if change == "expired":
+        now.current = T0 + dt.timedelta(hours=8)
+    elif change == "inactive":
+        leave_app.storage.set_account_active(EMAIL, False)
+    else:
+        leave_app.storage._accounts.clear()           # no delete in the contract yet (G-2)
+    resp = login(client, password=WRONG)
+    assert resp.status_code == 401 and MSG_FAILED in visible_text(resp.get_data(as_text=True))
+    with client.session_transaction() as s:
+        assert not {"hesap", "giris", "_permanent"} & set(s)
+    assert "Set-Cookie" not in client.get("/giris").headers
+    if change == "inactive":
+        leave_app.storage.set_account_active(EMAIL, True)
 
 
 def test_logged_in_user_skips_login_page(client, account):

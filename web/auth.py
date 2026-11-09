@@ -72,6 +72,15 @@ def register_auth(app, logins):
 
     @app.route("/giris", methods=["GET", "POST"], endpoint="login")
     def login():
+        # /giris acik endpoint, kapi onu gormez: bitmis oturum burada da kapanir (R-7, R-8;
+        # issue #40). Yoksa giris anahtarlari kalir, her yanitta yeni 8 saatlik cerez gider.
+        expired = False
+        try:
+            account = current_account()
+        except SessionExpired:
+            account, expired = None, True
+        if account is None:
+            drop_login()
         if request.method == "POST":
             email = request.form.get("eposta", "")
             try:
@@ -85,11 +94,10 @@ def register_auth(app, logins):
             session["giris"] = logins.session_start()
             session.permanent = True
             return redirect("/")  # her zaman Ana Sayfa; geri donus parametresi yok (S-7)
-        try:
-            if current_account() is not None:
-                return redirect("/")
-        except SessionExpired:
-            pass
+        if account is not None:
+            return redirect("/")
+        if expired:
+            return login_page(MSG_EXPIRED)  # anahtarlar silindi; form dogrudan, ileti ile (R-7)
         return login_page(STATUS_MESSAGES.get(request.args.get("durum", "")))
 
     @app.route("/cikis", methods=["POST"], endpoint="logout")
