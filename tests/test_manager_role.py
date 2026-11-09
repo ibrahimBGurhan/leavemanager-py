@@ -230,3 +230,22 @@ def test_unlinked_manager_sees_nothing(client, as_account, employee_id):
     before = statuses()
     assert client.post("/requests/5/approve").status_code == 403
     assert statuses() == before
+
+
+# --- AC-9: the decision log names who decided -------------------------------------------------
+
+@pytest.mark.parametrize("who, action, rid, status", [
+    ("manager", "approve", 5, "Onaylandi"), ("manager", "reject", 5, "Reddedildi"),
+    ("hr", "approve", 2, "Onaylandi"), ("hr", "reject", 2, "Reddedildi"),
+], ids=["manager-approve", "manager-reject", "hr-approve", "hr-reject"])
+def test_decision_log_names_who_decided(client, as_account, caplog, who, action, rid, status):
+    caplog.set_level(logging.INFO)
+    acc, decider = (MANAGER, "mudur@firma.com (Yonetici)") if who == "manager" \
+        else (HR, "ik@firma.com (IK)")
+    as_account(acc)
+    assert client.post("/requests/%d/%s" % (rid, action)).status_code == 302
+    lines = [r.getMessage() for r in caplog.records
+             if r.name == "domain.leave_service" and r.levelname == "INFO"]
+    assert lines == ["izin talebi #%d: %s, karar: %s" % (rid, status, decider)]
+    for leak in ("Yil sonu", "Aile ziyareti", "Ayse", "Mehmet", "2026"):
+        assert leak not in lines[0]

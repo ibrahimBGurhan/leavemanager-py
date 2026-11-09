@@ -124,11 +124,15 @@ class AccountView:
 
     def approve_request(self, request_id):
         self.authorize_decide(ACTION_APPROVE, request_id)
-        return self._svc.approve_request(request_id)
+        return self._svc.approve_request(request_id, decided_by=self._decider())
 
     def reject_request(self, request_id):
         self.authorize_decide(ACTION_REJECT, request_id)
-        return self._svc.reject_request(request_id)
+        return self._svc.reject_request(request_id, decided_by=self._decider())
+
+    def _decider(self):
+        # Karar log'u icin "<e-posta> (<rol>)" (spec 0021 R-9)
+        return "%s (%s)" % (self._account.get("email"), self._account.get("role"))
 
     def _refuse(self, action, target):
         # E-posta, islem ve hedef numara; talebin nedeni ve tarihleri yazilmaz (G-6). Hedef elle
