@@ -55,7 +55,8 @@
   personel kaydının bakiyesini ve taleplerini görür, yalnız kendi adına talep açar, hiçbir talebi
   sonuçlandıramaz. **Yönetici** bu sürümde Personel gibidir; birim görünümü ve onay ayrı spec'tir
   (0021). Bilinmeyen ya da bozuk rol Personel kapsamına düşer (fail-closed). Bağlı personel kaydı
-  olmayan hesap hiçbir veri görmez, talep açamaz.
+  olmayan Personel / Yönetici hesabı hiçbir veri görmez, talep açamaz; IK için bağlantı fark
+  etmez.
 - Yetki kontrolü sunucu tarafında, tek yerde: `domain/access.py` (`AccountView`) hesabı parametre
   olarak alır; web her ekranı ve işlemi `svc.for_account(g.account)` üzerinden yapar ve ekranı
   (düğmeler, personel seçimi) ona göre çizer (plan 0020 Risk 1). Yetki, talebin ya da personelin
