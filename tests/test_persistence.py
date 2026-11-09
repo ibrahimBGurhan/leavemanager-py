@@ -29,7 +29,8 @@ CHILD = r'''
 import json, sys
 import app
 from domain.auth import LoginService  # spec 0019: logged in, the subject here is not login
-LoginService.session_account = lambda self, *a: {"email": "test@firma.com", "active": True}
+LoginService.session_account = lambda self, *a: {"email": "test@firma.com", "active": True,
+                                                  "role": "IK"}  # spec 0020: storage, not access
 app.app.config["WTF_CSRF_ENABLED"] = False  # the subject here is storage, not CSRF (0011)
 client = app.app.test_client()
 out = []

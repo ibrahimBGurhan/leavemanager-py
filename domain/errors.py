@@ -114,3 +114,12 @@ class LoginRefused(Exception):
 class SessionExpired(Exception):
     # Oturum girisinden 8 saat gecti (spec 0019 R-7)
     pass
+
+
+class NotAuthorized(Exception):
+    # Hesabin rolu bu islemi yapmaya yetmiyor (spec 0020 R-6). LeaveRequestError'dan turemez:
+    # o istisnayi yakalayan mevcut yollar yetki hatasini yutmasin (plan 0020).
+    def __init__(self, action, target):
+        super().__init__(action, target)
+        self.action = action
+        self.target = target

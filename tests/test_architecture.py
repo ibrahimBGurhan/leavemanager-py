@@ -120,3 +120,16 @@ def test_domain_does_not_read_the_real_clock():
                 if isinstance(node, ast.Attribute)
                 and node.attr in CLOCK_READS.get(resolve(node.value, names), ())]
     assert bad == []
+
+
+def test_routes_reach_data_only_through_for_account():
+    """Spec 0020 (plan Risk 5): every screen and action goes through the account view, so a later
+    route cannot read or change data unscoped. In web/, the leave service is only ever called as
+    svc.for_account(...); its data, calculation and action functions are not called directly."""
+    bad = []
+    for f in layer_files("web"):
+        for node in ast.walk(parse(f)):
+            if (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)
+                    and node.value.id == "svc" and node.attr != "for_account"):
+                bad.append(f"{where(f, node.lineno)} svc.{node.attr}")
+    assert bad == []

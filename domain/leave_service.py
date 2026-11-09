@@ -2,6 +2,7 @@
 # Saat ve depo disaridan verilir; bu katman Flask'i, HTML'i ve gercek saati bilmez.
 import logging
 
+from domain.access import AccountView
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
                            NoWorkingDays, RequestAlreadyDecided, RequestNotFound)
 from domain.workdays import count_workdays
@@ -119,6 +120,10 @@ class LeaveService:
     def reject_request(self, request_id):
         self._pending_request(request_id)  # redde bakiye kontrolu yok (R-3)
         self._decide(request_id, REJECTED)
+
+    def for_account(self, account):
+        # Web veriye ve islemlere yalniz bu gorunumle ulasir; yetki kurali orada (spec 0020)
+        return AccountView(self, account)
 
     # Salt okuma: web veriye yalniz servis uzerinden erisir (docs/architecture.md)
     def employees(self):

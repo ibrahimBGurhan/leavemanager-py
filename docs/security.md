@@ -50,10 +50,20 @@
 - **Yöntem:** uygulama içi kullanıcı (e-posta) ve şifre; Werkzeug şifre özeti, Flask oturumu
   (en fazla 8 saat), 5 başarısız denemede 15 dakika kilit, en az 12 karakter, varsayılan şifre yok
   (ADR-0002). **Giriş sistemi yayına yalnız HTTPS ile çıkar**; `SESSION_COOKIE_SECURE` orada açılır.
-- Roller: **Personel** (kendi bakiyesi ve talepleri) · **Yönetici** (biriminin taleplerini
-  onaylar/reddeder) · **IK** (tüm personel, geriye dönük giriş).
-- Yetki kontrolü sunucu tarafında, domain'e girmeden önce web katmanında yapılır ve domain
-  servisi çağıranın rolünü parametre olarak alır. UI'da bir butonu gizlemek yetkilendirme sayılmaz.
+- Roller (spec 0020): **IK** tüm personeli ve talepleri görür, herkes adına talep açar, talepleri
+  onaylar / reddeder (kendi talebi dahil; görev ayrılığı yok). **Personel** yalnız bağlı olduğu
+  personel kaydının bakiyesini ve taleplerini görür, yalnız kendi adına talep açar, hiçbir talebi
+  sonuçlandıramaz. **Yönetici** bu sürümde Personel gibidir; birim görünümü ve onay ayrı spec'tir
+  (0021). Bilinmeyen ya da bozuk rol Personel kapsamına düşer (fail-closed). Bağlı personel kaydı
+  olmayan Personel / Yönetici hesabı hiçbir veri görmez, talep açamaz; IK için bağlantı fark
+  etmez.
+- Yetki kontrolü sunucu tarafında, tek yerde: `domain/access.py` (`AccountView`) hesabı parametre
+  olarak alır; web her ekranı ve işlemi `svc.for_account(g.account)` üzerinden yapar ve ekranı
+  (düğmeler, personel seçimi) ona göre çizer (plan 0020 Risk 1). Yetki, talebin ya da personelin
+  varlığından ve durumundan önce denetlenir: yetkisiz deneme 403 + "Bu işlem için yetkiniz yok.",
+  hiçbir kayıt değişmez, log'a WARNING (e-posta, işlem, hedef numara; neden ve tarih yok). Hata ve
+  CSRF sayfaları da süzülür. UI'da bir butonu gizlemek yetkilendirme sayılmaz;
+  `tests/test_architecture.py` web'in servise yalnız `for_account` ile gittiğini sınar.
 - *Hesaplar (spec 0018):* kullanıcı hesapları `flask --app app hesap-ac` ile açılır; şifre
   yalnız Werkzeug özeti (scrypt) olarak saklanır, açık metni veritabanına, log'a ya da çıktıya
   yazılmaz; komut satırı argümanı ya da ortam değişkeni olarak alınmaz. Kodda varsayılan hesap ya
@@ -78,10 +88,8 @@
   dolana kadar geçerli kalır (pasif hesap ve süre yine kapıda sınanır). Çerezde e-posta ve giriş
   zamanı imzalı ama şifresiz (base64) durur; şifre ya da özet durmaz. Sunucu tarafı oturum kaydı
   roller spec'inde ya da bir olay olursa yeniden değerlendirilir.
-- *Bugün yetki yok:* girişli her kullanıcı her şeyi görür, herkes adına talep girebilir ve
-  bekleyen her talebi onaylayıp reddedebilir (spec 0010; bilinçli kabul edilen risk). Rol bazlı
-  yetki ayrı bir spec'tir; Yönetici / IK onay ayrımı orada değerlendirilir (`docs/domain.md`
-  OD-7, BR-10).
+- *Rol bazlı yetki (spec 0020):* yukarıdaki roller uygulanır; Yönetici'nin birim görünümü ve onay
+  yetkisi spec 0021'de değerlendirilir (`docs/domain.md` OD-7, BR-10).
 
 ## Dependencies
 - Her yeni paket plan aşamasında gerekçesiyle önerilir ve **insan onaylar**.
