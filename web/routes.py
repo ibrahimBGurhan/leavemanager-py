@@ -8,7 +8,7 @@ from markupsafe import escape
 
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
                            NoWorkingDays, NotAuthorized, RequestAlreadyDecided, RequestNotFound)
-from domain.access import ACTION_APPROVE, ACTION_REJECT
+from domain.access import ACTION_APPROVE, ACTION_REJECT, parse_request_id
 from domain.leave_service import APPROVED, PENDING, REJECTED
 from web.auth import login_page
 
@@ -67,17 +67,6 @@ def status_badge(status):
     if status == REJECTED:
         color = "red"
     return "<b style='color:%s'>%s</b>" % (color, status)
-
-
-def parse_request_id(text):
-    # Talep numarasi yalniz ASCII rakamdir; int()'in kabul ettigi bosluk, Unicode rakam ve "_"
-    # bir talebe eslenmez (spec 0010 AC-7, review F-1)
-    if not (text.isascii() and text.isdigit()):
-        return None
-    try:
-        return int(text)
-    except ValueError:  # int()'in hane siniri (4300) asilirsa da talep yok (review F-4)
-        return None
 
 
 def csrf_field():

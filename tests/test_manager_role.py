@@ -249,3 +249,25 @@ def test_decision_log_names_who_decided(client, as_account, caplog, who, action,
     assert lines == ["izin talebi #%d: %s, karar: %s" % (rid, status, decider)]
     for leak in ("Yil sonu", "Aile ziyareti", "Ayse", "Mehmet", "2026"):
         assert leak not in lines[0]
+
+
+# --- Review 0021 F-1: an over-long numeric id is refused, not a server error -----------------
+
+LONG_ID = "9" * 4301   # past int()'s digit limit (4300)
+
+
+@pytest.mark.parametrize("acc", [account("Yonetici"), account("Personel", A, "ayse@firma.com")],
+                         ids=["manager", "staff"])
+@pytest.mark.parametrize("action", ["approve", "reject"])
+def test_over_long_request_id_is_refused(client, as_account, caplog, acc, action):
+    caplog.set_level(logging.INFO)
+    as_account(acc)
+    before = statuses()
+    resp = client.post("/requests/%s/%s" % (LONG_ID, action))
+    assert resp.status_code == 403 and MSG_FORBIDDEN in text(resp)
+    assert statuses() == before
+    lines = [(r.levelname, r.getMessage()) for r in caplog.records
+             if r.name == "domain.access" or r.levelno >= logging.ERROR]
+    label = {"approve": "onay", "reject": "red"}[action]
+    assert len(lines) == 1 and lines[0][0] == "WARNING"
+    assert lines[0][1].startswith("yetkisiz islem: %s, %s, hedef '999" % (acc["email"], label))

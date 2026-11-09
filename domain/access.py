@@ -25,6 +25,18 @@ ACTION_CREATE_FOR_OTHER = "baskasi adina talep"
 ACTION_BALANCE = "bakiye"
 
 
+def parse_request_id(text):
+    """Talep numarasi yalniz ASCII rakamdir; int()'in kabul ettigi bosluk, Unicode rakam ve "_"
+    bir talebe eslenmez (spec 0010 AC-7, review F-1). int()'in hane siniri (4300) asilirsa da talep
+    yoktur (review 0010 F-4). Kural tek yerde: web de bunu kullanir (review 0021 F-1)."""
+    if not (text.isascii() and text.isdigit()):
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        return None
+
+
 class AccountView:
 
     def __init__(self, service, account):
@@ -108,13 +120,14 @@ class AccountView:
         # IK: denetim yok, domain hatalari (yok / sonuclanmis) bugunku gibi akar. Digerleri: talep
         # gorunur, kendisinin degil ve bekliyor olmali; yoksa ayni ret — "yok" ile "baska birimde"
         # disaridan ayirt edilemez (0021 R-6; plan 0021 Risk 1). Hedef ham olabilir (route numarayi
-        # ayristirmadan sorar): yalniz ASCII rakam numara sayilir (web.parse_request_id kurali).
+        # ayristirmadan sorar): numara parse_request_id kuraliyla cozulur (review 0021 F-1, F-4).
         if self.sees_everyone():
             return
-        rid = target
-        if isinstance(target, str):
-            rid = int(target) if target.isascii() and target.isdigit() else None
-        r = next((x for x in self.requests() if x["id"] == rid), None)             if isinstance(rid, int) else None
+        rid = parse_request_id(target) if isinstance(target, str) else target
+        if isinstance(rid, int):
+            r = next((x for x in self.requests() if x["id"] == rid), None)
+        else:
+            r = None
         if r is None or not self.can_decide_request(r):
             self._refuse(action, target)
 
