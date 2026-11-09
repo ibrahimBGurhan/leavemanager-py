@@ -42,9 +42,10 @@ def test_hr_sees_and_decides_everything(employee_id):
     assert v.can_decide()
 
 
-@pytest.mark.parametrize("role", ["Personel", "Yonetici", "Admin", "ik", None])
+@pytest.mark.parametrize("role", ["Personel", "Admin", "ik", None])
 def test_other_roles_see_only_their_own_employee(role):
-    """R-1; an unknown or mis-written role gains nothing (plan 0020 Risk 2)."""
+    """R-1; an unknown or mis-written role gains nothing (plan 0020 Risk 2). Yonetici left this
+    list with spec 0021 (Supersedes 0020/AC-7, plan 0021 Risk 2): tests/test_manager_role.py."""
     v = view(account(role))
     assert [e["id"] for e in v.employees()] == [A]
     assert sorted(r["id"] for r in v.requests()) == [1, 5]
@@ -139,3 +140,42 @@ def test_refusal_is_logged_without_request_content(caplog):
 def test_not_authorized_is_not_a_leave_request_error():
     """Existing `except LeaveRequestError` paths must not swallow it (plan 0020)."""
     assert not issubclass(NotAuthorized, LeaveRequestError)
+
+
+# --- Spec 0021: manager (Yonetici) scope ------------------------------------------------------
+
+M = 4   # Ahmet Celik, IT — same unit as A
+
+
+def test_pending_value_matches_the_service():
+    """domain/access.py repeats the status value (import cycle); it must stay equal."""
+    import domain.access as access
+    from domain import leave_service
+    assert access.PENDING == leave_service.PENDING
+
+
+def test_manager_sees_the_unit_and_decides_others_pending():
+    v = view(account("Yonetici", M))
+    assert [e["id"] for e in v.employees()] == [A, M]
+    assert sorted(r["id"] for r in v.requests()) == [1, 4, 5]
+    assert v.can_decide()
+    by_id = {r["id"]: r for r in leave_app.storage.requests()}
+    assert [rid for rid in (1, 2, 4, 5) if v.can_decide_request(by_id[rid])] == [5]
+
+
+@pytest.mark.parametrize("target", [5, "5"], ids=["int", "raw"])
+def test_manager_authorize_decide_allows_unit_pending(target):
+    view(account("Yonetici", M)).authorize_decide("onay", target)   # no refusal
+
+
+@pytest.mark.parametrize("target", [4, "4", 2, 1, 999, "abc", "５", None],
+                         ids=["own", "own-raw", "other-unit", "decided", "missing", "letters",
+                              "fullwidth-digit", "none"])
+def test_manager_authorize_decide_refuses_everything_else(target):
+    with pytest.raises(NotAuthorized):
+        view(account("Yonetici", M)).authorize_decide("onay", target)
+
+
+def test_manager_cannot_read_another_unit_balance():
+    with pytest.raises(NotAuthorized):
+        view(account("Yonetici", M)).balance(employee(B))

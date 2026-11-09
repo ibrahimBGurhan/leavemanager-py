@@ -142,13 +142,13 @@ def register_routes(app, svc):
         # Hata ve CSRF sayfalari da buradan: her yolda suzulmus liste (R-3, R-8)
         v = view()
         employees = v.employees()
-        buttons = v.can_decide()  # Personel'de dugme yok (R-3); asil engel domain'de (R-6)
+        # Dugme yalniz sonuclandirabilecegi talepte (0020 R-3, 0021 R-4); asil engel domain'de
         body = "<h3>Izin Talepleri</h3><table><tr><th>Personel</th><th>Baslangic</th><th>Bitis</th><th>Gun</th><th>Neden</th><th>Durum</th></tr>"
         for r in v.requests():
             emp = [e for e in employees if e["id"] == r["employee_id"]][0]
             body += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>" % (
                 escape(emp["name"]), r["start"], r["end"], v.calc_days(r["start"], r["end"]), escape(r["reason"]),
-                status_badge(r["status"]) + (decision_buttons(r["id"]) if buttons and r["status"] == PENDING else ""))
+                status_badge(r["status"]) + (decision_buttons(r["id"]) if v.can_decide_request(r) else ""))
         body += "</table>"
         if message is not None:
             color = "green" if success else "red"

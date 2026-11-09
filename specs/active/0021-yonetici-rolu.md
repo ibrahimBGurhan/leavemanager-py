@@ -1,6 +1,6 @@
 # Spec 0021 — yonetici-rolu
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0021-plan.md`
 - Source: ADR-0002 (`docs/decisions/0002-kimlik-dogrulama-uygulama-ici-sifre.md`) rol hedefi

@@ -272,12 +272,17 @@ def test_forbidden_is_logged(client, as_account, caplog):
     assert "Aile ziyareti" not in logged and "Gizli neden" not in logged and "2026" not in logged
 
 
-# --- AC-7: Yonetici behaves like Personel in this version (S-1, G-7) -------------------------
+# --- AC-7: Yonetici — spec 0021 supersedes 0020/AC-7 (plan 0021 Risk 2) ---------------------
 
-def test_manager_is_scoped_like_staff(client, as_account):
+def test_manager_is_scoped_to_unit(client, as_account):
+    """Was test_manager_is_scoped_like_staff (0020/AC-7). Since spec 0021 the manager linked to A
+    sees A's unit (IT: A and Ahmet Celik, id 4), decides Ahmet's pending request 4 but not their
+    own (5), and still cannot touch B (Muhasebe) or request for B."""
     as_account(account("Yonetici", A, "yonetici@firma.com"))
-    assert table_rows(client.get("/").get_data(as_text=True))[1:] == [balance_row(A)]
-    assert "value='Onayla'" not in client.get("/requests").get_data(as_text=True)
+    assert table_rows(client.get("/").get_data(as_text=True))[1:] == [balance_row(A), balance_row(4)]
+    page = client.get("/requests").get_data(as_text=True)
+    assert "/requests/4/approve" in page and "/requests/5/approve" not in page
+    assert_no_b_data(visible_text(page))
     before = snapshot()
     assert client.post("/requests/2/approve").status_code == 403
     assert client.post("/new", data={"employee_id": str(B), "start": "2026-11-16",
