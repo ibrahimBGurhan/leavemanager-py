@@ -50,13 +50,18 @@
 - **Yöntem:** uygulama içi kullanıcı (e-posta) ve şifre; Werkzeug şifre özeti, Flask oturumu
   (en fazla 8 saat), 5 başarısız denemede 15 dakika kilit, en az 12 karakter, varsayılan şifre yok
   (ADR-0002). **Giriş sistemi yayına yalnız HTTPS ile çıkar**; `SESSION_COOKIE_SECURE` orada açılır.
-- Roller (spec 0020): **IK** tüm personeli ve talepleri görür, herkes adına talep açar, talepleri
-  onaylar / reddeder (kendi talebi dahil; görev ayrılığı yok). **Personel** yalnız bağlı olduğu
+- Roller (spec 0020, 0021): **IK** tüm personeli ve talepleri görür, herkes adına talep açar,
+  talepleri onaylar / reddeder (kendi talebi dahil; görev ayrılığı yok). **Yönetici** kendi
+  biriminin (bağlı personelin Birim değeriyle tam eşleşen personel) bakiyelerini ve taleplerini
+  görür, birimindeki başka bir personelin bekleyen talebini onaylar / reddeder (başka bir
+  yöneticininki dahil; kendi talebini İK ya da birimdeki başka bir Yönetici sonuçlandırır),
+  yalnız kendi adına talep açar; Birim
+  değeri boş Yönetici Personel gibidir. Onay tek aşamalıdır. **Personel** yalnız bağlı olduğu
   personel kaydının bakiyesini ve taleplerini görür, yalnız kendi adına talep açar, hiçbir talebi
-  sonuçlandıramaz. **Yönetici** bu sürümde Personel gibidir; birim görünümü ve onay ayrı spec'tir
-  (0021). Bilinmeyen ya da bozuk rol Personel kapsamına düşer (fail-closed). Bağlı personel kaydı
-  olmayan Personel / Yönetici hesabı hiçbir veri görmez, talep açamaz; IK için bağlantı fark
-  etmez.
+  sonuçlandıramaz. Bilinmeyen ya da bozuk rol Personel kapsamına düşer (fail-closed). Bağlı
+  personel kaydı olmayan Personel / Yönetici hesabı hiçbir veri görmez, talep açamaz; IK için
+  bağlantı fark etmez. Her onay ve red log'a kararı verenle yazılır:
+  `izin talebi #<N>: <durum>, karar: <e-posta> (<rol>)` (ad, neden, tarih yok).
 - Yetki kontrolü sunucu tarafında, tek yerde: `domain/access.py` (`AccountView`) hesabı parametre
   olarak alır; web her ekranı ve işlemi `svc.for_account(g.account)` üzerinden yapar ve ekranı
   (düğmeler, personel seçimi) ona göre çizer (plan 0020 Risk 1). Yetki, talebin ya da personelin

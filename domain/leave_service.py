@@ -107,19 +107,23 @@ class LeaveService:
                 return r
         raise RequestNotFound(request_id)
 
-    def _decide(self, request_id, status):
+    def _decide(self, request_id, status, decided_by=None):
         self._storage.set_request_status(request_id, status)
-        logger.info("izin talebi #%d: %s", request_id, status)  # ad ve neden yok (KVKK)
+        # Ad, neden ve tarih yok (KVKK). Karari veren: "<e-posta> (<rol>)" (spec 0021 R-9, G-4)
+        if decided_by is None:
+            logger.info("izin talebi #%d: %s", request_id, status)
+        else:
+            logger.info("izin talebi #%d: %s, karar: %s", request_id, status, decided_by)
 
-    def approve_request(self, request_id):
+    def approve_request(self, request_id, decided_by=None):
         r = self._pending_request(request_id)
         emp = next(e for e in self._storage.employees() if e["id"] == r["employee_id"])
         self._check_balance(emp, self.calc_days(r["start"], r["end"]))
-        self._decide(request_id, APPROVED)
+        self._decide(request_id, APPROVED, decided_by)
 
-    def reject_request(self, request_id):
+    def reject_request(self, request_id, decided_by=None):
         self._pending_request(request_id)  # redde bakiye kontrolu yok (R-3)
-        self._decide(request_id, REJECTED)
+        self._decide(request_id, REJECTED, decided_by)
 
     def for_account(self, account):
         # Web veriye ve islemlere yalniz bu gorunumle ulasir; yetki kurali orada (spec 0020)
