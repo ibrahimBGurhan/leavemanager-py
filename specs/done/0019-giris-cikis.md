@@ -1,6 +1,6 @@
 # Spec 0019 — giris-cikis
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0019-plan.md`
 - Source: ADR-0002 (`docs/decisions/0002-kimlik-dogrulama-uygulama-ici-sifre.md`) D-4…D-6;
@@ -112,58 +112,58 @@ personel yönetim ekranları, şifre değiştirme ve sıfırlama.
   aykırı olurdu (S-7 boyut notu).
 
 ## Acceptance criteria
-- [ ] AC-1 — Giriş yapmamışken `/`, `/requests`, `/new` (GET) ve onay / red / Yeni Talep (POST)
+- [x] AC-1 — Giriş yapmamışken `/`, `/requests`, `/new` (GET) ve onay / red / Yeni Talep (POST)
   istekleri giriş ekranına yönlendirilir; POST'lar hiçbir kaydı değiştirmez; yanıtta personel ya
   da talep verisi yok. Uygulamanın giriş ekranı dışındaki her route'u kapalıdır (route listesi
   üzerinden).
-- [ ] AC-2 — Doğru e-posta (büyük harf ve boşluklu yazım dahil) ve şifreyle aktif hesap girer,
+- [x] AC-2 — Doğru e-posta (büyük harf ve boşluklu yazım dahil) ve şifreyle aktif hesap girer,
   Ana Sayfa'ya yönlendirilir; giriş öncesi istenen sayfa ne olursa olsun hedef Ana Sayfa'dır.
   Menüde e-posta (HTML kaçışlı, G-5) ve Çıkış görünür; Ana Sayfa, Talepler ve Yeni Talep bugünkü içerikleri gösterir.
-- [ ] AC-3 — Bilinmeyen e-posta, yanlış şifre, pasif hesap, kilitli hesap, boş e-posta ve boş
+- [x] AC-3 — Bilinmeyen e-posta, yanlış şifre, pasif hesap, kilitli hesap, boş e-posta ve boş
   şifre aynı iletiyi ve 401 durum kodunu alır (G-1); e-posta geri basılır, şifre basılmaz; kimse girmez.
-- [ ] AC-4 — Art arda 4 yanlış denemeden sonra doğru şifre girer ve sayaç sıfırlanır; 5. yanlış
+- [x] AC-4 — Art arda 4 yanlış denemeden sonra doğru şifre girer ve sayaç sıfırlanır; 5. yanlış
   denemede hesap kilitlenir, kilit sürerken doğru şifre reddedilir ve sayaç artmaz; 15 dakika
   dolunca (dolmasına 1 saniye kala değil) doğru şifre girer; kilit bitiminden sonraki ilk yanlış
   deneme sayacı 1 yapar. Sayaç ve kilit uygulama yeniden başlatıldığında (SQLite) korunur.
   Aynı anda gelen yanlış denemelerden sonra kilit en geç 5. başarısız denemede başlamıştır (G-4).
-- [ ] AC-5 — Bilinmeyen e-postayla deneme, yanlış şifreyle deneme kadar şifre doğrulaması yapar
+- [x] AC-5 — Bilinmeyen e-postayla deneme, yanlış şifreyle deneme kadar şifre doğrulaması yapar
   (doğrulama çağrısı sayılarak); bilinmeyen e-posta ve pasif hesapta hiçbir hesabın sayacı değişmez.
   254 / 1024 karakter kabul edilir; 255 karakterlik e-posta ya da 1025 karakterlik şifre genel
   iletiyi alır, özet hesaplanmaz, sayaç artmaz (G-3).
-- [ ] AC-6 — Log: her başarısız deneme bir WARNING (R-6 içeriği), kilit başlangıcı ayrı WARNING,
+- [x] AC-6 — Log: her başarısız deneme bir WARNING (R-6 içeriği), kilit başlangıcı ayrı WARNING,
   başarılı giriş ve çıkış INFO; bilinmeyen e-postanın yazılan metni, şifre ve özet hiçbir log
   kaydında yok.
-- [ ] AC-7 — Oturum girişten 8 saat sonra geçersizdir (8 saat dolmasına 1 saniye kala geçerli),
+- [x] AC-7 — Oturum girişten 8 saat sonra geçersizdir (8 saat dolmasına 1 saniye kala geçerli),
   arada yapılan istekler süreyi uzatmaz; süresi dolmuş oturumla gelen istek giriş ekranına gider,
   süre doldu iletisi görünür, POST hiçbir kaydı değiştirmez. Yeniden giriş yeni 8 saat başlatır.
-- [ ] AC-8 — Oturum açıkken hesap pasife alınırsa ya da silinirse sonraki istek giriş ekranına
+- [x] AC-8 — Oturum açıkken hesap pasife alınırsa ya da silinirse sonraki istek giriş ekranına
   gider ve oturum kapanır; POST hiçbir kaydı değiştirmez.
-- [ ] AC-9 — Başarılı girişte giriş öncesi oturuma konmuş veri girişten sonra yoktur (oturum
+- [x] AC-9 — Başarılı girişte giriş öncesi oturuma konmuş veri girişten sonra yoktur (oturum
   sabitleme). Çıkış CSRF token'lı form gönderimiyle oturumu bitirir, "Çıkış yapıldı." gösterilir,
   sonraki istekler giriş ekranına gider; token'sız ya da bozuk token'lı çıkış 400 alır ve oturum
   açık kalır; çıkış GET ile yapılamaz.
-- [ ] AC-10 — Giriş ekranı: başlık "Giriş", düğme "Giriş Yap", menü yok, alan etiketleri bağlı, otomatik doldurma ipuçları var, kilit
+- [x] AC-10 — Giriş ekranı: başlık "Giriş", düğme "Giriş Yap", menü yok, alan etiketleri bağlı, otomatik doldurma ipuçları var, kilit
   notu görünür, form CSRF token taşır (token'sız giriş 400 + spec 0011 iletisi, kimse girmez);
   girişli kullanıcı giriş ekranını açınca Ana Sayfa'ya yönlendirilir.
-- [ ] AC-11 — `SESSION_COOKIE_SECURE=1` ile oturum çerezi `Secure` taşır; değişken yoksa ya da
+- [x] AC-11 — `SESSION_COOKIE_SECURE=1` ile oturum çerezi `Secure` taşır; değişken yoksa ya da
   başka bir değerse taşımaz. Çerez her durumda `HttpOnly` ve `SameSite=Lax`.
-- [ ] AC-12 — `hesap-ac` şifre soruları "Şifre (yazarken görünmez):" ve "Şifre (tekrar):"; var olan
+- [x] AC-12 — `hesap-ac` şifre soruları "Şifre (yazarken görünmez):" ve "Şifre (tekrar):"; var olan
   e-posta iletisi "…zaten var: <e-posta>." ile biter.
-- [ ] AC-13 — Mevcut testler yalnız S-1'de onaylanan satırlarla değişir ve geçer; `README.md`,
+- [x] AC-13 — Mevcut testler yalnız S-1'de onaylanan satırlarla değişir ve geçer; `README.md`,
   `docs/security.md`, `docs/architecture.md` bugünkü durumu anlatır.
 
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 1 (R-5, onaylı: sayaç yazımı kadar zamanlama farkı kabul; `a88b7eb`) |
+| Fix rounds | 3 (fix-1: review round 1 F-1 kod + test, F-2 belge, N-2 test; fix-2: round 2 F-1 kod + test, F-2 test, N-a spec, N-b yorum; fix-3: VERIFY F-1 test, F-2 metin) |
+| Review findings: real / noise | 7 / 3 (round 1: F-1 (yüksek), F-2, N-2 gerçek; N-1 noise. Round 2: F-1, F-2, N-a, N-b gerçek. Round 3: Not-1, Not-2 noise; Not-1 ship sonrası ayrı issue). VERIFY: F-1, F-2 gerçek, kapandı |
+| Regressions introduced | 0 |
+| Bugs escaped to production | 0 (henüz yayında değil) |
