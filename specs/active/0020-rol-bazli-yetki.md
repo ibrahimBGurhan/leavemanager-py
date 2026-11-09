@@ -1,6 +1,6 @@
 # Spec 0020 — rol-bazli-yetki
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0020-plan.md`
 - Source: ADR-0002 (`docs/decisions/0002-kimlik-dogrulama-uygulama-ici-sifre.md`) Bağlam ve
