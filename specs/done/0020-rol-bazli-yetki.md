@@ -1,6 +1,6 @@
 # Spec 0020 — rol-bazli-yetki
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0020-plan.md`
 - Source: ADR-0002 (`docs/decisions/0002-kimlik-dogrulama-uygulama-ici-sifre.md`) Bağlam ve
@@ -105,50 +105,50 @@ personelin talebini geri çekmesi.
 ## Acceptance criteria
 <!-- Test verisi: iki personel A ve B; ikisinin de Beklemede, Onaylandi ve Reddedildi talepleri var;
      A'ya bağlı bir Personel hesabı, bir Yonetici hesabı, bir IK hesabı. -->
-- [ ] AC-1 — İK hesabı (personel bağlantılı ve bağlantısız) Ana Sayfa'da tüm personelin sayılarını
+- [x] AC-1 — İK hesabı (personel bağlantılı ve bağlantısız) Ana Sayfa'da tüm personelin sayılarını
   ve satırlarını, Talepler'de tüm talepleri ve bekleyenlerde Onayla / Reddet düğmelerini, Yeni
   Talep'te personel seçimini bugünkü gibi görür; bekleyen bir talebi (kendi talebi dahil) onaylar
   ve reddeder.
-- [ ] AC-2 — A'nın Personel hesabı Ana Sayfa'da yalnız A'nın taleplerinin sayılarını ve yalnız
+- [x] AC-2 — A'nın Personel hesabı Ana Sayfa'da yalnız A'nın taleplerinin sayılarını ve yalnız
   A'nın bakiye satırını (doğru Hak, Kullanılan, Kalan, Bekleyen) görür; sayfada B'nin adı ve
   birimi yoktur.
-- [ ] AC-3 — A'nın Personel hesabı Talepler'de yalnız A'nın taleplerini görür, hiçbir satırda
+- [x] AC-3 — A'nın Personel hesabı Talepler'de yalnız A'nın taleplerini görür, hiçbir satırda
   Onayla / Reddet düğmesi yoktur, durumlar metin olarak görünür; B'nin adı, tarihleri ve nedenleri
   sayfada yoktur.
-- [ ] AC-4 — A'nın Personel hesabı Yeni Talep'te personel seçimi görmez, A'nın adını görür; geçerli
+- [x] AC-4 — A'nın Personel hesabı Yeni Talep'te personel seçimi görmez, A'nın adını görür; geçerli
   gönderim A adına `Beklemede` bir talep oluşturur. Bakiye, tarih aralığı, iş günü ve bozuk girdi
   hataları bugünkü iletileri verir ve form A'nın adıyla yeniden gösterilir.
-- [ ] AC-5 — A'nın Personel hesabıyla B adına ve olmayan bir personel adına talep gönderimi 403 ve
+- [x] AC-5 — A'nın Personel hesabıyla B adına ve olmayan bir personel adına talep gönderimi 403 ve
   "Bu işlem için yetkiniz yok." alır; hiçbir talep oluşmaz; form A'nın adıyla, girilen tarih ve
   neden geri basılarak gösterilir (G-2).
-- [ ] AC-6 — A'nın Personel hesabıyla onay ve red istekleri — A'nın bekleyen talebi, B'nin
+- [x] AC-6 — A'nın Personel hesabıyla onay ve red istekleri — A'nın bekleyen talebi, B'nin
   bekleyen talebi, sonuçlanmış bir talep ve olmayan bir talep için — 403 ve aynı iletiyi alır;
   hiçbir talep değişmez; yanıtta B'ye ait veri yoktur; her deneme için log'da e-posta, işlem ve
   hedef talep numarasıyla bir WARNING vardır, talebin nedeni ve tarihleri log'da yoktur (G-6).
-- [ ] AC-7 — Yonetici hesabı (A'ya bağlı), Personel ile aynı kuralı temsilen gösterir (G-7): Ana
+- [x] AC-7 — Yonetici hesabı (A'ya bağlı), Personel ile aynı kuralı temsilen gösterir (G-7): Ana
   Sayfa'da yalnız A'nın satırı; Talepler'de düğme yok; bir onay isteği ve B adına bir talep
   gönderimi 403 alır ve hiçbir kayıt değişmez.
-- [ ] AC-8 — Bağlı personel kaydı olmayan bir Personel hesabı giriş yapar; Ana Sayfa'da sayılar 0
+- [x] AC-8 — Bağlı personel kaydı olmayan bir Personel hesabı giriş yapar; Ana Sayfa'da sayılar 0
   ve bakiye satırı yok, Talepler boş; Yeni Talep form göstermez ve G-1 iletisini 200 ile verir;
   talep gönderimi 403 alır ve hiçbir talep oluşmaz.
-- [ ] AC-9 — Personel hesabıyla token'sız bir form gönderimi (spec 0011) ve Talepler ekranının
+- [x] AC-9 — Personel hesabıyla token'sız bir form gönderimi (spec 0011) ve Talepler ekranının
   başarı iletisi parametreleriyle B'nin bir talebini gösteren adres, B'ye ait hiçbir veri ya da
   talep bilgisi göstermez.
-- [ ] AC-10 — Mevcut testler değişmeden geçer (ya da planda onaylı satırlarla); `docs/security.md`,
+- [x] AC-10 — Mevcut testler değişmeden geçer (ya da planda onaylı satırlarla); `docs/security.md`,
   `docs/domain.md` (BR-10, OD-7) ve `README.md` bugünkü durumu anlatır.
 
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 0 |
+| Fix rounds | 1 (fix-1: review round 1 F-1 kural tek yerde — `authorize_*`, F-2 belge, F-3 plan haritası, F-4 log assert'leri) |
+| Review findings: real / noise | 4 / 1 (round 1: F-1…F-4 gerçek, hepsi düşük; round 2: F2-1 noise, seçenek b sonraki dokunuşa). VERIFY: 10/10 Pass, 15 mutant kırmızı; G-1, G-3, G-4 takip işi, G-2 ship'te kapandı, G-5 ekran görüntüleri PR'da. BUILD'de 3 R-07 (onaylı) |
+| Regressions introduced | 0 |
+| Bugs escaped to production | 0 (henüz yayında değil) |
