@@ -240,7 +240,8 @@ def test_staff_may_name_themselves(client, as_account):
                          ids=["own-pending", "other-pending", "own-decided", "other-decided",
                               "missing", "non-numeric"])
 @pytest.mark.parametrize("action", ["approve", "reject"])
-def test_staff_cannot_decide(client, as_account, action, rid):
+def test_staff_cannot_decide(client, as_account, caplog, action, rid):
+    caplog.set_level(logging.INFO)
     as_account(STAFF)
     before = snapshot()
     resp = client.post("/requests/%s/%s" % (rid, action))
@@ -248,6 +249,10 @@ def test_staff_cannot_decide(client, as_account, action, rid):
     assert snapshot() == before
     assert_no_b_data(text(resp))
     assert "value='Onayla'" not in resp.get_data(as_text=True)
+    # Every attempt is logged, whatever the request's existence or status (AC-6; review F-4)
+    label = {"approve": "onay", "reject": "red"}[action]
+    assert [(r.levelname, r.getMessage()) for r in caplog.records if r.name == "domain.access"] == [
+        ("WARNING", "yetkisiz islem: ayse@firma.com, %s, hedef '%s'" % (label, rid))]
 
 
 def test_forbidden_is_logged(client, as_account, caplog):
