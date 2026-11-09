@@ -7,6 +7,7 @@ The logged-in account is chosen per test by `as_account` (the gate's session che
 as conftest does for the shared IK account; production code has no switch for it).
 """
 import datetime as dt
+import logging
 import re
 
 import pytest
@@ -148,8 +149,148 @@ def test_csrf_error_page_is_scoped(as_account, full_statuses, monkeypatch):
     monkeypatch.setitem(leave_app.app.config, "WTF_CSRF_ENABLED", True)
     leave_app.app.testing = True
     with leave_app.app.test_client() as c:
-        for path in ("/requests/2/approve",):
+        for path in ("/requests/2/approve", "/new"):
             resp = c.post(path, data={"employee_id": str(B), "start": "2026-11-16",
                                       "end": "2026-11-16", "reason": "x"})
             assert resp.status_code == 400 and MSG_CSRF in text(resp)
             assert_no_b_data(text(resp))
+
+
+# --- AC-1 (actions): IK decides any request, own included -------------------------------------
+
+def test_hr_decides_any_request_including_own(client, as_account):
+    as_account(account("IK", A, "ik@firma.com"))
+    assert client.post("/requests/5/approve").status_code == 302      # A's own request (S-2)
+    assert client.post("/requests/2/reject").status_code == 302
+    st = {r["id"]: r["status"] for r in leave_app.storage.requests()}
+    assert (st[5], st[2]) == ("Onaylandi", "Reddedildi")
+
+
+# --- AC-4: Personel opens requests in their own name -----------------------------------------
+
+MSG_NO_EMPLOYEE = "Hesabınız bir personel kaydına bağlı değil; talep açmak için İK ile görüşün."
+
+
+def snapshot():
+    return [dict(r) for r in leave_app.storage.requests()]
+
+
+def test_staff_new_request_has_fixed_name(client, as_account):
+    as_account(STAFF)
+    html = client.get("/new").get_data(as_text=True)
+    assert "<select" not in html and 'name="employee_id"' not in html
+    assert "Personel: %s" % A_NAME in visible_text(html)
+    for other in (B_NAME, "Zeynep Kaya", "Ahmet Celik", "Elif Sahin"):
+        assert other not in html
+
+
+def test_staff_creates_own_request(client, as_account):
+    as_account(STAFF)
+    before = snapshot()
+    resp = client.post("/new", data={"start": "2026-11-16", "end": "2026-11-16", "reason": "Kendi"})
+    assert resp.status_code == 302 and resp.headers["Location"] == "/requests"
+    new = snapshot()[len(before):]
+    assert [(r["employee_id"], r["status"], r["reason"]) for r in new] == [(A, "Beklemede", "Kendi")]
+    assert ["Ayse Yilmaz", "2026-11-16", "2026-11-16", "1", "Kendi", "Beklemede"] in         table_rows(client.get("/requests").get_data(as_text=True))
+
+
+@pytest.mark.parametrize("data, message", [
+    ({"start": "2027-01-04", "end": "2027-03-26"}, "Kalan izin bakiyeniz yetersiz"),
+    ({"start": "2026-11-20", "end": "2026-11-16"}, "Bitiş tarihi başlangıç tarihinden önce olamaz."),
+    ({"start": "2026-11-21", "end": "2026-11-22"}, "Seçilen tarihler arasında iş günü yok."),
+    ({"start": "bozuk", "end": "2026-11-16"},
+     "Lütfen personeli ve geçerli başlangıç ve bitiş tarihlerini girin."),
+], ids=["balance", "range", "no-workdays", "bad-input"])
+def test_staff_rule_errors_keep_fixed_name(client, as_account, data, message):
+    as_account(STAFF)
+    before = snapshot()
+    resp = client.post("/new", data=dict(data, reason="x"))
+    assert resp.status_code == 400 and message in text(resp)
+    assert "Personel: %s" % A_NAME in text(resp) and "<select" not in resp.get_data(as_text=True)
+    assert snapshot() == before
+
+
+# --- AC-5: not on behalf of anyone else -------------------------------------------------------
+
+@pytest.mark.parametrize("employee_id", [str(B), "99", "abc", ""], ids=["B", "missing", "garbage", "empty"])
+def test_staff_cannot_request_for_others(client, as_account, employee_id):
+    as_account(STAFF)
+    before = snapshot()
+    resp = client.post("/new", data={"employee_id": employee_id, "start": "2026-11-16",
+                                     "end": "2026-11-17", "reason": "Baskasi icin"})
+    assert resp.status_code == 403 and MSG_FORBIDDEN in text(resp)
+    assert snapshot() == before
+    html = resp.get_data(as_text=True)
+    assert "Personel: %s" % A_NAME in text(resp) and "<select" not in html      # G-2
+    assert 'value="2026-11-16"' in html and 'value="2026-11-17"' in html and "Baskasi icin" in html
+    assert_no_b_data(text(resp))
+
+
+def test_staff_may_name_themselves(client, as_account):
+    """The own number in the field is not an attempt on anyone else."""
+    as_account(STAFF)
+    resp = client.post("/new", data={"employee_id": str(A), "start": "2026-11-16",
+                                     "end": "2026-11-16", "reason": "x"})
+    assert resp.status_code == 302
+
+
+# --- AC-6: Personel decides nothing -----------------------------------------------------------
+
+@pytest.mark.parametrize("rid", ["5", "2", "1", "8", "999", "abc"],
+                         ids=["own-pending", "other-pending", "own-decided", "other-decided",
+                              "missing", "non-numeric"])
+@pytest.mark.parametrize("action", ["approve", "reject"])
+def test_staff_cannot_decide(client, as_account, action, rid):
+    as_account(STAFF)
+    before = snapshot()
+    resp = client.post("/requests/%s/%s" % (rid, action))
+    assert resp.status_code == 403 and MSG_FORBIDDEN in text(resp)
+    assert snapshot() == before
+    assert_no_b_data(text(resp))
+    assert "value='Onayla'" not in resp.get_data(as_text=True)
+
+
+def test_forbidden_is_logged(client, as_account, caplog):
+    caplog.set_level(logging.INFO)
+    as_account(STAFF)
+    client.post("/requests/2/approve")
+    client.post("/requests/5/reject")
+    client.post("/new", data={"employee_id": str(B), "start": "2026-11-16", "end": "2026-11-16",
+                              "reason": "Gizli neden"})
+    lines = [(r.levelname, r.getMessage()) for r in caplog.records if r.name == "domain.access"]
+    assert lines == [
+        ("WARNING", "yetkisiz islem: ayse@firma.com, onay, hedef '2'"),
+        ("WARNING", "yetkisiz islem: ayse@firma.com, red, hedef '5'"),
+        ("WARNING", "yetkisiz islem: ayse@firma.com, baskasi adina talep, hedef 2"),
+    ]
+    logged = " ".join(m for _, m in lines)
+    assert "Aile ziyareti" not in logged and "Gizli neden" not in logged and "2026" not in logged
+
+
+# --- AC-7: Yonetici behaves like Personel in this version (S-1, G-7) -------------------------
+
+def test_manager_is_scoped_like_staff(client, as_account):
+    as_account(account("Yonetici", A, "yonetici@firma.com"))
+    assert table_rows(client.get("/").get_data(as_text=True))[1:] == [balance_row(A)]
+    assert "value='Onayla'" not in client.get("/requests").get_data(as_text=True)
+    before = snapshot()
+    assert client.post("/requests/2/approve").status_code == 403
+    assert client.post("/new", data={"employee_id": str(B), "start": "2026-11-16",
+                                     "end": "2026-11-16", "reason": "x"}).status_code == 403
+    assert snapshot() == before
+
+
+# --- AC-8 (actions): no linked employee -------------------------------------------------------
+
+@pytest.mark.parametrize("employee_id", [None, 99])
+def test_unlinked_staff_cannot_request(client, as_account, employee_id):
+    as_account(account("Personel", employee_id))
+    page = client.get("/new")
+    assert page.status_code == 200 and MSG_NO_EMPLOYEE in text(page)
+    assert "<form method=\"post\">" not in page.get_data(as_text=True)
+    before = snapshot()
+    for data in ({"start": "2026-11-16", "end": "2026-11-16", "reason": "x"},
+                 {"employee_id": str(A), "start": "2026-11-16", "end": "2026-11-16", "reason": "x"}):
+        resp = client.post("/new", data=data)
+        assert resp.status_code == 403 and MSG_FORBIDDEN in text(resp)
+    assert snapshot() == before

@@ -7,7 +7,7 @@ from flask_wtf.csrf import CSRFError, generate_csrf
 from markupsafe import escape
 
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
-                           NoWorkingDays, RequestAlreadyDecided, RequestNotFound)
+                           NoWorkingDays, NotAuthorized, RequestAlreadyDecided, RequestNotFound)
 from domain.leave_service import APPROVED, PENDING, REJECTED
 from web.auth import login_page
 
@@ -29,6 +29,9 @@ MSG_REQUEST_NOT_FOUND = "Talep bulunamadı."
 MSG_ACTION_UNEXPECTED = "İşlem tamamlanamadı. Lütfen daha sonra tekrar deneyin."
 # CSRF (spec 0011)
 MSG_CSRF = "Form geçersiz ya da süresi dolmuş. Lütfen sayfayı yenileyip tekrar deneyin."
+# Yetki (spec 0020 R-6, R-7 / G-1)
+MSG_FORBIDDEN = "Bu işlem için yetkiniz yok."
+MSG_NO_EMPLOYEE = "Hesabınız bir personel kaydına bağlı değil; talep açmak için İK ile görüşün."
 
 # Menu (spec 0019): kullanicinin e-postasi Jinja kacisiyla (G-5); cikis formu sayfanin sonunda,
 # dugmesi menude (form= ozniteligi), boylece ekranlardaki formlarin sirasi degismez (plan 0019 Risk 2).
@@ -168,13 +171,21 @@ def register_routes(app, svc):
         message = success_message()
         return requests_page(message, success=True)
 
-    def decide(request_id, action, result):
+    def decide(request_id, action_name, result):
         # Hata: yonlendirme yok, liste mesajla yeniden gosterilir (spec 0010, K-4)
-        rid = parse_request_id(request_id)
-        if rid is None:
-            return requests_page(MSG_REQUEST_NOT_FOUND), 404
+        v = view()
+        action = getattr(v, action_name)
         try:
+            if not v.can_decide():
+                # Yetki her seyden once: numara ayristirilmadan, ham degerle reddedilir; olmayan
+                # ya da sonuclanmis talep de ayni iletiyi alir (R-6; plan 0020 Risk 4)
+                action(request_id)
+            rid = parse_request_id(request_id)
+            if rid is None:
+                return requests_page(MSG_REQUEST_NOT_FOUND), 404
             action(rid)
+        except NotAuthorized:
+            return requests_page(MSG_FORBIDDEN), 403
         except RequestNotFound:
             return requests_page(MSG_REQUEST_NOT_FOUND), 404
         except RequestAlreadyDecided:
@@ -188,25 +199,38 @@ def register_routes(app, svc):
 
     @app.route("/requests/<request_id>/approve", methods=["POST"])
     def approve_request(request_id):
-        return decide(request_id, svc.approve_request, "onaylandi")
+        return decide(request_id, "approve_request", "onaylandi")
 
     @app.route("/requests/<request_id>/reject", methods=["POST"])
     def reject_request(request_id):
-        return decide(request_id, svc.reject_request, "reddedildi")
+        return decide(request_id, "reject_request", "reddedildi")
 
     def new_request_form(message=None, values=None):
         v = values or {}
-        options = "".join("<option value='%d'%s>%s</option>" % (
-            e["id"], " selected" if e["id"] == v.get("employee_id") else "", escape(e["name"]))
-            for e in svc.employees())
+        acc = view()
+        if acc.sees_everyone():
+            options = "".join("<option value='%d'%s>%s</option>" % (
+                e["id"], " selected" if e["id"] == v.get("employee_id") else "", escape(e["name"]))
+                for e in acc.employees())
+            employee_field = "<select name=\"employee_id\">%s</select>" % options
+        else:
+            own = acc.own_employee()
+            if own is None:
+                # Bagli personel kaydi yok: form yok, yalniz bilgi (R-7, G-1)
+                body = "<h3>Yeni Talep</h3><p>%s</p>" % escape(MSG_NO_EMPLOYEE)
+                if message is not None:
+                    body = "<p style='color:red'>%s</p>" % escape(message) + body
+                return render_template_string(PAGE, body=body)
+            # Secim yok, kendi adi sabit metin; talep her zaman kendi adina (R-4)
+            employee_field = escape(own["name"])
         start = v["start"].isoformat() if v.get("start") else ""
         end = v["end"].isoformat() if v.get("end") else ""
         body = """<h3>Yeni Talep</h3><form method="post">%s
-    Personel: <select name="employee_id">%s</select><br><br>
+    Personel: %s<br><br>
     Baslangic: <input type="date" name="start" value="%s"><br><br>
     Bitis: <input type="date" name="end" value="%s"><br><br>
     Neden: <input type="text" name="reason" value="%s"><br><br>
-    <input type="submit" value="Kaydet"></form>""" % (csrf_field(), options, start, end,
+    <input type="submit" value="Kaydet"></form>""" % (csrf_field(), employee_field, start, end,
                                                        escape(v.get("reason", "")))
         if message is not None:
             body = "<p style='color:red'>%s</p>" % escape(message) + body
@@ -216,16 +240,37 @@ def register_routes(app, svc):
     def new_request():
         if request.method == "POST":
             values = form_values(request.form)
+            acc = view()
+            if not acc.sees_everyone():
+                # Personel / Yonetici: alan yoksa kendi kaydi; varsa ve kendi numarasi degilse
+                # (baska personel, olmayan numara, bozuk deger) yetki hatasi, tarihlerden once
+                # (R-4, R-6; plan 0020 Risk 3). Form kendi adiyla, tarih ve neden geri basili (G-2).
+                own = acc.own_employee()
+                raw = request.form.get("employee_id")
+                if raw is None and own is not None:
+                    emp_id = own["id"]
+                else:
+                    try:
+                        emp_id = int(raw)
+                    except (TypeError, ValueError):
+                        emp_id = raw
+                if own is None or emp_id != own["id"]:
+                    try:
+                        acc.create_request(emp_id, None, None, "")  # her zaman reddeder, kayit yok
+                    except NotAuthorized:
+                        return new_request_form(MSG_FORBIDDEN, values), 403
             # Ihlal sirasi: bozuk girdi -> personel -> tarih araligi -> is gunu yok -> bakiye
             # (spec 0008 S-4, spec 0014 K-5)
             try:
-                emp_id = int(request.form["employee_id"])
+                emp_id = int(request.form["employee_id"]) if acc.sees_everyone() else emp_id
                 start = datetime.strptime(request.form["start"], "%Y-%m-%d").date()
                 end = datetime.strptime(request.form["end"], "%Y-%m-%d").date()
             except (KeyError, ValueError):
                 return new_request_form(MSG_INVALID_INPUT, values), 400
             try:
-                svc.create_request(emp_id, start, end, request.form.get("reason", ""))
+                acc.create_request(emp_id, start, end, request.form.get("reason", ""))
+            except NotAuthorized:
+                return new_request_form(MSG_FORBIDDEN, values), 403
             except EmployeeNotFound:
                 return new_request_form(MSG_EMPLOYEE_NOT_FOUND, values), 400
             except InvalidDateRange:

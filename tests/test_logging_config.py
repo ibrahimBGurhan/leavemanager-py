@@ -32,7 +32,8 @@ from werkzeug.serving import make_server
 
 from storage.memory import MemoryStorage
 from domain.auth import LoginService  # spec 0019: logged in, the subject here is not login
-LoginService.session_account = lambda self, *a: {"email": "test@firma.com", "active": True}
+LoginService.session_account = lambda self, *a: {"email": "test@firma.com", "active": True,
+                                                  "role": "IK"}  # spec 0020: logging, not access
 
 entry, app_py = sys.argv[1], sys.argv[2]
 
