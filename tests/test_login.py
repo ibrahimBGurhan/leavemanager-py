@@ -402,10 +402,11 @@ STALE = {"only-hesap": {"hesap": EMAIL}, "only-giris": {"giris": T0.isoformat()}
          "broken-giris": {"hesap": EMAIL, "giris": "xx"}}
 
 
-@pytest.mark.parametrize("change", ["inactive", "deleted", *STALE])
-def test_session_with_login_keys_keeps_the_form_valid(csrf_client, account, change):
+@pytest.mark.parametrize("change", ["inactive", "deleted", "expired", *STALE])
+def test_session_with_login_keys_keeps_the_form_valid(csrf_client, account, now, change):
     """Review 0019 round 2 F-2: the gate ends a session that still carries login keys (inactive,
-    deleted, broken) without dropping the CSRF token of the login form opened before it."""
+    deleted, broken) without dropping the CSRF token of the login form opened before it. "expired"
+    (issue #40 review F-1): the gate's own expiry branch, no longer reached by the test above."""
     if change in STALE:
         token = TOKEN.search(csrf_client.get("/giris").get_data(as_text=True)).group(1)
         with csrf_client.session_transaction() as s:
@@ -415,9 +416,12 @@ def test_session_with_login_keys_keeps_the_form_valid(csrf_client, account, chan
         token = TOKEN.search(csrf_client.get("/").get_data(as_text=True)).group(1)
         if change == "inactive":
             leave_app.storage.set_account_active(EMAIL, False)
+        elif change == "expired":
+            now.current = T0 + dt.timedelta(hours=8)
         else:
             leave_app.storage._accounts.clear()           # no delete in the contract yet (G-2)
-    assert goes_to(csrf_client.get("/favicon.ico"), "/giris")
+    expected = "/giris?durum=sure" if change == "expired" else "/giris"
+    assert goes_to(csrf_client.get("/favicon.ico"), expected)
     if change == "inactive":                               # the account is back; so is login
         leave_app.storage.set_account_active(EMAIL, True)
     elif change == "deleted":
