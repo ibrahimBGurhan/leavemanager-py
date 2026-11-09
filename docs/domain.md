@@ -56,9 +56,9 @@
   `Beklemede → Onaylandi` ya da `Beklemede → Reddedildi`. `Onaylandi` ve `Reddedildi` son
   durumlardır; geri alınmaz, birbirine çevrilmez. Onayda bakiye yeniden kontrol edilir: Kalan ≥ talebin
   izin günü (aynı karar fonksiyonu; diğer bekleyen talepler sayılmaz, spec 0013 K-4); yetmezse talep `Beklemede` kalır. Redde bakiye kontrolü
-  yoktur. Geçmiş tarihli bekleyen talep de sonuçlandırılabilir (BR-8). Bu sürümde sonuçlandıran
-  IK'dır; başka roller sonuçlandıramaz (spec 0020; IK kendi talebini de sonuçlandırabilir, OD-7,
-  `docs/security.md`).
+  yoktur. Geçmiş tarihli bekleyen talep de sonuçlandırılabilir (BR-8). Sonuçlandıran IK (her
+  talep, kendi talebi dahil) ya da birimin Yöneticisidir (birimindeki başka bir personelin talebi;
+  spec 0021). Karar tek aşamalıdır; Personel sonuçlandıramaz (OD-7, `docs/security.md`).
 
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.
@@ -85,8 +85,8 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
 - **OD-6** Devreden izin (yorum satırındaki "en fazla 5 gün" taslağı) — öneri: IK yazılı kural
   verene kadar kapsam dışı; ölü kod refactor ile silinsin.
 - **OD-7** ~~Onay/red akışı yok~~ — **kapandı** (spec 0010, İbrahim Gürhan, 2026-11-04): bu
-  sürümde IK onaylar (BR-10). "Yalnızca IK" kısıtı spec 0020'de uygulandı; Yönetici onayı spec
-  0021'de değerlendirilir.
+  sürümde IK onaylar (BR-10). "Yalnızca IK" kısıtı spec 0020'de uygulandı; spec 0021 ile birimin
+  Yöneticisi de birimindeki talepleri tek aşamada sonuçlandırır.
 - **OD-8** ~~Kalıcılık: bellekteki veri her yeniden başlatmada kayboluyor.~~ — **karar verildi**
   (ADR-0001, İbrahim Gürhan, 2026-11-05): SQLite, standart kütüphane `sqlite3`, storage katmanının
   arkasında; üretimde demo verisi yüklenmez. Uygulandı (spec 0017).

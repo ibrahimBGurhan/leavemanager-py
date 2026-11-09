@@ -41,10 +41,13 @@ e-posta ve şifreyle girilir, oturum en fazla 8 saat sürer, menüdeki "Çıkı�
 5 hatalı denemede hesap 15 dakika kilitlenir. Oturumlar `SECRET_KEY` ile imzalanır: üretimde
 mutlaka tanımlayın, yoksa her yeniden başlatmada herkes yeniden giriş yapar.
 
-Roller ve yetki (spec 0020). `IK` her şeyi görür ve yapar: tüm personelin bakiyeleri ve talepleri,
-herkes adına talep, onay ve red. `Personel` yalnız kendi bakiyesini ve taleplerini görür, yalnız
-kendi adına talep açar, onay ve red yapamaz. `Yonetici` bu sürümde Personel gibidir. Yetkisiz bir
-işlem "Bu işlem için yetkiniz yok." iletisiyle reddedilir ve hiçbir kaydı değiştirmez.
+Roller ve yetki (spec 0020, 0021). `IK` her şeyi görür ve yapar: tüm personelin bakiyeleri ve
+talepleri, herkes adına talep, onay ve red. `Yonetici` kendi biriminin (bağlı olduğu personelin
+"Birim" değeri) bakiyelerini ve taleplerini görür, birimindeki başkalarının bekleyen taleplerini
+onaylar ya da reddeder; kendi talebini İK sonuçlandırır. `Personel` yalnız kendi bakiyesini ve
+taleplerini görür, yalnız kendi adına talep açar, onay ve red yapamaz. Herkes (İK hariç) yalnız
+kendi adına talep açar. Yetkisiz bir işlem "Bu işlem için yetkiniz yok." iletisiyle reddedilir ve
+hiçbir kaydı değiştirmez.
 
 **Giriş sistemi yayına yalnız HTTPS ile çıkar** (ADR-0002 D-6; ters vekil sunucu). HTTPS'li
 dağıtımda oturum çerezinin yalnız HTTPS'te gönderilmesi için:
