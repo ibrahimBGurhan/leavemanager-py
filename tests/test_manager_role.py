@@ -271,3 +271,22 @@ def test_over_long_request_id_is_refused(client, as_account, caplog, acc, action
     label = {"approve": "onay", "reject": "red"}[action]
     assert len(lines) == 1 and lines[0][0] == "WARNING"
     assert lines[0][1].startswith("yetkisiz islem: %s, %s, hedef '999" % (acc["email"], label))
+
+
+# --- Review 0021 F-3: the CSRF error screen is scoped to the unit ----------------------------
+
+MSG_CSRF = "Form geçersiz ya da süresi dolmuş. Lütfen sayfayı yenileyip tekrar deneyin."
+
+
+def test_manager_csrf_error_page_is_scoped(as_account, monkeypatch):
+    as_account(MANAGER)
+    monkeypatch.setitem(leave_app.app.config, "WTF_CSRF_ENABLED", True)
+    leave_app.app.testing = True
+    with leave_app.app.test_client() as c:
+        before = statuses()
+        resp = c.post("/requests/5/approve")
+        assert resp.status_code == 400 and MSG_CSRF in text(resp)
+        names = {row[0] for row in table_rows(resp.get_data(as_text=True))[1:]}
+        assert names == {"Ayse Yilmaz", "Ahmet Celik"}
+        assert_no_b_data(text(resp))
+        assert statuses() == before
