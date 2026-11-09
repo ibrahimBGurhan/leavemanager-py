@@ -9,7 +9,7 @@
 
 | Term | Meaning | Notes / not to be confused with |
 |---|---|---|
-| Personel (`Employee`) | İzin hakkı olan çalışan: ad, birim, işe giriş tarihi | Kullanıcı hesabı değildir (auth henüz yok) |
+| Personel (`Employee`) | İzin hakkı olan çalışan: ad, birim, işe giriş tarihi | Kullanıcı hesabı değildir; bir hesap en fazla bir personele bağlanır (spec 0018) |
 | Birim (`department`) | Personelin bağlı olduğu departman (IT, Muhasebe, IK, Satis…) | |
 | İzin Talebi (`LeaveRequest`) | Bir personelin başlangıç–bitiş tarihli yıllık izin isteği ve nedeni | Yalnızca yıllık ücretli izin; başka izin türü yok |
 | Durum (`status`) | Talebin durumu: `Beklemede` · `Onaylandi` · `Reddedildi` | Veri değeridir: ASCII yazılır, Türkçe karakterli hali (`Onaylandı`) **farklı** bir değerdir. Geçişler: BR-10 |
@@ -57,7 +57,8 @@
   durumlardır; geri alınmaz, birbirine çevrilmez. Onayda bakiye yeniden kontrol edilir: Kalan ≥ talebin
   izin günü (aynı karar fonksiyonu; diğer bekleyen talepler sayılmaz, spec 0013 K-4); yetmezse talep `Beklemede` kalır. Redde bakiye kontrolü
   yoktur. Geçmiş tarihli bekleyen talep de sonuçlandırılabilir (BR-8). Bu sürümde sonuçlandıran
-  IK'dır; yetki kısıtı henüz yok (OD-7, `docs/security.md`).
+  IK'dır; başka roller sonuçlandıramaz (spec 0020; IK kendi talebini de sonuçlandırabilir, OD-7,
+  `docs/security.md`).
 
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.
@@ -84,7 +85,8 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
 - **OD-6** Devreden izin (yorum satırındaki "en fazla 5 gün" taslağı) — öneri: IK yazılı kural
   verene kadar kapsam dışı; ölü kod refactor ile silinsin.
 - **OD-7** ~~Onay/red akışı yok~~ — **kapandı** (spec 0010, İbrahim Gürhan, 2026-11-04): bu
-  sürümde IK onaylar (BR-10). Yönetici onayı ve "yalnızca IK" kısıtı auth spec'inde değerlendirilir.
+  sürümde IK onaylar (BR-10). "Yalnızca IK" kısıtı spec 0020'de uygulandı; Yönetici onayı spec
+  0021'de değerlendirilir.
 - **OD-8** ~~Kalıcılık: bellekteki veri her yeniden başlatmada kayboluyor.~~ — **karar verildi**
   (ADR-0001, İbrahim Gürhan, 2026-11-05): SQLite, standart kütüphane `sqlite3`, storage katmanının
   arkasında; üretimde demo verisi yüklenmez. Uygulandı (spec 0017).

@@ -21,7 +21,11 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
 - **`domain/auth.py`:** `LoginService` giriş ve oturum kuralları (spec 0019): genel ret, 5
   denemede 15 dakika kilit, 8 saatlik oturum; saati (`clock.now()`), depoyu ve `hasher`'ı
   kurulumda alır.
-- **`web/routes.py`:** route'lar, sayfa ve durum rozeti burada.
+- **`domain/access.py`:** `AccountView` rol bazlı yetki (spec 0020): bir hesabın gözünden personel,
+  talep, bakiye ve işlemler; IK her şey, diğer roller yalnız bağlı personel. `LeaveService.for_account`
+  ile alınır.
+- **`web/routes.py`:** route'lar, sayfa ve durum rozeti burada; veriye ve işlemlere yalnız
+  `svc.for_account(g.account)` ile ulaşır (`tests/test_architecture.py`).
 - **`web/auth.py`:** giriş ekranı, çıkış ve her istekten önce çalışan kapı (varsayılan kapalı,
   spec 0019); kurallar için yalnız `LoginService`'i çağırır.
 - **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati
