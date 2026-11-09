@@ -33,7 +33,8 @@
 - **CSRF:** durum değiştiren her form (POST) CSRF token'ı taşır. Flask-WTF `CSRFProtect` ile
   sağlanır (spec 0011): token tarayıcı oturumuna bağlıdır, süre sınırı yoktur; eksik, bozuk ya da
   başka oturumun token'ı → 400, hiçbir kayıt değişmez, Türkçe mesaj. Oturum çerezi `HttpOnly` ve
-  `SameSite=Lax`; `Secure` zorlanmaz (iç ağ HTTP). Testlerin ortak istemcisi korumayı kapatır;
+  `SameSite=Lax`; `Secure` yalnız `SESSION_COOKIE_SECURE=1` ile (spec 0019). Testlerin
+  ortak istemcisi korumayı kapatır;
   korumayı `tests/test_csrf.py` açık olarak sınar.
 - **Form değerlerinin geri basılması:** Yeni Talep hata ekranında yalnız doğrulanmış değerler geri
   basılır: personel yalnız seçenek listesiyle tamsayı eşleşmesi, tarihler yalnız ayrıştırılmış
@@ -56,12 +57,31 @@
 - *Hesaplar (spec 0018):* kullanıcı hesapları `flask --app app hesap-ac` ile açılır; şifre
   yalnız Werkzeug özeti (scrypt) olarak saklanır, açık metni veritabanına, log'a ya da çıktıya
   yazılmaz; komut satırı argümanı ya da ortam değişkeni olarak alınmaz. Kodda varsayılan hesap ya
-  da şifre yok (`tests/test_accounts.py`). Hesaplar henüz girişte kullanılmıyor (spec 0019).
-- *Bugün:* kimlik doğrulama yok, herkes her şeyi görür, herkes adına talep girebilir ve
-  bekleyen her talebi onaylayıp reddedebilir (spec 0010; bilinçli kabul edilen risk). Başka bir
-  siteden gelen sahte form isteği ise CSRF koruması nedeniyle reddedilir (spec 0011). Giriş
-  sistemi ayrı bir feature'dır; Yönetici / IK onay ayrımı
-  orada değerlendirilir (`docs/domain.md` OD-7, BR-10).
+  da şifre yok (`tests/test_accounts.py`).
+- *Giriş (spec 0019):* giriş ekranı (`/giris`) dışındaki her istek — bilinmeyen adresler ve
+  sonradan eklenecek route'lar dahil — giriş yapmamış kullanıcıyı girişe yönlendirir; hiçbir
+  kayıt değişmez (`web/auth.py`, `tests/test_login.py::test_every_route_is_closed`). Kapı
+  `CSRFProtect`'ten önce çalışır: giriş yapmamış birinin token'sız POST'u CSRF hata sayfasına
+  (Talepler, veriyle) ulaşmaz. Her ret nedeni (bilinmeyen e-posta, yanlış şifre, pasif, kilitli,
+  boş alan) aynı iletiyi ve 401'i alır; bilinmeyen e-postada da bir şifre doğrulaması yapılır:
+  asıl maliyet olan doğrulama işi iki yolda eşittir. Yanlış şifrede sayaç yazımı kadar küçük bir
+  süre farkı kalır (review 0019 F-2: yerelde medyan ~80 ms'ye ~85 ms); 5 denemede gelen kilit
+  bu farkın ağ gürültüsünden ayrılmasını zorlaştırır. Art arda 5 hatalı denemede 15 dakika
+  kilit; sayaç veritabanında, aynı anda gelen denemelerde de kaybolmaz. E-posta en fazla 254,
+  şifre en fazla 1024 karakter (uzun girdiyle özet hesaplatılamaz). Her başarısız deneme
+  WARNING (var olan hesapta e-posta ve sayı; bilinmeyen e-postada yazılan metin değil "bilinmeyen
+  hesap"), kilit ayrı WARNING, giriş ve çıkış INFO; şifre ve özet hiçbir kayıtta yok. Oturum
+  girişten itibaren en fazla 8 saat (işlemle uzamaz); girişte önceki oturum verisi temizlenir; hesap
+  pasife alınır ya da silinirse sonraki istekte oturum kapanır. Çıkış CSRF token'lı POST.
+- *Bilinen sınır (plan 0019 Risk 4, kabul):* Flask oturumu imzalı çerezde durur; sunucuda iptal
+  listesi yok. Çıkış tarayıcıdaki çerezi siler, ama çıkıştan önce **kopyalanmış** bir çerez 8 saat
+  dolana kadar geçerli kalır (pasif hesap ve süre yine kapıda sınanır). Çerezde e-posta ve giriş
+  zamanı imzalı ama şifresiz (base64) durur; şifre ya da özet durmaz. Sunucu tarafı oturum kaydı
+  roller spec'inde ya da bir olay olursa yeniden değerlendirilir.
+- *Bugün yetki yok:* girişli her kullanıcı her şeyi görür, herkes adına talep girebilir ve
+  bekleyen her talebi onaylayıp reddedebilir (spec 0010; bilinçli kabul edilen risk). Rol bazlı
+  yetki ayrı bir spec'tir; Yönetici / IK onay ayrımı orada değerlendirilir (`docs/domain.md`
+  OD-7, BR-10).
 
 ## Dependencies
 - Her yeni paket plan aşamasında gerekçesiyle önerilir ve **insan onaylar**.

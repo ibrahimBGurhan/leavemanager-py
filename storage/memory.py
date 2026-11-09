@@ -1,4 +1,6 @@
 # Bellek deposu: testler ve LEAVEMANAGER_STORAGE=memory icin (spec 0017). Uretim deposu SQLite.
+import threading
+
 from storage.demo import demo_employees, demo_requests
 
 
@@ -7,6 +9,7 @@ class MemoryStorage:
     # Kayitlar sozluk: personel {id, name, department, hire_date};
     # talep {id, employee_id, start, end, reason, status}; hesap (spec 0018) contract.py'de
     def __init__(self):
+        self._lock = threading.Lock()  # sayac artirma atomik (spec 0019 G-4)
         self.reset()
 
     def employees(self):
@@ -38,6 +41,36 @@ class MemoryStorage:
 
     def add_account(self, record):
         self._accounts.append(record)
+
+    def _account(self, email):
+        return next((a for a in self._accounts if a["email"] == email), None)
+
+    def record_login_failure(self, email):
+        with self._lock:
+            account = self._account(email)
+            if account is None:
+                return 0
+            account["failed_attempts"] += 1
+            return account["failed_attempts"]
+
+    def lock_account(self, email, until):
+        with self._lock:
+            account = self._account(email)
+            if account is not None:
+                account["locked_until"] = until
+
+    def clear_login_failures(self, email):
+        with self._lock:
+            account = self._account(email)
+            if account is not None:
+                account["failed_attempts"] = 0
+                account["locked_until"] = None
+
+    def set_account_active(self, email, active):
+        with self._lock:
+            account = self._account(email)
+            if account is not None:
+                account["active"] = active
 
     def reset(self):
         # acilis verisi (storage/demo.py, SEED_DEMO_DATA ile ayni kayitlar); demo verisinde

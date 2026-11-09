@@ -171,6 +171,31 @@ class SqliteStorage:
              1 if record["active"] else 0, record["failed_attempts"],
              locked_until.isoformat() if locked_until is not None else None))
 
+    def record_login_failure(self, email):
+        # Artirma ve okuma ayni islemde: ayni anda gelen denemeler sayaci kaybetmez; ayni dosyayi
+        # acan ikinci surec de SQLite yazma kilidinde bekler (spec 0019 G-4)
+        with self._lock, self._db:
+            self._db.execute("UPDATE accounts SET failed_attempts = failed_attempts + 1 "
+                             "WHERE email = ?", (email,))
+            row = self._db.execute("SELECT failed_attempts FROM accounts WHERE email = ?",
+                                   (email,)).fetchone()
+        return row[0] if row is not None else 0
+
+    def lock_account(self, email, until):
+        with self._lock, self._db:
+            self._db.execute("UPDATE accounts SET locked_until = ? WHERE email = ?",
+                             (until.isoformat(), email))
+
+    def clear_login_failures(self, email):
+        with self._lock, self._db:
+            self._db.execute("UPDATE accounts SET failed_attempts = 0, locked_until = NULL "
+                             "WHERE email = ?", (email,))
+
+    def set_account_active(self, email, active):
+        with self._lock, self._db:
+            self._db.execute("UPDATE accounts SET active = ? WHERE email = ?",
+                             (1 if active else 0, email))
+
     def next_request_id(self):
         with self._lock:
             request_id = self._next_id

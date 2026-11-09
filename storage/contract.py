@@ -60,3 +60,22 @@ class LeaveStorage(Protocol):
         eklenen cakisan bir kaydi (ayni e-posta ya da personel) reddedebilir; SqliteStorage bunu
         StorageUnavailable ile yapar (spec 0018 review F-1)."""
         ...
+
+    # Giris durumu (spec 0019). Dordu de bilinmeyen e-postada sessizce hicbir sey yapmaz; kacinci
+    # denemede kilitlenecegi ve kilidin suresi domain'in karari (domain/auth.py).
+    def record_login_failure(self, email: str) -> int:
+        """Hesabin art arda basarisiz deneme sayacini atomik olarak 1 artirir ve yeni degeri doner
+        (ayni anda gelen artirmalar kaybolmaz, spec 0019 G-4). Bilinmeyen e-postada 0."""
+        ...
+
+    def lock_account(self, email: str, until) -> None:
+        """Hesabin kilit bitis zamanini (datetime) yazar; sayaca dokunmaz."""
+        ...
+
+    def clear_login_failures(self, email: str) -> None:
+        """Sayaci 0, kilidi yok yapar."""
+        ...
+
+    def set_account_active(self, email: str, active: bool) -> None:
+        """Hesabi aktif ya da pasif yapar."""
+        ...

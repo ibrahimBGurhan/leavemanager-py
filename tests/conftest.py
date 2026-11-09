@@ -18,6 +18,7 @@ os.environ.pop("LOG_LEVEL", None)
 os.environ["LEAVEMANAGER_STORAGE"] = "memory"  # spec 0017: no database file from the suite
 
 import app as leave_app  # noqa: E402
+from domain.auth import LoginService  # noqa: E402
 
 TODAY = _dt.date(2026, 10, 23)
 
@@ -30,6 +31,25 @@ def frozen_today(monkeypatch):
 @pytest.fixture(autouse=True)
 def opening_data():
     leave_app.storage.reset()
+
+
+# Spec 0019 S-1: the suite's in-process clients are logged in as this account. The class method is
+# swapped (not the instance): child processes that load app.py through runpy see the same class.
+# Production code has no flag or environment switch for this.
+TEST_ACCOUNT = {"email": "test@firma.com", "password_hash": "", "role": "IK", "employee_id": None,
+                "active": True, "failed_attempts": 0, "locked_until": None}
+_REAL_SESSION_ACCOUNT = LoginService.session_account
+
+
+@pytest.fixture(autouse=True)
+def logged_in(monkeypatch):
+    monkeypatch.setattr(LoginService, "session_account", lambda self, email, login_at: TEST_ACCOUNT)
+
+
+@pytest.fixture
+def logged_out(monkeypatch):
+    """The real session check: login tests (tests/test_login.py, tests/test_auth.py) use this."""
+    monkeypatch.setattr(LoginService, "session_account", _REAL_SESSION_ACCOUNT)
 
 
 @pytest.fixture

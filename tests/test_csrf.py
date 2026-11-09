@@ -102,7 +102,7 @@ def test_forms_carry_a_token(csrf_client):
     html = csrf_client.get("/requests").get_data(as_text=True)
     pending = [r for r in leave_app.storage.requests() if r["status"] == "Beklemede"]
     forms = html.split("<form")[1:]
-    assert len(forms) == 2 * len(pending) == 8
+    assert len(forms) == 2 * len(pending) + 1 == 9      # + the logout form (spec 0019)
     assert all(TOKEN.search(f.split("</form>")[0]) for f in forms)
 
 

@@ -24,3 +24,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+
+# Yerel ajan araç klasörleri (kişisel; commit edilmez)
+.agents/
+.codex/

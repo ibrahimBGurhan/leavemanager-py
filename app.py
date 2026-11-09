@@ -9,7 +9,7 @@ import logging
 import os
 import secrets
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import click
 from flask import Flask
@@ -17,6 +17,7 @@ from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from domain.accounts import AccountService
+from domain.auth import SESSION_HOURS, LoginService
 from domain.errors import (AccountEmployeeNotFound, EmailTaken, EmployeeAlreadyHasAccount,
                            EmployeeRequired, InvalidEmail, PasswordMismatch, PasswordTooShort,
                            UnknownRole)
@@ -24,6 +25,7 @@ from domain.leave_service import LeaveService
 from storage.demo import demo_employees, demo_requests
 from storage.memory import MemoryStorage
 from storage.sqlite import SqliteStorage, StorageUnavailable
+from web.auth import register_auth
 from web.routes import register_routes
 
 # ---------------------------------------------------------------
@@ -67,20 +69,32 @@ def load_secret_key(environ):
     return secrets.token_hex(32)
 
 
+def cookie_secure(environ):
+    # Oturum cerezinde Secure yalniz SESSION_COOKIE_SECURE=1 ile (spec 0019 R-11, ADR-0002 D-6):
+    # giris sistemi yayina yalniz HTTPS ile cikar; yerel / ic ag HTTP'de varsayilan kapali.
+    return environ.get("SESSION_COOKIE_SECURE") == "1"
+
+
 app = Flask(__name__)
 app.config["SECRET_KEY"] = load_secret_key(os.environ)
 app.config["WTF_CSRF_TIME_LIMIT"] = None        # token tarayici oturumu boyunca gecerli (K-2)
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"   # HttpOnly varsayilan; Secure zorlanmaz (K-3)
-CSRFProtect(app)
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"   # HttpOnly varsayilan (K-3)
+app.config["SESSION_COOKIE_SECURE"] = cookie_secure(os.environ)
+# Cerez Expires'i her yanitta "simdi + 8 saat" yazilir (Flask SESSION_REFRESH_EACH_REQUEST);
+# asil sinir sunucuda: oturum giris zamanindan 8 saat sonra biter, islemle uzamaz (spec 0019 R-7)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=SESSION_HOURS)
 
 # ---------------------------------------------------------------
 # Baglanti noktalari (spec 0005): testler yalniz clock, storage, svc ve app'e
 # dokunur; bu adlar burada kalir
 # ---------------------------------------------------------------
 class SystemClock:
-    # "bugun"un tek kaynagi
+    # "bugun"un ve "simdi"nin tek kaynagi
     def today(self):
         return datetime.now().date()
+
+    def now(self):
+        return datetime.now()
 
 clock = SystemClock()
 
@@ -135,6 +149,12 @@ class WerkzeugHasher:
 hasher = WerkzeugHasher()
 accounts = AccountService(storage, hasher)
 
+# Giris / cikis (spec 0019): `logins` bir baglanti noktasi. Kapi CSRFProtect'ten ONCE kurulur:
+# giris yapmamis birinin token'siz POST'u CSRF hata sayfasina (veriyle) ulasmaz (plan 0019 Risk 3).
+logins = LoginService(clock, storage, hasher)
+register_auth(app, logins)
+CSRFProtect(app)
+
 ROLE_LIST = "Personel, Yonetici, IK"
 
 
@@ -144,7 +164,7 @@ def account_error_message(error):
         return ("Geçersiz e-posta adresi: tek bir @ içermeli, iki yanı dolu olmalı ve boşluk "
                 "içermemeli.")
     if isinstance(error, EmailTaken):
-        return "Bu e-posta adresiyle bir hesap zaten var: %s" % error.email
+        return "Bu e-posta adresiyle bir hesap zaten var: %s." % error.email  # nokta: 0018 G-2
     if isinstance(error, UnknownRole):
         return "Bilinmeyen rol: '%s'. Geçerli roller: %s." % (error.role, ROLE_LIST)
     if isinstance(error, EmployeeRequired):
@@ -185,7 +205,7 @@ def create_account_command(eposta, rol, personel):
     try:
         # Sifre sorulmadan once diger girdiler dogrulanir (plan 0018 Risk 4)
         accounts.check_account_details(eposta, rol, employee_id)
-        password = click.prompt("Şifre", hide_input=True)
+        password = click.prompt("Şifre (yazarken görünmez)", hide_input=True)  # 0018 G-1
         password_again = click.prompt("Şifre (tekrar)", hide_input=True)
         record = accounts.create_account(eposta, rol, employee_id, password, password_again)
     except (InvalidEmail, EmailTaken, UnknownRole, EmployeeRequired, AccountEmployeeNotFound,
