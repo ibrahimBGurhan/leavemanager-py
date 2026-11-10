@@ -1,6 +1,6 @@
 # Spec 0026 — eszamanli-sayac-testleri (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0026-plan.md`
 - Source: issue #43 — 0022 G-1 (spec 0022 VERIFY: "`test_concurrent_adds_get_distinct_numbers` ve
@@ -37,19 +37,19 @@ none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior
 "Koruma kalkarsa" = ilgili sayaç işleminin eşzamanlı çağrılara karşı korunması (bugün kilit)
 kaldırılırsa; VERIFY bunu repo dışı kopyada mutantla dener.
 
-- [ ] PB-1 — **Personel numarası, iki depo:** personel ekleme ve numara sayacı eşzamanlılık
+- [x] PB-1 — **Personel numarası, iki depo:** personel ekleme ve numara sayacı eşzamanlılık
   testleri bugünkü kodla yeşildir; sayacın koruması kalkarsa (memory ve sqlite deposunda ayrı
   ayrı) **her koşuda** kırmızıdır (VERIFY: her mutant için 10/10 kırmızı).
-- [ ] PB-2 — **Giriş hatası sayacı** (S-2 kabul edilirse): `record_login_failure` eşzamanlılık
+- [x] PB-2 — **Giriş hatası sayacı** (S-2 kabul edilirse): `record_login_failure` eşzamanlılık
   testi bugünkü kodla yeşildir; memory deposunda koruması kalkarsa her koşuda kırmızıdır
   (VERIFY: 10/10). sqlite deposu için aynı mutantın kurulabildiği yerde aynı şart (G-a).
-- [ ] PB-3 — **Bugünkü güvenceler korunur:** testlerin bugünkü assert'leri (ör. 8 iş parçacığı ×
+- [x] PB-3 — **Bugünkü güvenceler korunur:** testlerin bugünkü assert'leri (ör. 8 iş parçacığı ×
   10 eklemede 80 ayrı numara, hiçbir kayıt kaybolmaz; 200 çağrıda 200 ayrı numara; hiçbir artış
   kaybolmaz) kaldırılmaz ve zayıflatılmaz.
-- [ ] PB-4 — **Kararlı ve hızlı:** bugünkü kodla ilgili testler 10 ardışık koşuda yeşildir
+- [x] PB-4 — **Kararlı ve hızlı:** bugünkü kodla ilgili testler 10 ardışık koşuda yeşildir
   (kararsızlık yok); testlerin süresi toplamda en fazla 5 s artar (G-b), `scripts/check` fast
   profilinde kalır.
-- [ ] PB-5 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); ilgili
+- [x] PB-5 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); ilgili
   eşzamanlılık testleri dışında hiçbir test değişmez, zayıflatılmaz ya da silinmez;
   `scripts/check` full yeşil.
 
@@ -78,8 +78,15 @@ kaldırılırsa; VERIFY bunu repo dışı kopyada mutantla dener.
 - **G-b (self-critique):** PB-4 süre sınırı kesin: en fazla 5 s (bugünkü full check ~55 s).
   *Öneri: kabul.*
 
+## Verification (VERIFY, 2026-11-10, HEAD `0830595`, bağımsız QA subagent)
+PB-1…PB-5 PASS; her mutant 10/10 kırmızı (repo dışı kopyada), bugünkü kod 10/10 yeşil, süre farkı
+≈ 3,1 s. PB-2 sqlite: kırmızının mekanizması iş parçacığı çökmesi → kayıp artış (review F-1). Review
+round 1: verdict clean; F-1 (düşük) noise, kabul + not. VERIFY bulguları: uygulama ayrıntısına
+bağlılık kabul + issue #43 notu; G-1…G-5 aksiyon yok / bilgi. Ayrıntı: `specs/plans/0026-plan.md`
+"Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
