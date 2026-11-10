@@ -133,3 +133,35 @@ def test_routes_reach_data_only_through_for_account():
                     and node.value.id == "svc" and node.attr != "for_account"):
                 bad.append(f"{where(f, node.lineno)} svc.{node.attr}")
     assert bad == []
+
+
+def parents(tree):
+    """Node -> its parent node, for every node in the tree."""
+    return {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
+
+
+def is_g_account(node):
+    return (isinstance(node, ast.Attribute) and node.attr == "account"
+            and isinstance(node.value, ast.Name) and node.value.id == "g")
+
+
+def test_for_account_gets_the_logged_in_account():
+    """Spec 0025 (issue #43, 0020 G-3): the account view is always opened for the account the gate
+    set up (g.account, spec 0019). In web/, every use of svc.for_account is a call with exactly one
+    positional argument, g.account, and no keyword arguments; at least one such call exists."""
+    bad, calls = [], 0
+    for f in layer_files("web"):
+        tree = parse(f)
+        up = parents(tree)
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)
+                    and node.value.id == "svc" and node.attr == "for_account"):
+                continue
+            call = up.get(node)
+            if (isinstance(call, ast.Call) and call.func is node and len(call.args) == 1
+                    and not call.keywords and is_g_account(call.args[0])):
+                calls += 1
+            else:
+                bad.append(f"{where(f, node.lineno)} {ast.unparse(call or node)}")
+    assert bad == []
+    assert calls >= 1, "no svc.for_account(g.account) call found under web/"

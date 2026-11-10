@@ -1,6 +1,6 @@
 # Spec 0025 — for-account-hesap-korumasi (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0025-plan.md`
 - Source: issue #43 — 0020 G-3 (spec 0020 VERIFY: "Mimari koruma testi
