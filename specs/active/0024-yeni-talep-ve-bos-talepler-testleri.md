@@ -1,6 +1,6 @@
 # Spec 0024 — yeni-talep-ve-bos-talepler-testleri (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0024-plan.md`
 - Source: issue #43 — 0020 G-4 (spec 0020 VERIFY: "Yeni Talep ekranında tarih, neden alanları ve
