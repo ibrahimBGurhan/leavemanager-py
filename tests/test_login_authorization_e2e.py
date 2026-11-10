@@ -136,7 +136,10 @@ def test_unlinked_staff_sees_nothing_and_cannot_request_after_real_login(browser
     assert UNLINKED in text
     assert counts(text) == [0, 0, 0]
     assert table_rows(home)[1:] == []                      # header only, no balance row
-    assert table_rows(html(browser.get("/requests")))[1:] == []
+    listing = browser.get("/requests")              # review 0023 F-1: cannot pass vacuously
+    assert listing.status_code == 200
+    assert table_rows(html(listing)) == [["Personel", "Baslangic", "Bitis", "Gun", "Neden",
+                                          "Durum"]]       # header only, no request row
 
     form = browser.get("/new")
     assert form.status_code == 200
