@@ -1,6 +1,6 @@
 # Spec 0022 — personel-ekleme
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0022-plan.md`
 - Source: spec 0017 K-1 ("personel ekleme ekranı … ayrı spec") ve spec 0018 G-1 ("Bilinen sınır:
@@ -90,47 +90,47 @@ da işten ayrılma kaydı, toplu içe aktarma, hesap yönetimi ekranı.
   seçme.
 
 ## Acceptance criteria
-- [ ] AC-1 — İK menüde "Yeni Personel"i görür; form Ad, Birim (kayıtlı birimler öneri listesinde),
+- [x] AC-1 — İK menüde "Yeni Personel"i görür; form Ad, Birim (kayıtlı birimler öneri listesinde),
   İşe giriş tarihi ve "Kaydet" içerir. Geçerli gönderim, kayıtlı en büyük numaradan bir fazla
   numarayla kayıt oluşturur ve "Personel #N eklendi: <ad> (<birim>)." gösterir; yeni personel Ana
   Sayfa'nın bakiye tablosunda doğru Hak / Kullanılan / Kalan / Bekleyen ile ve Yeni Talep'in
   personel listesinde görünür.
-- [ ] AC-2 — " Ayşe Yılmaz " ve " IT " olarak girilen değerler "Ayşe Yılmaz" ve "IT" olarak
+- [x] AC-2 — " Ayşe Yılmaz " ve " IT " olarak girilen değerler "Ayşe Yılmaz" ve "IT" olarak
   kaydedilir; bu personel IT Yöneticisinin (spec 0021) ekranında görünür.
-- [ ] AC-3 — Boş ad, yalnız boşluk ad, boş birim, 101 karakterlik ad, 51 karakterlik birim, eksik
+- [x] AC-3 — Boş ad, yalnız boşluk ad, boş birim, 101 karakterlik ad, 51 karakterlik birim, eksik
   tarih, bozuk tarih ve 1949-12-31 tarihi 400 ve G-2'deki ilgili iletiyi alır; birden çok hatada
   ad → birim → tarih sırasındaki ilk ileti görünür; kayıt oluşmaz; girilen değerler geri basılır.
   100 karakterlik ad, 50 karakterlik birim ve 1950-01-01 kabul edilir. `<script>` içeren bir ad
   kaydedilir ve Ana Sayfa'da metin olarak görünür, çalışmaz (G-6).
-- [ ] AC-4 — Gelecek tarihli işe giriş kabul edilir; personel Ana Sayfa'da Hak 0 ile görünür.
-- [ ] AC-5 — Aynı ad ve birimle ikinci bir personel eklenir; iki ayrı numara alırlar. Aynı anda
+- [x] AC-4 — Gelecek tarihli işe giriş kabul edilir; personel Ana Sayfa'da Hak 0 ile görünür.
+- [x] AC-5 — Aynı ad ve birimle ikinci bir personel eklenir; iki ayrı numara alırlar. Aynı anda
   gelen iki ekleme ayrı numaralar alır (G-5). Başarıdan sonra form boş açılır ve sayfa yenilemesi
   ikinci bir kayıt oluşturmaz (G-3); öneri listesi kayıtlı birimleri tekil ve alfabetik gösterir
   (G-4).
-- [ ] AC-6 — Personel, Yönetici ve personel kaydına bağlı olmayan bir Personel hesabı menüde
+- [x] AC-6 — Personel, Yönetici ve personel kaydına bağlı olmayan bir Personel hesabı menüde
   "Yeni Personel"i görmez; personel kaydına bağlı olmayan İK hesabı görür ve ekler (G-7). Bu
   üç hesabın ekranı açması ve form göndermesi 403 ve "Bu işlem için yetkiniz yok." alır; kayıt
   oluşmaz; log'da WARNING vardır. Geçersiz girdili yetkisiz gönderim de 403 alır (yetki önce).
-- [ ] AC-7 — Her ekleme için log'da `personel eklendi: #<N> (<birim>), ekleyen: <e-posta> (<rol>)`
+- [x] AC-7 — Her ekleme için log'da `personel eklendi: #<N> (<birim>), ekleyen: <e-posta> (<rol>)`
   biçiminde bir INFO satırı vardır; personelin adı ve işe giriş tarihi log'da yoktur.
-- [ ] AC-8 — Boş bir veritabanında (demo verisi yok) İK ilk personeli ekler: numarası 1'dir;
+- [x] AC-8 — Boş bir veritabanında (demo verisi yok) İK ilk personeli ekler: numarası 1'dir;
   ardından `hesap-ac --rol Personel --personel 1` bu personele hesap açar.
-- [ ] AC-9 — Token'sız ya da bozuk token'lı gönderim spec 0011 iletisini alır; kayıt oluşmaz.
-- [ ] AC-10 — Mevcut testler değişmeden geçer (Supersedes 0020/R-9 için planda onaylı satırlar
+- [x] AC-9 — Token'sız ya da bozuk token'lı gönderim spec 0011 iletisini alır; kayıt oluşmaz.
+- [x] AC-10 — Mevcut testler değişmeden geçer (Supersedes 0020/R-9 için planda onaylı satırlar
   dışında); `README.md`, `docs/security.md` ve `docs/domain.md` bugünkü durumu anlatır.
 
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 0 |
+| Fix rounds | 1 (fix-1: review round 1 F-1 — birimdeki kontrol karakterleri log satırında kaçışlanır) |
+| Review findings: real / noise | 1 / 1 (round 1: F-1 düşük real, F-2 bilgi noise — CSRF yetkiden önce, gerekçe planda). VERIFY: 10/10 Pass, 34/36 mutant kırmızı; G-1, G-2 bilinen sınır (kabul), G-3, G-4 aksiyon yok, G-5 ekran görüntüleri PR'da |
+| Regressions introduced | 0 |
+| Bugs escaped to production | 0 (henüz yayında değil) |

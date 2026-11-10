@@ -68,7 +68,9 @@
   ve birimle ikinci bir kayıt açılabilir; kayıtlar numarayla ayrılır. Numarayı depo verir:
   kayıtlı en büyük numaradan bir fazla (boş veritabanında 1), aynı anda gelen iki ekleme ayrı
   numara alır. İhlal sırası: ad → birim → tarih; ilk ihlal bildirilir, kayıt oluşmaz. Personeli
-  düzenleme, silme ve pasife alma yoktur.
+  düzenleme, silme ve pasife alma yoktur. *Bilinen sınır (VERIFY 0022 G-2, kabul):* Yeni Personel
+  ekranındaki birim öneri listesi karakter koduna göre sıralanır; Türkçe harfle başlayan birimler
+  (Ç, İ, Ö, Ş, Ü) Z'den sonra gelir.
 
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.
