@@ -104,6 +104,7 @@ def test_hr_new_request_form_keeps_its_fields(client, as_account):
     assert set(by_name) == {"employee_id", "start", "end", "reason"}
     assert by_name["employee_id"]["tag"] == "select"
     assert (by_name["start"]["type"], by_name["end"]["type"]) == ("date", "date")
+    assert by_name["reason"]["type"] == "text"                  # review 0024 F-1
     assert [c.get("value") for c in forms[0] if c.get("type") == "submit"] == ["Kaydet"]
 
 
