@@ -8,6 +8,7 @@
 """
 import datetime as _dt
 import os
+import threading
 from html.parser import HTMLParser
 
 import pytest
@@ -63,6 +64,105 @@ def client():
     leave_app.app.config["WTF_CSRF_ENABLED"] = False  # spec 0011 D3; CSRF: tests/test_csrf.py
     with leave_app.app.test_client() as c:
         yield c
+
+
+# --- spec 0026: concurrency tests open the race window themselves ------------------------------
+# A counter's unprotected read-then-write window is a few bytecodes wide; lowering the switch
+# interval does not open it (spec 0026, Observation). The hooks below make the first thread that
+# reads the counter wait for a second one. Unprotected, a second thread reads the same value and
+# both carry on with it: a duplicate number or a lost increment on every run. Protected, the
+# second thread waits for the lock, so the first one times out once (RACE_WAIT) and goes on alone.
+RACE_WAIT = 0.5  # seconds; paid once per protected test run (plan 0026 Risk 1)
+
+
+class _Rendezvous:
+    """One-shot meeting point of two threads; later calls pass straight through."""
+
+    def __init__(self):
+        self._barrier = threading.Barrier(2, timeout=RACE_WAIT)
+        self._guard = threading.Lock()
+        self._arrived = 0
+
+    def meet(self):
+        with self._guard:
+            if self._arrived >= 2:
+                return
+            self._arrived += 1
+        try:
+            self._barrier.wait()
+        except threading.BrokenBarrierError:
+            pass  # no second thread came: the counter is protected
+
+
+class _RaceConnection:
+    """Wraps a sqlite3 connection; waits once right after a statement that starts with `sql`."""
+
+    def __init__(self, db, sql, meet):
+        self._race = (db, sql, meet)
+
+    def execute(self, statement, *args):
+        db, sql, meet = self._race
+        cursor = db.execute(statement, *args)
+        if statement.startswith(sql):
+            meet()
+        return cursor
+
+    def __enter__(self):
+        return self._race[0].__enter__()
+
+    def __exit__(self, *exc):
+        return self._race[0].__exit__(*exc)
+
+    def __getattr__(self, name):
+        return getattr(self._race[0], name)
+
+
+class _RaceWindow:
+    @staticmethod
+    def counter(store, name):
+        """Reading the store's counter attribute `name` waits once for a second reader."""
+        assert name in vars(store), (
+            f"{type(store).__name__} has no {name}: race hook not installed (spec 0026)")
+        meet = _Rendezvous().meet
+        backing = "_race" + name
+        vars(store)[backing] = vars(store).pop(name)
+
+        def read(self):
+            value = vars(self)[backing]
+            meet()
+            return value
+
+        def write(self, value):
+            vars(self)[backing] = value
+
+        cls = type(store)
+        store.__class__ = type("Race" + cls.__name__, (cls,), {name: property(read, write)})
+
+    @staticmethod
+    def item(record, key):
+        """A copy of `record` whose `key` waits once for a second reader."""
+        meet = _Rendezvous().meet
+
+        class RaceRecord(dict):
+            def __getitem__(self, k):
+                value = super().__getitem__(k)
+                if k == key:
+                    meet()
+                return value
+
+        return RaceRecord(record)
+
+    @staticmethod
+    def statement(store, sql):
+        """The store's connection waits once right after a statement starting with `sql`."""
+        assert hasattr(store, "_db"), (
+            f"{type(store).__name__} has no _db: race hook not installed (spec 0026)")
+        store._db = _RaceConnection(store._db, sql, _Rendezvous().meet)
+
+
+@pytest.fixture
+def race_window():
+    return _RaceWindow
 
 
 def end_after_workdays(start, n):

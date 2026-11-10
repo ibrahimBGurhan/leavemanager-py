@@ -1,6 +1,6 @@
 # Spec 0026 — eszamanli-sayac-testleri (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0026-plan.md`
 - Source: issue #43 — 0022 G-1 (spec 0022 VERIFY: "`test_concurrent_adds_get_distinct_numbers` ve
