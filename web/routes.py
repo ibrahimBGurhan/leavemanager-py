@@ -7,7 +7,8 @@ from flask_wtf.csrf import CSRFError, generate_csrf
 from markupsafe import escape
 
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
-                           NoWorkingDays, NotAuthorized, RequestAlreadyDecided, RequestNotFound)
+                           InvalidEmployee, NoWorkingDays, NotAuthorized, RequestAlreadyDecided,
+                           RequestNotFound)
 from domain.access import ACTION_APPROVE, ACTION_REJECT, parse_request_id
 from domain.leave_service import APPROVED, PENDING, REJECTED
 from web.auth import login_page
@@ -33,9 +34,22 @@ MSG_CSRF = "Form geçersiz ya da süresi dolmuş. Lütfen sayfayı yenileyip tek
 # Yetki (spec 0020 R-6, R-7 / G-1)
 MSG_FORBIDDEN = "Bu işlem için yetkiniz yok."
 MSG_NO_EMPLOYEE = "Hesabınız bir personel kaydına bağlı değil; talep açmak için İK ile görüşün."
+# Yeni Personel (spec 0022 R-2, R-6 / G-2). Anahtar: InvalidEmployee.reason
+MSG_EMPLOYEE_ADDED = "Personel #%d eklendi: %s (%s)."
+EMPLOYEE_ERRORS = {
+    "name-missing": "Ad girin.",
+    "unit-missing": "Birim girin.",
+    "name-too-long": "Ad en fazla 100 karakter olabilir.",
+    "unit-too-long": "Birim en fazla 50 karakter olabilir.",
+    "date-invalid": "Geçerli bir işe giriş tarihi girin.",
+    "date-too-early": "İşe giriş tarihi 1950-01-01'den önce olamaz.",
+}
+MSG_EMPLOYEE_UNEXPECTED = "Personel kaydedilemedi. Lütfen daha sonra tekrar deneyin."
+NEW_EMPLOYEE_PATH = "/personel/yeni"
 
 # Menu (spec 0019): kullanicinin e-postasi Jinja kacisiyla (G-5); cikis formu sayfanin sonunda,
 # dugmesi menude (form= ozniteligi), boylece ekranlardaki formlarin sirasi degismez (plan 0019 Risk 2).
+# "Yeni Personel" yalniz personel ekleyebilen hesaba (spec 0022 R-7; bayrak gorunumden, plan Risk 3).
 
 # Basari parametresi (PRG): sonuc -> (beklenen gercek durum, mesaj)
 RESULTS = {"onaylandi": (APPROVED, MSG_APPROVED), "reddedildi": (REJECTED, MSG_REJECTED)}
@@ -47,6 +61,7 @@ td,th{border:1px solid #ccc;padding:6px 10px} .kutu{display:inline-block;border:
 </head><body>
 <h2>LeaveManager</h2>
 <p><a href="/">Ana Sayfa</a> | <a href="/requests">Talepler</a> | <a href="/new">Yeni Talep</a>
+{%- if can_add_employees %} | <a href="/personel/yeni">Yeni Personel</a>{% endif %}
 {%- if g.account %} | {{ g.account.email }} <button type="submit" form="cikis-formu">Çıkış</button>{% endif %}</p>
 {{ body|safe }}
 {%- if g.account %}
@@ -110,6 +125,12 @@ def register_routes(app, svc):
         # Veri ve islemler yalniz hesabin gorunumunden (spec 0020 R-1; plan 0020 Risk 1, 5).
         # Kapi her kapali endpoint'te g.account'u kurar (spec 0019).
         return svc.for_account(g.account)
+
+    @app.context_processor
+    def menu_flags():
+        # Giris ekraninda hesap yok: bayrak yok, baglanti yok
+        account = g.get("account")
+        return {"can_add_employees": account is not None and view().can_add_employees()}
 
     @app.route("/")
     def dashboard():
@@ -276,6 +297,72 @@ def register_routes(app, svc):
             return redirect("/requests")
         return new_request_form()
 
+    def employee_form(message=None, values=None, success=False):
+        # Yeni Personel ekrani (spec 0022 R-1). Yetkisiz hesaba form cizilmez, yalniz ileti
+        # (plan Risk 4). Ad ve birim geri basilirken kacislanir (R-6, G-6); bozuk tarih geri
+        # basilmaz (spec 0015 K-3).
+        v = view()
+        body = "<h3>Yeni Personel</h3>"
+        if not v.can_add_employees():
+            body += "<p style='color:red'>%s</p>" % escape(MSG_FORBIDDEN)
+            if message is not None and message != MSG_FORBIDDEN:
+                body = "<p style='color:red'>%s</p>" % escape(message) + body
+            return render_template_string(PAGE, body=body)
+        values = values or {}
+        # Oneri listesi: kayitli birimler, her biri bir kez, yazildigi gibi, alfabetik (G-4)
+        units = sorted({e["department"] for e in v.employees() if e["department"].strip()})
+        options = "".join("<option value=\"%s\"></option>" % escape(u) for u in units)
+        hire = values.get("hire_date")
+        body += """<form method="post">%s
+    <label for="ad">Ad</label>: <input type="text" id="ad" name="name" value="%s"><br><br>
+    <label for="birim">Birim</label>: <input type="text" id="birim" name="department" list="birimler" value="%s">
+    <datalist id="birimler">%s</datalist><br><br>
+    <label for="ise-giris">İşe giriş tarihi</label>: <input type="date" id="ise-giris" name="hire_date" value="%s"><br><br>
+    <input type="submit" value="Kaydet"></form>""" % (
+            csrf_field(), escape(values.get("name", "")), escape(values.get("department", "")),
+            options, hire.isoformat() if hire else "")
+        if message is not None:
+            color = "green" if success else "red"
+            body = "<p style='color:%s'>%s</p>" % (color, escape(message)) + body
+        return render_template_string(PAGE, body=body)
+
+    def employee_added_message():
+        # Ileti URL'deki numaradan degil kayittan kurulur; gorunur bir personele eslesmezse ileti
+        # yok (plan Risk 5; spec 0010 Risk 2 kalibi)
+        emp_id = parse_request_id(request.args.get("eklendi", ""))
+        if emp_id is None:
+            return None
+        emp = next((e for e in view().employees() if e["id"] == emp_id), None)
+        if emp is None:
+            return None
+        return MSG_EMPLOYEE_ADDED % (emp["id"], emp["name"], emp["department"])
+
+    @app.route(NEW_EMPLOYEE_PATH, methods=["GET", "POST"])
+    def new_employee():
+        v = view()
+        try:
+            v.authorize_add_employee()  # yetki girdiden once (R-7); ret log'a WARNING
+        except NotAuthorized:
+            return employee_form(), 403
+        if request.method == "GET":
+            message = employee_added_message()
+            return employee_form(message, success=message is not None)
+        values = {"name": request.form.get("name", ""),
+                  "department": request.form.get("department", ""),
+                  "hire_date": parse_date(request.form.get("hire_date"))}
+        try:
+            # Ayristirilamayan tarih None gider: ad ve birim hatalari once gelir (G-1, plan Risk 2)
+            record = v.add_employee(values["name"], values["department"], values["hire_date"])
+        except NotAuthorized:
+            return employee_form(), 403
+        except InvalidEmployee as e:
+            return employee_form(EMPLOYEE_ERRORS[e.reason], values), 400
+        except Exception:
+            logger.exception("personel kaydedilemedi")
+            return employee_form(MSG_EMPLOYEE_UNEXPECTED, values), 500
+        # PRG: yenileme kaydi tekrarlamaz, form bos acilir (G-3)
+        return redirect("%s?eklendi=%d" % (NEW_EMPLOYEE_PATH, record["id"]))
+
     @app.errorhandler(CSRFError)
     def csrf_failed(e):
         # Token yok / bozuk / baska oturumun: hicbir sey degismez, 400 + Turkce mesaj (spec 0011
@@ -283,6 +370,8 @@ def register_routes(app, svc):
         logger.warning("CSRF dogrulamasi basarisiz: %s %r", request.method, request.path)
         if request.path == "/new":
             return new_request_form(MSG_CSRF), 400  # degerler geri basilmaz (0015 K-2)
+        if request.path == NEW_EMPLOYEE_PATH:
+            return employee_form(MSG_CSRF), 400  # degerler geri basilmaz; yetkisize form yok
         if request.path == "/giris":
             return login_page(MSG_CSRF, error=True), 400  # kimse girmez (spec 0019 R-10)
         return requests_page(MSG_CSRF), 400
