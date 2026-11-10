@@ -1,6 +1,6 @@
 # Spec 0027 — yonetici-403-birim-ekrani (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0027-plan.md`
 - Source: issue #43 — 0021 G-B (spec 0021 VERIFY: "`tests/test_manager_role.py::test_manager_cannot_decide`

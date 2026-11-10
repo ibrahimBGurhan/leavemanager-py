@@ -152,6 +152,10 @@ def test_manager_cannot_decide(client, as_account, caplog, action, rid):
     label = {"approve": "onay", "reject": "red"}[action]
     assert [(r.levelname, r.getMessage()) for r in caplog.records if r.name == "domain.access"] == [
         ("WARNING", "yetkisiz islem: mudur@firma.com, %s, hedef '%s'" % (label, rid))]
+    # Spec 0027 (issue #43, 0021 G-B): the 403 screen shows the manager's unit, not just "no B".
+    rows = table_rows(resp.get_data(as_text=True))
+    assert {row[0] for row in rows[1:]} == {"Ayse Yilmaz", "Ahmet Celik"}
+    assert rows == table_rows(client.get("/requests").get_data(as_text=True))
 
 
 def test_manager_success_message_hides_other_unit(client, as_account):
