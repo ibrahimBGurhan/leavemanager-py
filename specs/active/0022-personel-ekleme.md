@@ -1,6 +1,6 @@
 # Spec 0022 — personel-ekleme
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0022-plan.md`
 - Source: spec 0017 K-1 ("personel ekleme ekranı … ayrı spec") ve spec 0018 G-1 ("Bilinen sınır:

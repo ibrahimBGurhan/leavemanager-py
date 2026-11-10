@@ -36,6 +36,12 @@ class MemoryStorage:
         self._next_id += 1
         return request_id
 
+    def next_employee_id(self):
+        with self._lock:  # ayni anda iki ekleme ayri numara alir (spec 0022 G-5)
+            employee_id = self._next_employee_id
+            self._next_employee_id += 1
+        return employee_id
+
     def accounts(self):
         return self._accounts
 
@@ -79,3 +85,4 @@ class MemoryStorage:
         self._requests = demo_requests()
         self._accounts = []
         self._next_id = 9
+        self._next_employee_id = max((e["id"] for e in self._employees), default=0) + 1

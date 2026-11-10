@@ -45,6 +45,15 @@ class LeaveStorage(Protocol):
         davranis kalici depo spec'inde (0017 K-4) belirlenir."""
         ...
 
+    def next_employee_id(self) -> int:
+        """Yeni personel numarasi (spec 0022 R-2): next_request_id ile ayni sozlesme. Depo
+        acildiginda var olan ve bu depodan daha once verilmis tum personel numaralarindan buyuk,
+        her cagrida artan; ayni depo nesnesi icinde verilen bir numara (kullanilmasa da) yeniden
+        verilmez; ayni anda gelen cagrilar ayri numara alir (G-5). Bos depoda ilk numara 1'dir.
+        Depo acildiktan sonra next_employee_id() disindan numara verilen personel kayitlarinda
+        sayacin davranisi tanimsizdir."""
+        ...
+
     def set_request_status(self, request_id: int, status: str) -> None:
         """Yalniz o talebin durumunu degistirir. Bilinmeyen numarada sessizce hicbir sey yapmaz
         (gecis karari domain'de, spec 0010)."""
