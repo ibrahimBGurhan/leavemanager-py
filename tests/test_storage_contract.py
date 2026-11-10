@@ -119,8 +119,10 @@ def test_next_employee_id_continues_after_reopen(tmp_path):
     reopened.close()
 
 
-def test_concurrent_next_employee_id_calls_get_distinct_numbers(store):
-    """G-5: two adds at the same time never get the same number."""
+def test_concurrent_next_employee_id_calls_get_distinct_numbers(store, race_window):
+    """G-5: two adds at the same time never get the same number. Spec 0026: the first read of the
+    counter waits for a second thread, so without the lock a number repeats on every run."""
+    race_window.counter(store, "_next_employee_id")
     start = threading.Barrier(8)
     seen = []
 
