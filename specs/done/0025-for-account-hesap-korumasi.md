@@ -1,6 +1,6 @@
 # Spec 0025 — for-account-hesap-korumasi (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0025-plan.md`
 - Source: issue #43 — 0020 G-3 (spec 0020 VERIFY: "Mimari koruma testi
@@ -24,17 +24,17 @@ kararıyla CHANGE lane'de, mini-spec ile (spec 0004, 0023, 0024 kalıbı).
 none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 
 ## Preserved behavior
-- [ ] PB-1 — **Hesap kuralı:** `web/` altındaki her `svc.for_account` kullanımı bir çağrıdır ve
+- [x] PB-1 — **Hesap kuralı:** `web/` altındaki her `svc.for_account` kullanımı bir çağrıdır ve
   tam olarak tek bir konumsal argüman alır: `g.account` (anahtar sözcüklü argüman yok). Bugünkü tek
   çağrı (`web/routes.py`, `view()`) bu kurala uyar; kural ihlal edilirse test dosyayı ve satırı
   adlandırarak kırmızıya düşer.
-- [ ] PB-2 — **Boşuna geçmez:** test `web/` altında en az bir `svc.for_account` çağrısı bulmazsa da
+- [x] PB-2 — **Boşuna geçmez:** test `web/` altında en az bir `svc.for_account` çağrısı bulmazsa da
   kırmızıdır (çağrı silinir ya da yeniden adlandırılırsa kural sessizce boş kalmaz).
-- [ ] PB-3 — Testler gerçekten sınar (VERIFY'da mutantla): argüman sabit bir hesap sözlüğü,
+- [x] PB-3 — Testler gerçekten sınar (VERIFY'da mutantla): argüman sabit bir hesap sözlüğü,
   `session[...]`, başka bir değişken ya da `g.user` olursa; ek argüman ya da anahtar sözcüklü
   argüman eklenirse; `svc.for_account` bir değişkene atanıp öyle çağrılırsa test kırmızı; bugünkü
   kod yeşil.
-- [ ] PB-4 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); mevcut
+- [x] PB-4 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); mevcut
   testlerin hiçbiri (`test_routes_reach_data_only_through_for_account` dahil) değişmez, zayıflatılmaz
   ya da silinmez; `scripts/check` full yeşil.
 
@@ -54,8 +54,14 @@ none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior
   ile kaçış yakalanır). *Öneri: kabul.*
 - **S-3 Boşluk koruması:** en az bir çağrı şartı (PB-2). *Öneri: kabul.*
 
+## Verification (VERIFY, 2026-11-10, HEAD `a28e795`, bağımsız QA subagent)
+PB-1…PB-4 Verified; 11/11 mutant kırmızı, zararsız kontroller (C0, C1, C2) yeşil (repo dışı kopyada).
+Review round 1: verdict clean; F-1 (düşük, bilgi) noise. G-1 (`g` gölgelenmesi, plan Risk 1) ve
+G-2 (dinamik erişim, `svc` adı) kod değişikliği olmadan kabul; G-1 PR notunda ve issue #43'te.
+Ayrıntı: `specs/plans/0025-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
