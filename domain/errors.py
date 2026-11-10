@@ -50,6 +50,14 @@ class RequestAlreadyDecided(LeaveRequestError):
         self.status = status
 
 
+class InvalidEmployee(LeaveRequestError):
+    # Yeni personel kaydi kurala uymuyor (spec 0022 R-3, R-4). reason: name-missing,
+    # unit-missing, name-too-long, unit-too-long, date-invalid, date-too-early.
+    def __init__(self, reason):
+        super().__init__(reason)
+        self.reason = reason
+
+
 # --- Kullanici hesaplari (spec 0018) ---------------------------------------------------------
 # Turkce iletiyi komut satiri araci (app.py) kurar; burada yalniz ihlalin turu ve verisi.
 

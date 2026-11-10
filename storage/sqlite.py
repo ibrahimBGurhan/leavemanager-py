@@ -87,6 +87,8 @@ class SqliteStorage:
                 self._db.commit()
             # Numara en buyuk numaradan devam eder (K-4); bu nesnede yeniden verilmez (0016)
             self._next_id = (self._db.execute("SELECT MAX(id) FROM requests").fetchone()[0] or 0) + 1
+            self._next_employee_id = (
+                self._db.execute("SELECT MAX(id) FROM employees").fetchone()[0] or 0) + 1  # 0022
         except sqlite3.Error as e:
             self._db.close()
             raise StorageUnavailable(str(e)) from e
@@ -195,6 +197,12 @@ class SqliteStorage:
         with self._lock, self._db:
             self._db.execute("UPDATE accounts SET active = ? WHERE email = ?",
                              (1 if active else 0, email))
+
+    def next_employee_id(self):
+        with self._lock:  # spec 0022 R-2, G-5: next_request_id ile ayni kalip
+            employee_id = self._next_employee_id
+            self._next_employee_id += 1
+        return employee_id
 
     def next_request_id(self):
         with self._lock:

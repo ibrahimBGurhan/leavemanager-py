@@ -80,6 +80,64 @@ def test_next_request_id_is_never_reused(store):
     assert len(seen) == 10
 
 
+# --- employee numbers (spec 0022) -------------------------------------------------------------
+
+def test_next_employee_id_is_above_every_existing_id_and_increases(store):
+    existing = ids(store.employees())
+    first = store.next_employee_id()
+    second = store.next_employee_id()
+    assert all(first > i for i in existing)
+    assert second > first
+    assert isinstance(first, int) and isinstance(second, int)
+
+
+def test_next_employee_id_is_never_reused(store):
+    seen = set()
+    for n in range(5):
+        emp_id = store.next_employee_id()
+        store.add_employee(employee(emp_id, "Kisi %d" % n))
+        seen.add(emp_id)
+        seen.add(store.next_employee_id())  # an id taken but not used is not handed out again
+    assert len(seen) == 10
+    assert len(set(ids(store.employees()))) == len(store.employees())
+
+
+def test_next_employee_id_starts_at_one_in_an_empty_store():
+    store = SqliteStorage(":memory:")
+    assert store.employees() == []
+    assert store.next_employee_id() == 1
+
+
+def test_next_employee_id_continues_after_reopen(tmp_path):
+    path = tmp_path / "personel.db"
+    store = SqliteStorage(path)
+    for n in range(3):
+        store.add_employee(employee(store.next_employee_id(), "Kisi %d" % n))
+    store.close()
+    reopened = SqliteStorage(path)
+    assert reopened.next_employee_id() == 4
+    reopened.close()
+
+
+def test_concurrent_next_employee_id_calls_get_distinct_numbers(store):
+    """G-5: two adds at the same time never get the same number."""
+    start = threading.Barrier(8)
+    seen = []
+
+    def worker():
+        start.wait()
+        for _ in range(25):
+            seen.append(store.next_employee_id())
+
+    threads = [threading.Thread(target=worker) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert len(seen) == 200
+    assert len(set(seen)) == 200
+
+
 # --- requests ---------------------------------------------------------------------------------
 
 def test_added_request_is_listed_last_with_its_fields(store):
