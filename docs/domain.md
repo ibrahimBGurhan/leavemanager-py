@@ -60,6 +60,16 @@
   talep, kendi talebi dahil) ya da birimin Yöneticisidir (birimindeki başka bir personelin talebi;
   spec 0021). Karar tek aşamalıdır; Personel sonuçlandıramaz (OD-7, `docs/security.md`).
 
+- **BR-11 Personel kaydı** (spec 0022): yeni personeli yalnız IK ekler (`docs/security.md`).
+  Ad (en fazla 100 karakter) ve birim (en fazla 50) zorunludur; baştaki ve sondaki boşluk atılır,
+  kırpılınca boş kalan değer eksiktir; birimin harf büyüklüğü korunur (Yönetici birimi tam
+  eşleşmeyle bulur, spec 0021). İşe giriş tarihi zorunludur, 1950-01-01'den önce olamaz; gelecek
+  tarih kabul edilir (hak BR-1/BR-2 ile hesaplanır: henüz başlamamış personelin hakkı 0). Aynı ad
+  ve birimle ikinci bir kayıt açılabilir; kayıtlar numarayla ayrılır. Numarayı depo verir:
+  kayıtlı en büyük numaradan bir fazla (boş veritabanında 1), aynı anda gelen iki ekleme ayrı
+  numara alır. İhlal sırası: ad → birim → tarih; ilk ihlal bildirilir, kayıt oluşmaz. Personeli
+  düzenleme, silme ve pasife alma yoktur.
+
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.
 - Durum yalnızca `Beklemede`, `Onaylandi`, `Reddedildi` değerlerinden biri olabilir.

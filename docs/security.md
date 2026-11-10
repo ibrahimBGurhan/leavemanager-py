@@ -62,6 +62,14 @@
   personel kaydı olmayan Personel / Yönetici hesabı hiçbir veri görmez, talep açamaz; IK için
   bağlantı fark etmez. Her onay ve red log'a kararı verenle yazılır:
   `izin talebi #<N>: <durum>, karar: <e-posta> (<rol>)` (ad, neden, tarih yok).
+- Personel ekleme (spec 0022): yalnız rol **IK** (bağlı personel kaydı gerekmez); Yönetici,
+  Personel ve bilinmeyen rol ekleyemez. Menüdeki "Yeni Personel" bağlantısı yalnız İK'ya
+  çizilir, ama asıl engel `AccountView.authorize_add_employee`: ekranı açma ve form gönderme
+  girdiye bakılmadan önce denetlenir; yetkisiz deneme 403, kayıt yok, log'a WARNING
+  (`yetkisiz islem: <e-posta>, personel ekleme, hedef None`). Her ekleme INFO:
+  `personel eklendi: #<N> (<birim>), ekleyen: <e-posta> (<rol>)` — ad ve işe giriş tarihi yok
+  (KVKK). Ad ve birim olduğu gibi saklanır, her ekranda kaçışlanarak gösterilir; form CSRF
+  token'lıdır.
 - Yetki kontrolü sunucu tarafında, tek yerde: `domain/access.py` (`AccountView`) hesabı parametre
   olarak alır; web her ekranı ve işlemi `svc.for_account(g.account)` üzerinden yapar ve ekranı
   (düğmeler, personel seçimi) ona göre çizer (plan 0020 Risk 1). Yetki, talebin ya da personelin
