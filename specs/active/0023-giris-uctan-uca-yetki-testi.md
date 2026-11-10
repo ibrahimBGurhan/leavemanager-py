@@ -1,6 +1,6 @@
 # Spec 0023 — giris-uctan-uca-yetki-testi (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0023-plan.md`
 - Source: issue #43 — 0020 G-1 (spec 0020 VERIFY: "Gerçek girişle Personel ve bağlı personel kaydı
