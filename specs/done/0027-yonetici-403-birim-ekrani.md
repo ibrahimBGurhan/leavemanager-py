@@ -1,6 +1,6 @@
 # Spec 0027 — yonetici-403-birim-ekrani (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0027-plan.md`
 - Source: issue #43 — 0021 G-B (spec 0021 VERIFY: "`tests/test_manager_role.py::test_manager_cannot_decide`
@@ -31,19 +31,19 @@ Talepler ekranıyla (`GET /requests`) satır satır aynı.
 none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 
 ## Preserved behavior
-- [ ] PB-1 — **Birim görünür:** `test_manager_cannot_decide`'ın her durumunda (onay ve red × kendi
+- [x] PB-1 — **Birim görünür:** `test_manager_cannot_decide`'ın her durumunda (onay ve red × kendi
   bekleyen talebi, başka birimin bekleyen talebi, birimde sonuçlanmış talep, olmayan numara,
   sayısal olmayan numara = 10 durum) 403 ekranının talep tablosundaki personel adları kümesi tam
   olarak `{"Ayse Yilmaz", "Ahmet Celik"}`'tir.
-- [ ] PB-2 — **Normal ekranla aynı** (S-1): aynı durumlarda 403 ekranının talep tablosu, yöneticinin
+- [x] PB-2 — **Normal ekranla aynı** (S-1): aynı durumlarda 403 ekranının talep tablosu, yöneticinin
   aynı andaki Talepler ekranının tablosuyla satır satır aynıdır (aynı talepler, aynı alanlar, aynı
   sıra).
-- [ ] PB-3 — **Bugünkü güvenceler korunur:** testin bugünkü assert'leri (403 ve ileti, hiçbir
+- [x] PB-3 — **Bugünkü güvenceler korunur:** testin bugünkü assert'leri (403 ve ileti, hiçbir
   kaydın değişmemesi, Muhasebe verisinin yokluğu, log satırı) kaldırılmaz ve zayıflatılmaz.
-- [ ] PB-4 — Testler gerçekten sınar (VERIFY'da mutantla): 403 ekranı süzülmemiş tüm talepleri,
+- [x] PB-4 — Testler gerçekten sınar (VERIFY'da mutantla): 403 ekranı süzülmemiş tüm talepleri,
   boş bir tabloyu ya da yalnız yöneticinin kendi taleplerini gösterirse test kırmızıdır; bugünkü
   kod yeşil.
-- [ ] PB-5 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş);
+- [x] PB-5 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş);
   `test_manager_cannot_decide` dışında hiçbir test değişmez, zayıflatılmaz ya da silinmez;
   `scripts/check` full yeşil.
 
@@ -61,8 +61,15 @@ none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior
   *Öneri: kabul* — 0026 S-4 gerekçesi; 10 durumun hepsi zaten bu testte.
 - **S-3 Üretim kodu değişmez** (PB-5). *Öneri: kabul* — iş yalnız test.
 
+## Verification (VERIFY, 2026-11-10, HEAD `dc58612`, bağımsız QA subagent)
+PB-1…PB-5 PASS; 6/6 bozucu mutant 10/10 kırmızı, değişmemiş kopya ve 2 kontrol yeşil; 4 mutantı
+(boş tablo, yalnız kendi talepleri, satır düşmesi, ters sıra) yalnız yeni assert'ler yakalıyor.
+**Kayıt notu (VERIFY G-1):** süzgeç iki ekranda birlikte gevşerse PB-2 tek başına yeşil kalır; onu
+PB-1 ve `assert_no_b_data` yakalar — PB-1 ileride kaldırılırsa bu boşluk açılır. Review round 1:
+verdict clean; F-1 (düşük) noise. Ayrıntı: `specs/plans/0027-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
