@@ -1,10 +1,12 @@
 # Is kurallari: kidem, hak, kullanilan, kalan, talep olusturma, durum gecisleri (docs/domain.md).
 # Saat ve depo disaridan verilir; bu katman Flask'i, HTML'i ve gercek saati bilmez.
 import logging
+from datetime import date
 
 from domain.access import AccountView
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
-                           NoWorkingDays, RequestAlreadyDecided, RequestNotFound)
+                           InvalidEmployee, NoWorkingDays, RequestAlreadyDecided,
+                           RequestNotFound)
 from domain.workdays import count_workdays
 
 logger = logging.getLogger(__name__)
@@ -13,6 +15,11 @@ logger = logging.getLogger(__name__)
 PENDING = "Beklemede"
 APPROVED = "Onaylandi"
 REJECTED = "Reddedildi"
+
+# Personel kaydi sinirlari (spec 0022 R-3, R-4)
+MAX_NAME = 100
+MAX_UNIT = 50
+EARLIEST_HIRE_DATE = date(1950, 1, 1)
 
 
 class LeaveService:
@@ -124,6 +131,32 @@ class LeaveService:
     def reject_request(self, request_id, decided_by=None):
         self._pending_request(request_id)  # redde bakiye kontrolu yok (R-3)
         self._decide(request_id, REJECTED, decided_by)
+
+    def add_employee(self, name, department, hire_date, added_by=None):
+        """Yeni personel kaydi (spec 0022). Ad ve birim kirpilir (R-3); ihlal sirasi ad -> birim
+        -> tarih, ilk ihlal InvalidEmployee olur (G-1). hire_date None ise tarih gecersizdir
+        (web ayristiramadigi tarihi None gecer). Gelecek tarih kabul (R-4); ayni ad kabul (R-5).
+        Numarayi depo verir (R-2, G-5). Kaydi doner."""
+        name = (name or "").strip()
+        department = (department or "").strip()
+        if not name:
+            raise InvalidEmployee("name-missing")
+        if len(name) > MAX_NAME:
+            raise InvalidEmployee("name-too-long")
+        if not department:
+            raise InvalidEmployee("unit-missing")
+        if len(department) > MAX_UNIT:
+            raise InvalidEmployee("unit-too-long")
+        if not isinstance(hire_date, date):
+            raise InvalidEmployee("date-invalid")
+        if hire_date < EARLIEST_HIRE_DATE:
+            raise InvalidEmployee("date-too-early")
+        record = {"id": self._storage.next_employee_id(), "name": name,
+                  "department": department, "hire_date": hire_date}
+        self._storage.add_employee(record)
+        # Ad ve ise giris tarihi yazilmaz (KVKK, R-8)
+        logger.info("personel eklendi: #%d (%s), ekleyen: %s", record["id"], department, added_by)
+        return record
 
     def for_account(self, account):
         # Web veriye ve islemlere yalniz bu gorunumle ulasir; yetki kurali orada (spec 0020)

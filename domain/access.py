@@ -3,9 +3,9 @@
 # birimindeki baskasinin bekleyen talebini sonuclandirir (0021 R-1…R-5); baska her rol (Personel,
 # bilinmeyen, birimi bos Yonetici) yalniz bagli oldugu personel kaydini gorur ve hicbir talebi
 # sonuclandiramaz (0020 R-1, R-5; bilinmeyen rol yetki kazanmaz, plan 0020 Risk 2). Herkes yalniz
-# kendi adina talep acar, IK haric. Yetki, talebin ya da personelin varligindan
-# ve talebin durumundan once denetlenir (R-6). Bu katman Flask'i, HTML'i ve depoyu bilmez; veriye
-# LeaveService'in public fonksiyonlariyla ulasir.
+# kendi adina talep acar, IK haric. Yeni personeli yalniz IK ekler (0022 R-7). Yetki, talebin ya
+# da personelin varligindan ve talebin durumundan once denetlenir (R-6). Bu katman Flask'i,
+# HTML'i ve depoyu bilmez; veriye LeaveService'in public fonksiyonlariyla ulasir.
 import logging
 
 from domain.errors import NotAuthorized
@@ -23,6 +23,7 @@ ACTION_APPROVE = "onay"
 ACTION_REJECT = "red"
 ACTION_CREATE_FOR_OTHER = "baskasi adina talep"
 ACTION_BALANCE = "bakiye"
+ACTION_ADD_EMPLOYEE = "personel ekleme"
 
 
 def parse_request_id(text):
@@ -49,6 +50,11 @@ class AccountView:
     def can_decide(self):
         # En az bir talebi sonuclandirabilir mi: IK ya da birim kapsamli Yonetici (plan 0021 Risk 6)
         return self.sees_everyone() or self._unit() is not None
+
+    def can_add_employees(self):
+        # Yalniz rol IK; bagli personel kaydi aranmaz, Yonetici birimi ne olursa olsun ekleyemez
+        # (spec 0022 R-7, G-7)
+        return self._account.get("role") == ROLE_HR
 
     def can_decide_request(self, r):
         """Bu talebi sonuclandirabilir mi. IK: bekleyen her talep (kendi talebi dahil, 0020 S-2).
@@ -131,6 +137,15 @@ class AccountView:
         if r is None or not self.can_decide_request(r):
             self._refuse(action, target)
 
+    def authorize_add_employee(self):
+        # Yetki girdiden once denetlenir (spec 0022 R-7): ret, gonderilen degerlere bakmaz
+        if not self.can_add_employees():
+            self._refuse(ACTION_ADD_EMPLOYEE, None)
+
+    def add_employee(self, name, department, hire_date):
+        self.authorize_add_employee()
+        return self._svc.add_employee(name, department, hire_date, added_by=self._decider())
+
     def create_request(self, emp_id, start, end, reason):
         self.authorize_create(emp_id)
         return self._svc.create_request(emp_id, start, end, reason)
@@ -144,7 +159,7 @@ class AccountView:
         return self._svc.reject_request(request_id, decided_by=self._decider())
 
     def _decider(self):
-        # Karar log'u icin "<e-posta> (<rol>)" (spec 0021 R-9)
+        # Karar ve personel ekleme log'u icin "<e-posta> (<rol>)" (spec 0021 R-9, 0022 R-8)
         return "%s (%s)" % (self._account.get("email"), self._account.get("role"))
 
     def _refuse(self, action, target):
