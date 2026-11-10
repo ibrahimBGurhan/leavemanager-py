@@ -108,9 +108,12 @@ def test_same_name_gets_a_new_number(svc):
 @pytest.mark.parametrize("factory", [pytest.param(MemoryStorage, id="memory"),
                                      pytest.param(lambda: SqliteStorage(":memory:"),
                                                   id="sqlite")])
-def test_concurrent_adds_get_distinct_numbers(factory):
-    """G-5: two adds at the same time get different numbers; none is lost."""
+def test_concurrent_adds_get_distinct_numbers(factory, race_window):
+    """G-5: two adds at the same time get different numbers; none is lost. Spec 0026: the first
+    read of the number counter waits for a second thread, so without the store's lock two adds
+    get the same number on every run (tests/conftest.py, race_window)."""
     storage = factory()
+    race_window.counter(storage, "_next_employee_id")
     service = LeaveService(leave_app.clock, storage)
     before = len(storage.employees())
     start = threading.Barrier(8)

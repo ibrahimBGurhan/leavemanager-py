@@ -119,8 +119,10 @@ def test_next_employee_id_continues_after_reopen(tmp_path):
     reopened.close()
 
 
-def test_concurrent_next_employee_id_calls_get_distinct_numbers(store):
-    """G-5: two adds at the same time never get the same number."""
+def test_concurrent_next_employee_id_calls_get_distinct_numbers(store, race_window):
+    """G-5: two adds at the same time never get the same number. Spec 0026: the first read of the
+    counter waits for a second thread, so without the lock a number repeats on every run."""
+    race_window.counter(store, "_next_employee_id")
     start = threading.Barrier(8)
     seen = []
 
@@ -256,9 +258,16 @@ def test_login_state_on_unknown_email_changes_nothing(store):
     assert [dict(a) for a in store.accounts()] == before
 
 
-def test_concurrent_login_failures_are_all_counted(store):
-    """G-4: increments that arrive at the same time are not lost."""
-    store.add_account(account("ali@firma.com"))
+def test_concurrent_login_failures_are_all_counted(store, race_window):
+    """G-4: increments that arrive at the same time are not lost. Spec 0026: the first increment
+    waits for a second thread right after reading (memory) or updating (sqlite) the counter, so
+    without the lock an increment is lost or a value repeats on every run."""
+    record = account("ali@firma.com")
+    if isinstance(store, SqliteStorage):
+        race_window.statement(store, "UPDATE accounts SET failed_attempts = failed_attempts + 1")
+    else:
+        record = race_window.item(record, "failed_attempts")
+    store.add_account(record)
     start = threading.Barrier(8)
     seen = []
 
