@@ -22,6 +22,12 @@ MAX_UNIT = 50
 EARLIEST_HIRE_DATE = date(1950, 1, 1)
 
 
+def _log_safe(text):
+    # Yazdirilamayan karakterler (CR, LF, sekme, U+2028 ...) Python kacisiyla tek satirda kalir;
+    # yazdirilabilir metin (Turkce harfler dahil) degismez
+    return "".join(c if c.isprintable() else repr(c)[1:-1] for c in text)
+
+
 class LeaveService:
 
     def __init__(self, clock, storage):
@@ -154,8 +160,10 @@ class LeaveService:
         record = {"id": self._storage.next_employee_id(), "name": name,
                   "department": department, "hire_date": hire_date}
         self._storage.add_employee(record)
-        # Ad ve ise giris tarihi yazilmaz (KVKK, R-8)
-        logger.info("personel eklendi: #%d (%s), ekleyen: %s", record["id"], department, added_by)
+        # Ad ve ise giris tarihi yazilmaz (KVKK, R-8). Birim kullanicinin yazdigi metin: kontrol
+        # karakterleri kacislanir, log'a sahte satir yazilamaz (review 0022 F-1)
+        logger.info("personel eklendi: #%d (%s), ekleyen: %s", record["id"],
+                    _log_safe(department), added_by)
         return record
 
     def for_account(self, account):

@@ -488,3 +488,20 @@ def test_csrf_failure_shows_no_form_to_other_roles(csrf_client, as_account):
     assert MSG_CSRF in text and MSG_FORBIDDEN in text
     assert form_of(page(resp)).forms == 0
     assert employee_ids() == before
+
+
+@pytest.mark.parametrize("unit, logged", [
+    pytest.param("IT\n2026-11-10 INFO sahte satir", r"IT\n2026-11-10 INFO sahte satir",
+                 id="LF"),
+    pytest.param("IT\r\nX", r"IT\r\nX", id="CRLF"),
+    pytest.param("A\N{LINE SEPARATOR}B\tC", "A\\u" "2028B\\tC", id="line-separator-and-tab"),
+    pytest.param("Arge Ğüşıöç", "Arge Ğüşıöç", id="printable-unchanged"),
+])
+def test_unit_cannot_forge_log_lines(svc, caplog, unit, logged):
+    """Review 0022 F-1: the unit is user text; control characters are escaped in the log line."""
+    with caplog.at_level(logging.INFO, logger="domain.leave_service"):
+        record = svc.for_account(HR).add_employee("Ali", unit, D(2020, 1, 6))
+    lines = [r.getMessage() for r in caplog.records if r.name == "domain.leave_service"]
+    assert lines == ["personel eklendi: #%d (%s), ekleyen: ik@firma.com (IK)"
+                     % (record["id"], logged)]
+    assert all("\n" not in line and "\r" not in line for line in lines)
