@@ -1,6 +1,6 @@
 # Spec 0023 — giris-uctan-uca-yetki-testi (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0023-plan.md`
 - Source: issue #43 — 0020 G-1 (spec 0020 VERIFY: "Gerçek girişle Personel ve bağlı personel kaydı
@@ -28,24 +28,24 @@ Testler gerçek oturum kontrolüyle (`logged_out` fikstürü) ve açık CSRF ile
 gerçek şifre özetiyle açılır, giriş `/giris` formundan yapılır, her form gönderimi sayfadaki
 token'ı kullanır (S-2). A = Ayse Yilmaz (1, IT), B = Mehmet Demir (2, Muhasebe), demo verisi.
 
-- [ ] PB-1 — **Personel (A'ya bağlı)** gerçek girişten sonra: Ana Sayfa yalnız A'nın sayılarını
+- [x] PB-1 — **Personel (A'ya bağlı)** gerçek girişten sonra: Ana Sayfa yalnız A'nın sayılarını
   ve bakiye satırını gösterir, B'nin adı ve birimi yoktur (0020 AC-2); Talepler yalnız A'nın
   taleplerini gösterir ve hiçbir Onayla / Reddet düğmesi yoktur (0020 AC-3); Yeni Talep personel
   seçimi göstermez, A'nın adını gösterir ve geçerli gönderim A adına `Beklemede` bir talep açar
   (0020 AC-4).
-- [ ] PB-2 — **Personel (A'ya bağlı)**, aynı oturumda: B'nin bekleyen talebini onaylama ve B
+- [x] PB-2 — **Personel (A'ya bağlı)**, aynı oturumda: B'nin bekleyen talebini onaylama ve B
   adına talep gönderme 403 + "Bu işlem için yetkiniz yok." alır, hiçbir kayıt değişmez, log'da
   hesabın e-postasıyla WARNING vardır (0020 AC-5, AC-6); "Yeni Personel" bağlantısı ve ekranı
   yoktur / 403 (0022 AC-6).
-- [ ] PB-3 — **Personel kaydına bağlı olmayan Personel hesabı** gerçek girişten sonra: Ana
+- [x] PB-3 — **Personel kaydına bağlı olmayan Personel hesabı** gerçek girişten sonra: Ana
   Sayfa'da sayılar 0 ve bakiye satırı yok, Talepler boş, Yeni Talep form göstermez ve G-1
   iletisini 200 ile verir, talep gönderimi 403 alır ve hiçbir talep oluşmaz (0020 AC-8).
-- [ ] PB-4 — Çıkıştan (`/cikis`) sonra aynı istemciyle Ana Sayfa yine girişe yönlendirir ve
+- [x] PB-4 — Çıkıştan (`/cikis`) sonra aynı istemciyle Ana Sayfa yine girişe yönlendirir ve
   aynı tarayıcıda ikinci hesapla giriş, ilk hesabın kapsamını taşımaz (S-3).
-- [ ] PB-5 — Testler gerçekten gerçek yolu sınar: oturumdaki hesabı görünüme bağlayan kod
+- [x] PB-5 — Testler gerçekten gerçek yolu sınar: oturumdaki hesabı görünüme bağlayan kod
   bozulursa (ör. görünüm sabit bir İK hesabıyla kurulursa ya da giriş kapısı `g.account`'u
   oturumdan okumazsa) bu testlerden en az biri kırmızıya düşer (VERIFY'da mutantla gösterilir).
-- [ ] PB-6 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); mevcut
+- [x] PB-6 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); mevcut
   testlerin hiçbiri değişmez, zayıflatılmaz ya da silinmez; `scripts/check` full yeşil.
 
 ## Out of scope
@@ -63,8 +63,13 @@ token'ı kullanır (S-2). A = Ayse Yilmaz (1, IT), B = Mehmet Demir (2, Muhasebe
 - **S-4 Yer:** yeni dosya `tests/test_login_authorization_e2e.py`; mevcut test dosyaları
   değişmez. *Öneri: kabul.*
 
+## Verification (VERIFY, 2026-11-10, HEAD `8780695`, bağımsız QA subagent)
+PB-1…PB-6 Pass; 19/20 mutant kırmızı (yakalanmayan: CSRF kapalı — istenmemişti, G-1). Review round 1:
+F-1 (düşük, boşuna geçebilen assert) real → `bb16448`. Ayrıntı: `specs/plans/0023-plan.md` "Triage" ve
+"Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
