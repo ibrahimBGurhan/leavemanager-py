@@ -43,11 +43,13 @@ def as_account(monkeypatch):
 
 class _Forms(HTMLParser):
     """The page's forms as a browser sees them: per form, its focusable controls in DOM order.
-    The logout form (/cikis, button in the menu via form=) is not a page form."""
+    The logout form (/cikis, button in the menu via form=) is not a page form. A <button> counts
+    as a browser counts it: no type means submit, and its label is its text (review 0024 F-2), so
+    <input type="submit" value="Kaydet"> and <button>Kaydet</button> read the same."""
 
     def __init__(self):
         super().__init__()
-        self.forms, self._current = [], None
+        self.forms, self._current, self._button = [], None, None
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
@@ -57,11 +59,22 @@ class _Forms(HTMLParser):
                 self.forms.append(self._current)
         elif tag in ("input", "select", "textarea", "button") and self._current is not None:
             if a.get("type") != "hidden":
-                self._current.append({"tag": tag, **a})
+                control = {"tag": tag, **a}
+                if tag == "button":
+                    control.setdefault("type", "submit")
+                    control["value"] = ""
+                    self._button = control
+                self._current.append(control)
+
+    def handle_data(self, data):
+        if self._button is not None:
+            self._button["value"] = (self._button["value"] + data).strip()
 
     def handle_endtag(self, tag):
         if tag == "form":
             self._current = None
+        elif tag == "button":
+            self._button = None
 
 
 def forms_of(html):
