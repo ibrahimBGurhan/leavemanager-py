@@ -1,6 +1,6 @@
 # Spec 0024 — yeni-talep-ve-bos-talepler-testleri (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0024-plan.md`
 - Source: issue #43 — 0020 G-4 (spec 0020 VERIFY: "Yeni Talep ekranında tarih, neden alanları ve
@@ -27,21 +27,21 @@ none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior
 Testler bugünkü test kalıbıyla çalışır (oturum kontrolü `as_account` ile; gerçek giriş yolu spec
 0023'te kilitli). A = Ayse Yilmaz (1, IT). C = talebi olmayan, test içinde eklenen bir personel.
 
-- [ ] PB-1 — **Yeni Talep, Personel (A'ya bağlı):** tek bir form vardır; içinde personel alanı
+- [x] PB-1 — **Yeni Talep, Personel (A'ya bağlı):** tek bir form vardır; içinde personel alanı
   olarak A'nın adı düz metin, Başlangıç ve Bitiş tarih alanları (`type="date"`), Neden metin
   alanı ve "Kaydet" gönderme düğmesi bulunur; personel seçimi yoktur (0020 States, Yeni Talep).
   Aynı alanlar İK'nın formunda da bugünkü gibi bulunur (seçimle birlikte).
-- [ ] PB-2 — **Klavye yolu:** formda alanlar sırasıyla Başlangıç → Bitiş → Neden → Kaydet gelir
+- [x] PB-2 — **Klavye yolu:** formda alanlar sırasıyla Başlangıç → Bitiş → Neden → Kaydet gelir
   (İK'da önce personel seçimi); sayfada `tabindex` ve betik yoktur; düğme formun içindedir,
   Enter formu gönderir (0020 Accessibility; `tests/test_login.py::test_keyboard_path` kalıbı).
-- [ ] PB-3 — **Talepler, bağlı ama talebi olmayan Personel (C'ye bağlı):** sayfa 200 döner,
+- [x] PB-3 — **Talepler, bağlı ama talebi olmayan Personel (C'ye bağlı):** sayfa 200 döner,
   tablo yalnız başlık satırından oluşur (Personel, Baslangic, Bitis, Gun, Neden, Durum), hiçbir
   düğme ve başka personelin verisi yoktur. Ana Sayfa'da sayılar 0 ve yalnız C'nin bakiye satırı
   vardır (0020 States, "Talepler, talebi yok").
-- [ ] PB-4 — Testler gerçekten sınar: Yeni Talep'ten bir alan ya da "Kaydet" kaldırılırsa,
+- [x] PB-4 — Testler gerçekten sınar: Yeni Talep'ten bir alan ya da "Kaydet" kaldırılırsa,
   alanların sırası değişirse, sayfaya `tabindex` eklenirse ya da talebi olmayan Personel'e
   başka talepler görünürse bu testlerden en az biri kırmızıya düşer (VERIFY'da mutantla).
-- [ ] PB-5 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); mevcut
+- [x] PB-5 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); mevcut
   testlerin hiçbiri değişmez, zayıflatılmaz ya da silinmez; `scripts/check` full yeşil.
 
 ## Out of scope
@@ -60,8 +60,13 @@ Testler bugünkü test kalıbıyla çalışır (oturum kontrolü `as_account` il
 - **S-4 Yer:** yeni dosya `tests/test_staff_screens.py`; mevcut test dosyaları değişmez.
   *Öneri: kabul.*
 
+## Verification (VERIFY, 2026-11-10, HEAD `cb01275`, bağımsız QA subagent)
+PB-1…PB-5 Pass; 25/25 mutant kırmızı. Review round 1: F-1, F-2 (düşük) real → `e4bd234`, `11a7161`
+(tek fix turu); round 2 (fix diff'i): bulgu yok. Ayrıntı: `specs/plans/0024-plan.md` "Triage",
+"Review round 2" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
