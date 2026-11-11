@@ -1,6 +1,6 @@
 # Spec 0028 — birim-onerisi-turkce-sira (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0028-plan.md`
 - Source: issue #43 — 0022 G-2 (spec 0022 VERIFY: "Yeni Personel ekranındaki birim öneri listesi
