@@ -1,6 +1,6 @@
 # Spec 0028 — birim-onerisi-turkce-sira (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0028-plan.md`
 - Source: issue #43 — 0022 G-2 (spec 0022 VERIFY: "Yeni Personel ekranındaki birim öneri listesi
@@ -31,39 +31,39 @@ Açılış verisine (IT, Muhasebe, IK, Satis) İK olarak şu birimlerle birer pe
 `[..., "Satis", "it"]` ile sabitliyor.
 
 ## Changed behavior
-- [ ] CB-1 — **Türkçe alfabe (S-1):** Harfler şu sırayla karşılaştırılır:
+- [x] CB-1 — **Türkçe alfabe (S-1):** Harfler şu sırayla karşılaştırılır:
   a b c ç d e f g ğ h ı i j k l m n o ö p q r s ş t u ü v w x y z. (q, w, x Türk alfabesinde yok;
   Latin alfabesindeki yerlerine konur.) Ç, Ğ, İ, Ö, Ş, Ü ile başlayan birimler alfabedeki yerinde
   görünür, Z'den sonra değil.
-- [ ] CB-2 — **Büyük/küçük harf ayrılmaz, Türkçe kurallarla (S-2):** Karşılaştırmada I ile ı, İ ile
+- [x] CB-2 — **Büyük/küçük harf ayrılmaz, Türkçe kurallarla (S-2):** Karşılaştırmada I ile ı, İ ile
   i aynı harftir; diğer harflerde büyük ve küçük aynıdır. Bu kuralla aynı harflerden oluşan iki
   birim (ör. "ARGE" ve "Arge") yan yana gelir; aralarında karakter kodu küçük olan önce gelir
   (genelde büyük harf önce; İ ile i'de i önce, çünkü İ'nin karakter kodu büyüktür) — sıra her
   zaman aynıdır. *(Spec revizyonu 1, review round 1 F-1: yalnız parantez düzeltildi; kural aynı.)*
-- [ ] CB-3 — **Harf olmayan karakterler ve alfabe dışı harfler (S-3):** Boşluk, noktalama ve
+- [x] CB-3 — **Harf olmayan karakterler ve alfabe dışı harfler (S-3):** Boşluk, noktalama ve
   rakamlar her harften önce gelir (kendi aralarında karakter koduna göre; böylece "IT Destek",
   "ITA"dan önce gelir). Bu alfabede olmayan harfler (ör. é, ä, ß) z'den sonra, karakter koduna göre
   gelir.
-- [ ] CB-4 — **Örnek (Gözlem'deki küme):** Öneri listesi tam olarak şu sırada görünür:
+- [x] CB-4 — **Örnek (Gözlem'deki küme):** Öneri listesi tam olarak şu sırada görünür:
   `2. Bölge, ar-ge, ARGE, Arge, Çağrı Merkezi, IK, ıslak, IT, İdari İşler, Muhasebe, Özel Proje,
   Satis, Şube, Üretim, Zemin, Éclair`.
-- [ ] CB-5 — `docs/domain.md` BR-11'deki "Bilinen sınır (VERIFY 0022 G-2)" notu kalkar; yerine
+- [x] CB-5 — `docs/domain.md` BR-11'deki "Bilinen sınır (VERIFY 0022 G-2)" notu kalkar; yerine
   CB-1…CB-3'ün sıralama kuralı yazılır.
 
 ## Preserved behavior
-- [ ] PB-1 — **Listenin geri kalanı aynı (0022 R-1, G-4):** Her birim bir kez ve yazıldığı gibi
+- [x] PB-1 — **Listenin geri kalanı aynı (0022 R-1, G-4):** Her birim bir kez ve yazıldığı gibi
   görünür ("it" ile "IT" iki ayrı birimdir; spec 0021 tam eşleşme); yalnız boşluktan oluşan birim
   listede yoktur; personeli olmayan veritabanında liste boştur.
-- [ ] PB-2 — **Kayıt değişmez:** Birimler girildiği gibi saklanır (kırpma dışında, harf büyüklüğü
+- [x] PB-2 — **Kayıt değişmez:** Birimler girildiği gibi saklanır (kırpma dışında, harf büyüklüğü
   korunur, 0022 R-3); Yönetici'nin birim eşleşmesi (spec 0021) ve diğer tüm ekranlar ile listelerin
   sırası (Ana Sayfa, Talepler, Yeni Talep'in personel listesi) bugünkü gibidir.
-- [ ] PB-3 — **Bağımsızlık (S-4):** Yeni bağımlılık yok (`requirements*.txt` değişmez); sıra
+- [x] PB-3 — **Bağımsızlık (S-4):** Yeni bağımlılık yok (`requirements*.txt` değişmez); sıra
   işletim sisteminin ya da sunucunun dil (locale) ayarına bağlı değildir — Windows'ta ve CI'da
   (Linux) aynı sonuç.
-- [ ] PB-4 — **Testler gerçekten sınar** (VERIFY'da mutantla): kod noktası sırası (bugünkü kod),
+- [x] PB-4 — **Testler gerçekten sınar** (VERIFY'da mutantla): kod noktası sırası (bugünkü kod),
   harf büyüklüğüne duyarlı sıra, Türkçe kuralı olmayan büyük/küçük harf eşlemesi (`str.lower`:
   I → i) ve ç/ş/ğ/ö/ü/ı'yı temel harfe indiren sıra kırmızıdır.
-- [ ] PB-5 — Mevcut testler değişmeden geçer; tek istisna
+- [x] PB-5 — Mevcut testler değişmeden geçer; tek istisna
   `test_unit_suggestions_are_distinct_and_sorted`'ın beklenen listesidir (Supersedes 0022/AC-5:
   o testin kümesinde `"it"` artık `"IT"` ile `"Muhasebe"` arasına gelir). `scripts/check` full
   yeşil.
@@ -110,8 +110,20 @@ Açılış verisine (IT, Muhasebe, IK, Satis) İK olarak şu birimlerle birer pe
 - **G-4 Risk:** Sıralama anahtarı tüm Unicode'u karşılamalı (boşluk, emoji, birleşik karakterler)
   ve hata vermemeli; 50 karakter sınırı ve birim sayısı küçük olduğu için performans sorun değil.
 
+## Verification (VERIFY, 2026-11-11, HEAD `a49a07a`, bağımsız QA subagent)
+CB-1…CB-5, PB-1…PB-5 Pass; full `CHECK GREEN (full, 3 steps, 71 s)` (712 passed, 5 skipped).
+Mutantlar repo dışı kopyada: istenen beş mutant (kod noktası, harfe duyarlı, `str.lower`, temel
+harfe indirme, eşitlik yok) ve 9 ek mutant kırmızı; değişmemiş kopya ve iki kontrol yeşil. Önce /
+sonra öneri sırası HTML'den okundu: `main` Gözlem'le, HEAD CB-4 ile birebir aynı; öneri kutusu açık
+ekran görüntüleri PR'da (merge'den önce). Review: round 1 F-1 (düşük) real → fix-1 + spec
+revizyonu 1 (CB-2 parantezi); round 2 clean. **Kayıt notları:** VERIFY G-1 — "yalnız boşluktan
+oluşan birim listede yok" maddesini koruyan test yok (0022'den beri; issue #43'e takip işi);
+G-2 — eşitlik kuralını deterministik olarak birim testi korur, ekran testi seed'e bağlı;
+G-3 — bazı birim testleri anahtarın şeklini de sınar, yanlarında davranış assert'i var. Ayrıntı:
+`specs/plans/0028-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
