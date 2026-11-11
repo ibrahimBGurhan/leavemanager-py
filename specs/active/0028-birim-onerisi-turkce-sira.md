@@ -38,7 +38,8 @@ Açılış verisine (IT, Muhasebe, IK, Satis) İK olarak şu birimlerle birer pe
 - [ ] CB-2 — **Büyük/küçük harf ayrılmaz, Türkçe kurallarla (S-2):** Karşılaştırmada I ile ı, İ ile
   i aynı harftir; diğer harflerde büyük ve küçük aynıdır. Bu kuralla aynı harflerden oluşan iki
   birim (ör. "ARGE" ve "Arge") yan yana gelir; aralarında karakter kodu küçük olan önce gelir
-  (büyük harf önce) — sıra her zaman aynıdır.
+  (genelde büyük harf önce; İ ile i'de i önce, çünkü İ'nin karakter kodu büyüktür) — sıra her
+  zaman aynıdır. *(Spec revizyonu 1, review round 1 F-1: yalnız parantez düzeltildi; kural aynı.)*
 - [ ] CB-3 — **Harf olmayan karakterler ve alfabe dışı harfler (S-3):** Boşluk, noktalama ve
   rakamlar her harften önce gelir (kendi aralarında karakter koduna göre; böylece "IT Destek",
   "ITA"dan önce gelir). Bu alfabede olmayan harfler (ör. é, ä, ß) z'den sonra, karakter koduna göre
