@@ -68,9 +68,13 @@
   ve birimle ikinci bir kayıt açılabilir; kayıtlar numarayla ayrılır. Numarayı depo verir:
   kayıtlı en büyük numaradan bir fazla (boş veritabanında 1), aynı anda gelen iki ekleme ayrı
   numara alır. İhlal sırası: ad → birim → tarih; ilk ihlal bildirilir, kayıt oluşmaz. Personeli
-  düzenleme, silme ve pasife alma yoktur. *Bilinen sınır (VERIFY 0022 G-2, kabul):* Yeni Personel
-  ekranındaki birim öneri listesi karakter koduna göre sıralanır; Türkçe harfle başlayan birimler
-  (Ç, İ, Ö, Ş, Ü) Z'den sonra gelir.
+  düzenleme, silme ve pasife alma yoktur. Yeni Personel ekranındaki birim öneri listesi Türkçe
+  alfabe sırasıyla gelir (spec 0028, `domain/collation.py`): harf sırası
+  a b c ç d e f g ğ h ı i j k l m n o ö p q r s ş t u ü v w x y z (q, w, x Latin yerinde);
+  büyük/küçük harf ayrılmaz, Türkçe kuralla (I ile ı, İ ile i aynı harftir; "IT", "İdari"den önce
+  gelir); boşluk, noktalama ve rakam her harften önce, alfabe dışı harfler (é, ä…) z'den sonra
+  gelir; yalnız harf büyüklüğüyle ayrılan birimlerde büyük harf önce. Sıra sunucunun dil ayarına
+  bağlı değildir.
 
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.
