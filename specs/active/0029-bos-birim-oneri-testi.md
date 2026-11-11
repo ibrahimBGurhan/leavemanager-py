@@ -1,6 +1,6 @@
 # Spec 0029 — bos-birim-oneri-testi (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0029-plan.md`
 - Source: issue #43 — 0028 G-1 (spec 0028 VERIFY: "Boş birimin (yalnız boşluk) öneri listesine
