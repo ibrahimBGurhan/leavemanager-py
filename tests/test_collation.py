@@ -55,6 +55,8 @@ def test_case_only_differences_are_adjacent_capital_first_and_stable():
     assert ordered(*texts) == ["arga", "ARGE", "Arge", "Arge", "arge", "Argf"]
     for perm in itertools.permutations(["arge", "Arge", "ARGE"]):
         assert ordered(*perm) == ["ARGE", "Arge", "arge"]
+    # Review F-1: the tie is the character code, and U+0130 (İ) is above i (U+0069).
+    assert ordered("İzmir", "izmir") == ["izmir", "İzmir"]
 
 
 def test_non_letters_come_before_letters():

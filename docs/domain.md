@@ -73,8 +73,9 @@
   a b c ç d e f g ğ h ı i j k l m n o ö p q r s ş t u ü v w x y z (q, w, x Latin yerinde);
   büyük/küçük harf ayrılmaz, Türkçe kuralla (I ile ı, İ ile i aynı harftir; "IT", "İdari"den önce
   gelir); boşluk, noktalama ve rakam her harften önce, alfabe dışı harfler (é, ä…) z'den sonra
-  gelir; yalnız harf büyüklüğüyle ayrılan birimlerde büyük harf önce. Sıra sunucunun dil ayarına
-  bağlı değildir.
+  gelir; yalnız harf büyüklüğüyle ayrılan birimlerde eşitlikte karakter kodu küçük olan önce gelir
+  (genelde büyük harf önce; İ/i'de i önce, çünkü İ'nin karakter kodu büyüktür). Sıra sunucunun dil
+  ayarına bağlı değildir.
 
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.

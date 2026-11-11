@@ -6,7 +6,8 @@
 #   grup 1 - alfabedeki harfler (q, w, x Latin yerinde): alfabe sirasiyla;
 #   grup 2 - alfabe disi harfler (e-akut, a-umlaut...): karakter koduna gore, z'den sonra.
 # Buyuk/kucuk harf ayrilmaz, Turkce kuralla: I -> dotless i, I-dot -> i. Esitlikte metnin kendisi
-# karsilastirilir (karakter kodu: buyuk harf once), boylece sira her zaman aynidir.
+# karsilastirilir (karakter kodu: genelde buyuk harf once; I-dot/i'de i once, cunku I-dot'un
+# kodu buyuktur), boylece sira her zaman aynidir.
 ALPHABET = "abcçdefgğhıijklmnoöpqrsştuüvwxyz"
 _RANK = {letter: index for index, letter in enumerate(ALPHABET)}
 # "İ".lower() iki karakter dondurur (i + birlesik nokta); I ve İ lower()'dan once eslenir.
