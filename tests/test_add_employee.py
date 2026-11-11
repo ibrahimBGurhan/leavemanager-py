@@ -405,7 +405,18 @@ def test_unit_suggestions_are_distinct_and_sorted(client):
     post(client, department="it")  # case is kept: a different unit (spec 0021 exact match)
     post(client, department="IT")
     f = form_of(page(client.get(PATH)))
-    assert f.options == ["Arge", "IK", "IT", "Muhasebe", "Satis", "it"]
+    assert f.options == ["Arge", "IK", "IT", "it", "Muhasebe", "Satis"]
+
+
+def test_unit_suggestions_follow_the_turkish_alphabet(client):
+    """Spec 0028 CB-1…CB-4 (issue #43, 0022 G-2): Turkish letters in their places, Turkish case
+    pairs (IK, ıslak, IT before İdari), non-letters first, letters outside the alphabet last."""
+    for unit in ["Üretim", "Çağrı Merkezi", "İdari İşler", "Şube", "Özel Proje", "Zemin", "ıslak",
+                 "ar-ge", "Arge", "ARGE", "2. Bölge", "Éclair"]:
+        assert post(client, department=unit).status_code == 302
+    assert form_of(page(client.get(PATH))).options == [
+        "2. Bölge", "ar-ge", "ARGE", "Arge", "Çağrı Merkezi", "IK", "ıslak", "IT", "İdari İşler",
+        "Muhasebe", "Özel Proje", "Satis", "Şube", "Üretim", "Zemin", "Éclair"]
 
 
 def test_unit_suggestions_are_empty_without_employees(client, monkeypatch):

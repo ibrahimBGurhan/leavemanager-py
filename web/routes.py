@@ -10,6 +10,7 @@ from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRan
                            InvalidEmployee, NoWorkingDays, NotAuthorized, RequestAlreadyDecided,
                            RequestNotFound)
 from domain.access import ACTION_APPROVE, ACTION_REJECT, parse_request_id
+from domain.collation import turkish_sort_key
 from domain.leave_service import APPROVED, PENDING, REJECTED
 from web.auth import login_page
 
@@ -309,8 +310,10 @@ def register_routes(app, svc):
                 body = "<p style='color:red'>%s</p>" % escape(message) + body
             return render_template_string(PAGE, body=body)
         values = values or {}
-        # Oneri listesi: kayitli birimler, her biri bir kez, yazildigi gibi, alfabetik (G-4)
-        units = sorted({e["department"] for e in v.employees() if e["department"].strip()})
+        # Oneri listesi: kayitli birimler, her biri bir kez, yazildigi gibi, Turkce alfabe sirasiyla
+        # (G-4, spec 0028)
+        units = sorted({e["department"] for e in v.employees() if e["department"].strip()},
+                       key=turkish_sort_key)
         options = "".join("<option value=\"%s\"></option>" % escape(u) for u in units)
         hire = values.get("hire_date")
         body += """<form method="post">%s
