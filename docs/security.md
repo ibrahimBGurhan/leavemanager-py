@@ -55,12 +55,11 @@
   biriminin (bağlı personelin Birim değeriyle tam eşleşen personel) bakiyelerini ve taleplerini
   görür, birimindeki başka bir personelin bekleyen talebini onaylar / reddeder (başka bir
   yöneticininki dahil; kendi talebini İK ya da birimdeki başka bir Yönetici sonuçlandırır),
-  yalnız kendi adına talep açar; Birim
-  değeri boş Yönetici Personel gibidir. Onay tek aşamalıdır. **Personel** yalnız bağlı olduğu
-  personel kaydının bakiyesini ve taleplerini görür, yalnız kendi adına talep açar, hiçbir talebi
-  sonuçlandıramaz. Bilinmeyen ya da bozuk rol Personel kapsamına düşer (fail-closed). Bağlı
-  personel kaydı olmayan Personel / Yönetici hesabı hiçbir veri görmez, talep açamaz; IK için
-  bağlantı fark etmez. Her onay ve red log'a kararı verenle yazılır:
+  yalnız kendi adına talep açar; Birim değeri boş Yönetici Personel gibidir. Onay tek aşamalıdır.
+  **Personel** yalnız bağlı olduğu personel kaydının bakiyesini ve taleplerini görür, yalnız kendi
+  adına talep açar, hiçbir talebi sonuçlandıramaz. Bilinmeyen ya da bozuk rol Personel kapsamına
+  düşer (fail-closed). Bağlı personel kaydı olmayan Personel / Yönetici hesabı hiçbir veri görmez,
+  talep açamaz; IK için bağlantı fark etmez. Her onay ve red log'a kararı verenle yazılır:
   `izin talebi #<N>: <durum>, karar: <e-posta> (<rol>)` (ad, neden, tarih yok).
 - Personel ekleme (spec 0022): yalnız rol **IK** (bağlı personel kaydı gerekmez); Yönetici,
   Personel ve bilinmeyen rol ekleyemez. Menüdeki "Yeni Personel" bağlantısı yalnız İK'ya
