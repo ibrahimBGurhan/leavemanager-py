@@ -1,6 +1,6 @@
 # Spec 0030 — refactor-karar-log-adi (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0030-plan.md`
 - Source: issue #43 — 0020 F2-1(b) (review 0020 round 2, `specs/plans/0020-plan.md` "Triage":

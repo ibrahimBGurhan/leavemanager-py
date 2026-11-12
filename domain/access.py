@@ -137,6 +137,14 @@ class AccountView:
         if r is None or not self.can_decide_request(r):
             self._refuse(action, target)
 
+    # Onay / red icin dar sorular: log adini burada secer, web log adini bilmez (spec 0030 S-1;
+    # issue #43, 0020 F2-1(b)). Genel soru authorize_decide public kalir (S-2).
+    def authorize_approve(self, target):
+        self.authorize_decide(ACTION_APPROVE, target)
+
+    def authorize_reject(self, target):
+        self.authorize_decide(ACTION_REJECT, target)
+
     def authorize_add_employee(self):
         # Yetki girdiden once denetlenir (spec 0022 R-7): ret, gonderilen degerlere bakmaz
         if not self.can_add_employees():
@@ -151,11 +159,11 @@ class AccountView:
         return self._svc.create_request(emp_id, start, end, reason)
 
     def approve_request(self, request_id):
-        self.authorize_decide(ACTION_APPROVE, request_id)
+        self.authorize_approve(request_id)
         return self._svc.approve_request(request_id, decided_by=self._decider())
 
     def reject_request(self, request_id):
-        self.authorize_decide(ACTION_REJECT, request_id)
+        self.authorize_reject(request_id)
         return self._svc.reject_request(request_id, decided_by=self._decider())
 
     def _decider(self):
