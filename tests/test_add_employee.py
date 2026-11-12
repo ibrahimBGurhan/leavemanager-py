@@ -419,6 +419,25 @@ def test_unit_suggestions_follow_the_turkish_alphabet(client):
         "Muhasebe", "Özel Proje", "Satis", "Şube", "Üretim", "Zemin", "Éclair"]
 
 
+def test_unit_suggestions_skip_whitespace_only_units(client):
+    """Spec 0029 PB-1, PB-2 (issue #43, 0028 G-1): a unit made only of whitespace is not offered,
+    a real unit with surrounding spaces still is. The screen rejects such units, so the records go
+    straight into the store (old data, manual edits) through the storage contract."""
+    def store(unit):
+        leave_app.storage.add_employee({"id": leave_app.storage.next_employee_id(),
+                                        "name": "Eski Kayit", "department": unit,
+                                        "hire_date": D(2020, 1, 6)})
+
+    for unit in ["", "   ", "\t", " ", " 　 "]:
+        store(unit)
+    resp = client.get(PATH)
+    assert resp.status_code == 200
+    assert form_of(page(resp)).options == ["IK", "IT", "Muhasebe", "Satis"]
+
+    store("  Arge  ")
+    assert form_of(page(client.get(PATH))).options == ["  Arge  ", "IK", "IT", "Muhasebe", "Satis"]
+
+
 def test_unit_suggestions_are_empty_without_employees(client, monkeypatch):
     monkeypatch.setattr(leave_app.storage, "_employees", [])  # MemoryStorage detail
     assert form_of(page(client.get(PATH))).options == []
