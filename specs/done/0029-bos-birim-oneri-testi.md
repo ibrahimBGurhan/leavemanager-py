@@ -1,6 +1,6 @@
 # Spec 0029 — bos-birim-oneri-testi (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0029-plan.md`
 - Source: issue #43 — 0028 G-1 (spec 0028 VERIFY: "Boş birimin (yalnız boşluk) öneri listesine
@@ -33,16 +33,16 @@ eklenince bu değer listede görünür (bkz. Out of scope). Mevcut testler süzg
 none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 
 ## Preserved behavior
-- [ ] PB-1 — **Yalnız boşluktan oluşan birim listede yok:** Depoda birimi `""`, `"   "`, `"\t"`,
+- [x] PB-1 — **Yalnız boşluktan oluşan birim listede yok:** Depoda birimi `""`, `"   "`, `"\t"`,
   `" "` ve `" 　 "` olan personel varken Yeni Personel ekranının öneri listesi tam olarak
   açılış verisinin listesidir: `IK, IT, Muhasebe, Satis` (sıra dahil). Ekran 200 döner.
-- [ ] PB-2 — **Gerçek birim yine listede:** Aynı durumda birimi boşluklarla çevrili bir ad olan
+- [x] PB-2 — **Gerçek birim yine listede:** Aynı durumda birimi boşluklarla çevrili bir ad olan
   personel (ör. `"  Arge  "`, depoya doğrudan) listede yazıldığı gibi görünür — süzgeç yalnız
   boşluktan oluşan birimleri atar, boşluk içeren birimleri değil.
-- [ ] PB-3 — **Test gerçekten sınar** (VERIFY'da mutantla): süzgeç kaldırılırsa, yalnız boş metni
+- [x] PB-3 — **Test gerçekten sınar** (VERIFY'da mutantla): süzgeç kaldırılırsa, yalnız boş metni
   atacak biçimde gevşetilirse (`if e["department"]`) ya da yalnız ASCII boşluğu kırpacak biçimde
   daraltılırsa (`.strip(" ")`) test kırmızıdır; bugünkü kod yeşil.
-- [ ] PB-4 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); mevcut hiçbir
+- [x] PB-4 — Üretim kodu değişmez (`git diff main -- domain web storage app.py` boş); mevcut hiçbir
   test değişmez, zayıflatılmaz ya da silinmez; `scripts/check` full yeşil.
 
 ## Out of scope
@@ -79,8 +79,16 @@ none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior
 - **G-3 Kırılganlık:** PB-1 açılış verisinin birim listesine bağlı; açılış verisi değişirse test
   güncellenir. Bu, mevcut öneri listesi testlerinin de bağımlılığı (aynı kalıp).
 
+## Verification (VERIFY, 2026-11-12, HEAD `c0e9b5c`)
+PB-1…PB-4 Pass; full `CHECK GREEN (full, 3 steps, 54 s)` (713 passed, 5 skipped). Mutantlar repo
+dışı kopyada (`web/routes.py:315`): süzgeç yok, `if e["department"]`, `.strip(" ")` → yeni test
+kırmızı; değişmemiş kopya yeşil. Süzgeç kaldırılınca tüm suite `1 failed, 712 passed` — 0028
+VERIFY G-1 kapandı. Üretim diff'i boş, `tests/` diff'i yalnız ekleme (19/0). Review round 1
+(read-only reviewer): clean, bulgu yok. UI değişmedi; ekran görüntüsü gerekmez. Ayrıntı:
+`specs/plans/0029-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
