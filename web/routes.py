@@ -9,7 +9,7 @@ from markupsafe import escape
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
                            InvalidEmployee, NoWorkingDays, NotAuthorized, RequestAlreadyDecided,
                            RequestNotFound)
-from domain.access import ACTION_APPROVE, ACTION_REJECT, parse_request_id
+from domain.access import parse_request_id
 from domain.collation import turkish_sort_key
 from domain.leave_service import APPROVED, PENDING, REJECTED
 from web.auth import login_page
@@ -183,14 +183,16 @@ def register_routes(app, svc):
         message = success_message()
         return requests_page(message, success=True)
 
-    def decide(request_id, action_name, result):
+    def decide(request_id, action_name, authorize_name, result):
         # Hata: yonlendirme yok, liste mesajla yeniden gosterilir (spec 0010, K-4)
         v = view()
         action = getattr(v, action_name)
+        authorize = getattr(v, authorize_name)
         try:
             # Yetki her seyden once: numara ayristirilmadan, ham degerle; olmayan ya da
-            # sonuclanmis talep de ayni iletiyi alir (R-6; plan 0020 Risk 4, review F-1)
-            v.authorize_decide(ACTION_LABELS[action_name], request_id)
+            # sonuclanmis talep de ayni iletiyi alir (R-6; plan 0020 Risk 4, review F-1). Log adini
+            # domain secer, web bilmez (spec 0030).
+            authorize(request_id)
             rid = parse_request_id(request_id)
             if rid is None:
                 return requests_page(MSG_REQUEST_NOT_FOUND), 404
@@ -208,15 +210,13 @@ def register_routes(app, svc):
             return requests_page(MSG_ACTION_UNEXPECTED), 500
         return redirect("/requests?sonuc=%s&talep=%d" % (result, rid))
 
-    ACTION_LABELS = {"approve_request": ACTION_APPROVE, "reject_request": ACTION_REJECT}
-
     @app.route("/requests/<request_id>/approve", methods=["POST"])
     def approve_request(request_id):
-        return decide(request_id, "approve_request", "onaylandi")
+        return decide(request_id, "approve_request", "authorize_approve", "onaylandi")
 
     @app.route("/requests/<request_id>/reject", methods=["POST"])
     def reject_request(request_id):
-        return decide(request_id, "reject_request", "reddedildi")
+        return decide(request_id, "reject_request", "authorize_reject", "reddedildi")
 
     def new_request_form(message=None, values=None):
         v = values or {}
