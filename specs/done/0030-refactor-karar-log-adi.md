@@ -1,6 +1,6 @@
 # Spec 0030 — refactor-karar-log-adi (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0030-plan.md`
 - Source: issue #43 — 0020 F2-1(b) (review 0020 round 2, `specs/plans/0020-plan.md` "Triage":
@@ -36,21 +36,21 @@ koda dokunuyor (yetki sınıfı web, domain ve testlerce kullanılıyor; iki dos
 none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 
 ## Preserved behavior
-- [ ] PB-1 — **Yetkisiz deneme aynı yanıtı alır:** Personel ya da Yönetici, sonuçlandıramadığı bir
+- [x] PB-1 — **Yetkisiz deneme aynı yanıtı alır:** Personel ya da Yönetici, sonuçlandıramadığı bir
   talebi (kendi talebi, başka birimin talebi, sonuçlanmış, olmayan, sayı olmayan, aşırı uzun
   numara) onaylamaya ya da reddetmeye çalışınca 403 ve bugünkü ileti; hiçbir talep değişmez.
-- [ ] PB-2 — **Log satırı aynı:** Her yetkisiz deneme için tek bir WARNING satırı, harfiyen
+- [x] PB-2 — **Log satırı aynı:** Her yetkisiz deneme için tek bir WARNING satırı, harfiyen
   `yetkisiz islem: <e-posta>, onay|red, hedef '<gönderilen ham değer>'` — onay için "onay", red
   için "red"; nedeni ve tarihleri yazılmaz.
-- [ ] PB-3 — **Sıra aynı:** Yetki, numaranın ayrıştırılmasından, talebin varlığından ve durumundan
+- [x] PB-3 — **Sıra aynı:** Yetki, numaranın ayrıştırılmasından, talebin varlığından ve durumundan
   önce denetlenir: yetkisiz hesap sayı olmayan / olmayan / sonuçlanmış talep için de 403 alır
   (404 / 400 değil). IK için olmayan talep 404, sonuçlanmış talep 400 kalır.
-- [ ] PB-4 — **Yetkili karar aynı:** IK her bekleyen talebi, Yönetici biriminde başkasının
+- [x] PB-4 — **Yetkili karar aynı:** IK her bekleyen talebi, Yönetici biriminde başkasının
   bekleyen talebini onaylar / reddeder: bugünkü yönlendirme, başarı iletisi, durum değişikliği ve
   karar log'u.
-- [ ] PB-5 — **Yapı hedefi:** Web katmanı onay / red log adlarını içermez — ne adları içe aktarır
+- [x] PB-5 — **Yapı hedefi:** Web katmanı onay / red log adlarını içermez — ne adları içe aktarır
   ne de işlemden log adına eşleme tutar; adlar yalnız yetki katmanında, tek yerde.
-- [ ] PB-6 — Hiçbir test değişmez, zayıflatılmaz ya da silinmez (refactor kuralı: sıfır test
+- [x] PB-6 — Hiçbir test değişmez, zayıflatılmaz ya da silinmez (refactor kuralı: sıfır test
   düzenlemesi); `scripts/check` full yeşil.
 
 ## Out of scope
@@ -90,8 +90,18 @@ none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior
   ör. `test_hr_decides_any_request_including_own`); PB-5 tarama + mutant; PB-6 diff + check.
 - **G-4 Boyut:** Tek yetenek, 6 kriter — bölme gerekmez.
 
+## Verification (VERIFY, 2026-11-13, HEAD `48b4fd6`)
+PB-1…PB-6 Pass; full `CHECK GREEN (full, 3 steps, 54 s)` (713 passed, 5 skipped). PB-5: daraltılmış
+tarama (triage F-1) `grep -rnI -E "from domain.access import.*ACTION_|ACTION_LABELS" web/` boş;
+`ACTION_APPROVE` / `ACTION_REJECT` yalnız `domain/access.py`'de. Mutantlar repo dışı kopyada (Plan
+Risk 4): sarmalayıcılarda adlar yer değiştirince 29, web yanlış soruyu çağırınca 15, yetki
+ayrıştırmadan sonraya kayınca 8 (404 ≠ 403), web'deki yetki silinince 27 test kırmızı; değişmemiş
+kopya yeşil. `tests/` diff'i 0 satır. Review round 1 (read-only reviewer): kodda temiz; F-1 (PB-5
+tarama komutu) kanıt ayarı olarak işlendi, düzeltme turu yok. UI değişmedi; ekran görüntüsü
+gerekmez. Ayrıntı: `specs/plans/0030-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
