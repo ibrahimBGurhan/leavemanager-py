@@ -215,3 +215,37 @@ def test_web_does_not_use_the_decision_log_names():
                     and ast.unparse(node.value) in bound):
                 bad.append(f"{where(f, node.lineno)} {ast.unparse(node)}")
     assert bad == []
+
+
+TEMPLATES = ROOT / "web" / "templates"
+UNESCAPED = re.compile(r"\|\s*safe\b|\bMarkup\b|\bautoescape\s+false\b", re.IGNORECASE)
+
+
+def test_web_html_lives_only_in_templates():
+    """Spec 0032 (ADR-0003, docs/security.md Input & output): page HTML lives only in
+    web/templates/, autoescaped. web/*.py holds no string constant with an HTML tag and never
+    names render_template_string; Flask route rules ("/requests/<request_id>/approve") are URL
+    patterns, not HTML. The templates use neither |safe, Markup nor autoescape false."""
+    bad = []
+    for f in layer_files("web"):
+        tree = parse(f)
+        rules = {id(node.args[0]) for node in ast.walk(tree)
+                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                 and node.func.attr == "route" and node.args}
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                    and id(node) not in rules and HTML_TAG.search(node.value)):
+                bad.append(f"{where(f, node.lineno)} HTML {node.value[:40]!r}")
+            name = (node.id if isinstance(node, ast.Name) else node.attr
+                    if isinstance(node, ast.Attribute) else node.name
+                    if isinstance(node, ast.alias) else None)
+            if name == "render_template_string":
+                bad.append(f"{where(f, getattr(node, 'lineno', 0))} render_template_string")
+    templates = sorted(TEMPLATES.rglob("*.html"))
+    if not templates:
+        bad.append("no templates under web/templates/")
+    for t in templates:
+        for line, text in enumerate(t.read_text(encoding="utf-8").splitlines(), 1):
+            if UNESCAPED.search(text):
+                bad.append(f"{t.relative_to(ROOT).as_posix()}:{line} {text.strip()[:60]!r}")
+    assert bad == []
