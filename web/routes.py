@@ -2,7 +2,7 @@
 import logging
 from datetime import datetime
 
-from flask import current_app, g, request, redirect, render_template_string
+from flask import current_app, g, request, redirect, render_template, render_template_string
 from flask_wtf.csrf import CSRFError, generate_csrf
 from markupsafe import escape
 
@@ -138,16 +138,13 @@ def register_routes(app, svc):
         v = view()
         reqs = v.requests()
         # Uc kutu talep sayisidir, gun degil; Personel icin yalniz kendi talepleri (R-2, G-5)
-        bekleyen = len([r for r in reqs if r["status"] == PENDING])
-        onaylanan = len([r for r in reqs if r["status"] == APPROVED])
-        reddedilen = len([r for r in reqs if r["status"] == REJECTED])
-        body = "<div class='kutu'>Bekleyen: <b>%d</b></div><div class='kutu'>Onaylanan: <b>%d</b></div><div class='kutu'>Reddedilen: <b>%d</b></div>" % (bekleyen, onaylanan, reddedilen)
-        body += "<h3>Personel Bakiyeleri</h3><table><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanilan</th><th>Kalan</th><th>Bekleyen</th></tr>"
-        for e in v.employees():
-            body += "<tr><td>%s</td><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>" % (
-                (escape(e["name"]), escape(e["department"])) + v.balance(e))
-        body += "</table>"
-        return render_template_string(PAGE, body=body)
+        rows = [{"name": e["name"], "department": e["department"], "balance": v.balance(e)}
+                for e in v.employees()]
+        return render_template(
+            "dashboard.html", rows=rows,
+            pending=len([r for r in reqs if r["status"] == PENDING]),
+            approved=len([r for r in reqs if r["status"] == APPROVED]),
+            rejected=len([r for r in reqs if r["status"] == REJECTED]))
 
     def requests_page(message=None, success=False):
         # Hata ve CSRF sayfalari da buradan: her yolda suzulmus liste (R-3, R-8)
