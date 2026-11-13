@@ -23,7 +23,9 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
   kurulumda alır.
 - **`domain/access.py`:** `AccountView` rol bazlı yetki (spec 0020, 0021): bir hesabın gözünden
   personel, talep, bakiye ve işlemler; IK her şey, Yönetici kendi birimi, diğer roller yalnız bağlı
-  personel. `LeaveService.for_account` ile alınır.
+  personel. `LeaveService.for_account` ile alınır. Yetkisiz denemelerin log adlarını (`ACTION_*`)
+  yalnız bu modül bilir; web onları kullanmaz, yetkiyi adıyla sorar (`authorize_approve` …)
+  (`tests/test_architecture.py`).
 - **`web/routes.py`:** route'lar, sayfa ve durum rozeti burada; veriye ve işlemlere yalnız
   `svc.for_account(g.account)` ile ulaşır (`tests/test_architecture.py`).
 - **`web/auth.py`:** giriş ekranı, çıkış ve her istekten önce çalışan kapı (varsayılan kapalı,

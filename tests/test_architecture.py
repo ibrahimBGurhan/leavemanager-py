@@ -165,3 +165,53 @@ def test_for_account_gets_the_logged_in_account():
                 bad.append(f"{where(f, node.lineno)} {ast.unparse(call or node)}")
     assert bad == []
     assert calls >= 1, "no svc.for_account(g.account) call found under web/"
+
+
+ACCESS = "domain.access"
+LOG_PREFIX = "ACTION_"
+
+
+def log_names():
+    """Module-level ACTION_ names in domain/access.py: the decision log names (spec 0030)."""
+    names = []
+    for node in parse(ROOT / "domain" / "access.py").body:
+        targets = node.targets if isinstance(node, ast.Assign) else (
+            [node.target] if isinstance(node, ast.AnnAssign) else [])
+        names += [t.id for t in targets if isinstance(t, ast.Name) and t.id.startswith(LOG_PREFIX)]
+    return names
+
+
+def from_module(path, node):
+    """Dotted module an ast.ImportFrom imports from; relative imports are resolved."""
+    package = list(path.relative_to(ROOT).with_suffix("").parts[:-1])
+    base = package[:len(package) - node.level + 1] if node.level else []
+    return ".".join(base + (node.module.split(".") if node.module else []))
+
+
+def test_web_does_not_use_the_decision_log_names():
+    """Spec 0031 (spec 0030 G-2): only the access layer knows the log names of refused actions;
+    web/ asks by name (authorize_approve, ...) and never uses domain.access's ACTION_ names — not
+    by name, alias or star import, nor as an attribute of the imported module. Written access
+    only: text constants ("onay"), dynamic access and a module re-bound by assignment are left
+    to review (spec Out of scope, plan Risk 2)."""
+    assert log_names(), "domain/access.py: no ACTION_ log name found"
+    bad = []
+    for f in layer_files("web"):
+        tree = parse(f)
+        bound = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                bound |= {alias.asname or alias.name for alias in node.names
+                          if alias.name == ACCESS}
+            elif isinstance(node, ast.ImportFrom):
+                module = from_module(f, node)
+                if module == ACCESS:
+                    bad += [f"{where(f, node.lineno)} import {alias.name}" for alias in node.names
+                            if alias.name == "*" or alias.name.startswith(LOG_PREFIX)]
+                bound |= {alias.asname or alias.name for alias in node.names
+                          if f"{module}.{alias.name}" == ACCESS}
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Attribute) and node.attr.startswith(LOG_PREFIX)
+                    and ast.unparse(node.value) in bound):
+                bad.append(f"{where(f, node.lineno)} {ast.unparse(node)}")
+    assert bad == []
