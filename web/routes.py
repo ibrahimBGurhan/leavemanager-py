@@ -1,10 +1,9 @@
-# HTTP: route'lar, form girdisi, sayfa ve durum rozeti. Veriye yalniz servis uzerinden erisir.
+# HTTP: route'lar, form girdisi, sablona verilen veri. Veriye yalniz servis uzerinden erisir.
 import logging
 from datetime import datetime
 
-from flask import current_app, g, request, redirect, render_template, render_template_string
-from flask_wtf.csrf import CSRFError, generate_csrf
-from markupsafe import escape
+from flask import g, request, redirect, render_template
+from flask_wtf.csrf import CSRFError
 
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
                            InvalidEmployee, NoWorkingDays, NotAuthorized, RequestAlreadyDecided,
@@ -48,29 +47,12 @@ EMPLOYEE_ERRORS = {
 MSG_EMPLOYEE_UNEXPECTED = "Personel kaydedilemedi. Lütfen daha sonra tekrar deneyin."
 NEW_EMPLOYEE_PATH = "/personel/yeni"
 
-# Menu (spec 0019): kullanicinin e-postasi Jinja kacisiyla (G-5); cikis formu sayfanin sonunda,
-# dugmesi menude (form= ozniteligi), boylece ekranlardaki formlarin sirasi degismez (plan 0019 Risk 2).
-# "Yeni Personel" yalniz personel ekleyebilen hesaba (spec 0022 R-7; bayrak gorunumden, plan Risk 3).
+# Sayfalar web/templates/ altinda, otomatik kacisla (ADR-0003, spec 0032): burada HTML yok, yalniz
+# sablona verilen veri. Menu iskelette (base.html); "Yeni Personel" bayragi gorunumden (spec 0022
+# R-7, plan Risk 3).
 
 # Basari parametresi (PRG): sonuc -> (beklenen gercek durum, mesaj)
 RESULTS = {"onaylandi": (APPROVED, MSG_APPROVED), "reddedildi": (REJECTED, MSG_REJECTED)}
-
-PAGE = """
-<html><head><meta charset="utf-8"><title>LeaveManager</title>
-<style>body{font-family:Arial;margin:30px} table{border-collapse:collapse}
-td,th{border:1px solid #ccc;padding:6px 10px} .kutu{display:inline-block;border:1px solid #ccc;padding:10px 20px;margin-right:10px}</style>
-</head><body>
-<h2>LeaveManager</h2>
-<p><a href="/">Ana Sayfa</a> | <a href="/requests">Talepler</a> | <a href="/new">Yeni Talep</a>
-{%- if can_add_employees %} | <a href="/personel/yeni">Yeni Personel</a>{% endif %}
-{%- if g.account %} | {{ g.account.email }} <button type="submit" form="cikis-formu">Çıkış</button>{% endif %}</p>
-{{ body|safe }}
-{%- if g.account %}
-<form id="cikis-formu" method="post" action="/cikis">
-{%- if config.get("WTF_CSRF_ENABLED", True) %}<input type='hidden' name='csrf_token' value='{{ csrf_token() }}'>{% endif %}</form>
-{%- endif %}
-</body></html>
-"""
 
 
 def status_color(status):
@@ -83,14 +65,6 @@ def status_color(status):
     if status == REJECTED:
         color = "red"
     return color
-
-
-def csrf_field():
-    # Durum degistiren her formda token (spec 0011 CB-1). Koruma kapaliyken alan uretilmez:
-    # token'in anlami yok ve ortak test istemcisi korumayi kapatir (plan 0011 Risk 2)
-    if not current_app.config.get("WTF_CSRF_ENABLED", True):
-        return ""
-    return "<input type='hidden' name='csrf_token' value='%s'>" % escape(generate_csrf())
 
 
 def parse_date(text):
@@ -110,14 +84,6 @@ def form_values(form):
         emp_id = None
     return {"employee_id": emp_id, "start": parse_date(form.get("start")),
             "end": parse_date(form.get("end")), "reason": form.get("reason", "")}
-
-
-def decision_buttons(request_id):
-    # Durum hucresinde; dugme etiketi value ozniteliginde ("Kaydet" kalibi, plan 0010 Risk 1)
-    return "".join(
-        " <form method='post' action='/requests/%d/%s' style='display:inline'>%s"
-        "<input type='submit' value='%s'></form>" % (request_id, action, csrf_field(), label)
-        for action, label in (("approve", "Onayla"), ("reject", "Reddet")))
 
 
 def register_routes(app, svc):
@@ -290,31 +256,22 @@ def register_routes(app, svc):
         # (plan Risk 4). Ad ve birim geri basilirken kacislanir (R-6, G-6); bozuk tarih geri
         # basilmaz (spec 0015 K-3).
         v = view()
-        body = "<h3>Yeni Personel</h3>"
         if not v.can_add_employees():
-            body += "<p style='color:red'>%s</p>" % escape(MSG_FORBIDDEN)
-            if message is not None and message != MSG_FORBIDDEN:
-                body = "<p style='color:red'>%s</p>" % escape(message) + body
-            return render_template_string(PAGE, body=body)
+            # Ustte yalniz yetki iletisinden farkli bir ileti (ör. CSRF), kirmizi
+            return render_template(
+                "new_employee.html", forbidden=True, forbidden_text=MSG_FORBIDDEN,
+                message=message if message != MSG_FORBIDDEN else None, message_color="red")
         values = values or {}
         # Oneri listesi: kayitli birimler, her biri bir kez, yazildigi gibi, Turkce alfabe sirasiyla
         # (G-4, spec 0028)
         units = sorted({e["department"] for e in v.employees() if e["department"].strip()},
                        key=turkish_sort_key)
-        options = "".join("<option value=\"%s\"></option>" % escape(u) for u in units)
         hire = values.get("hire_date")
-        body += """<form method="post">%s
-    <label for="ad">Ad</label>: <input type="text" id="ad" name="name" value="%s"><br><br>
-    <label for="birim">Birim</label>: <input type="text" id="birim" name="department" list="birimler" value="%s">
-    <datalist id="birimler">%s</datalist><br><br>
-    <label for="ise-giris">İşe giriş tarihi</label>: <input type="date" id="ise-giris" name="hire_date" value="%s"><br><br>
-    <input type="submit" value="Kaydet"></form>""" % (
-            csrf_field(), escape(values.get("name", "")), escape(values.get("department", "")),
-            options, hire.isoformat() if hire else "")
-        if message is not None:
-            color = "green" if success else "red"
-            body = "<p style='color:%s'>%s</p>" % (color, escape(message)) + body
-        return render_template_string(PAGE, body=body)
+        return render_template(
+            "new_employee.html", forbidden=False, message=message,
+            message_color="green" if success else "red", units=units,
+            name=values.get("name", ""), department=values.get("department", ""),
+            hire_date=hire.isoformat() if hire else "")
 
     def employee_added_message():
         # Ileti URL'deki numaradan degil kayittan kurulur; gorunur bir personele eslesmezse ileti
