@@ -1,6 +1,6 @@
 # Spec 0031 — log-adi-mimari-testi (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0031-plan.md`
 - Source: spec 0030 G-2 (`specs/done/0030-refactor-karar-log-adi.md`, Self-critique: "Yeni test
