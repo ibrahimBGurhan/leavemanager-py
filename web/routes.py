@@ -216,33 +216,25 @@ def register_routes(app, svc):
     def new_request_form(message=None, values=None):
         v = values or {}
         acc = view()
+        employees = own_name = None
+        no_employee = False
         if acc.sees_everyone():
-            options = "".join("<option value='%d'%s>%s</option>" % (
-                e["id"], " selected" if e["id"] == v.get("employee_id") else "", escape(e["name"]))
-                for e in acc.employees())
-            employee_field = "<select name=\"employee_id\">%s</select>" % options
+            employees = acc.employees()
         else:
             own = acc.own_employee()
             if own is None:
                 # Bagli personel kaydi yok: form yok, yalniz bilgi (R-7, G-1)
-                body = "<h3>Yeni Talep</h3><p>%s</p>" % escape(MSG_NO_EMPLOYEE)
-                if message is not None:
-                    body = "<p style='color:red'>%s</p>" % escape(message) + body
-                return render_template_string(PAGE, body=body)
-            # Secim yok, kendi adi sabit metin; talep her zaman kendi adina (R-4)
-            employee_field = escape(own["name"])
-        start = v["start"].isoformat() if v.get("start") else ""
-        end = v["end"].isoformat() if v.get("end") else ""
-        body = """<h3>Yeni Talep</h3><form method="post">%s
-    Personel: %s<br><br>
-    Baslangic: <input type="date" name="start" value="%s"><br><br>
-    Bitis: <input type="date" name="end" value="%s"><br><br>
-    Neden: <input type="text" name="reason" value="%s"><br><br>
-    <input type="submit" value="Kaydet"></form>""" % (csrf_field(), employee_field, start, end,
-                                                       escape(v.get("reason", "")))
-        if message is not None:
-            body = "<p style='color:red'>%s</p>" % escape(message) + body
-        return render_template_string(PAGE, body=body)
+                no_employee = True
+            else:
+                # Secim yok, kendi adi sabit metin; talep her zaman kendi adina (R-4)
+                own_name = own["name"]
+        return render_template(
+            "new_request.html", message=message, no_employee=no_employee,
+            no_employee_text=MSG_NO_EMPLOYEE, employees=employees,
+            selected=v.get("employee_id"), own_name=own_name,
+            start=v["start"].isoformat() if v.get("start") else "",
+            end=v["end"].isoformat() if v.get("end") else "",
+            reason=v.get("reason", ""))
 
     @app.route("/new", methods=["GET", "POST"])
     def new_request():
