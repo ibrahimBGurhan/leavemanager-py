@@ -73,8 +73,8 @@ td,th{border:1px solid #ccc;padding:6px 10px} .kutu{display:inline-block;border:
 """
 
 
-def status_badge(status):
-    # renkler: UI isi
+def status_color(status):
+    # Durum rozetinin rengi (UI isi); rozet _macros.html'de (spec 0032)
     color = "#999"
     if status == APPROVED:
         color = "green"
@@ -82,7 +82,7 @@ def status_badge(status):
         color = "orange"
     if status == REJECTED:
         color = "red"
-    return "<b style='color:%s'>%s</b>" % (color, status)
+    return color
 
 
 def csrf_field():
@@ -151,17 +151,15 @@ def register_routes(app, svc):
         v = view()
         employees = v.employees()
         # Dugme yalniz sonuclandirabilecegi talepte (0020 R-3, 0021 R-4); asil engel domain'de
-        body = "<h3>Izin Talepleri</h3><table><tr><th>Personel</th><th>Baslangic</th><th>Bitis</th><th>Gun</th><th>Neden</th><th>Durum</th></tr>"
+        rows = []
         for r in v.requests():
             emp = [e for e in employees if e["id"] == r["employee_id"]][0]
-            body += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>" % (
-                escape(emp["name"]), r["start"], r["end"], v.calc_days(r["start"], r["end"]), escape(r["reason"]),
-                status_badge(r["status"]) + (decision_buttons(r["id"]) if v.can_decide_request(r) else ""))
-        body += "</table>"
-        if message is not None:
-            color = "green" if success else "red"
-            body = "<p style='color:%s'>%s</p>" % (color, escape(message)) + body
-        return render_template_string(PAGE, body=body)
+            rows.append({"id": r["id"], "name": emp["name"], "start": r["start"], "end": r["end"],
+                         "days": v.calc_days(r["start"], r["end"]), "reason": r["reason"],
+                         "status": r["status"], "color": status_color(r["status"]),
+                         "can_decide": v.can_decide_request(r)})
+        return render_template("requests.html", rows=rows, message=message,
+                               message_color="green" if success else "red")
 
     def success_message():
         # Mesaj yalniz talebin gercek durumu parametreyle eslesirse gosterilir (plan 0010 Risk 2)
