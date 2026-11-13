@@ -1,7 +1,7 @@
 # Giris / cikis ve varsayilan kapali kapi (spec 0019, ADR-0002 D-4…D-6). Kurallar domain/auth.py'de;
-# burada yalniz HTTP: oturum cerezi, yonlendirme, giris ekrani. HTML Jinja ile, otomatik kacisla
-# (docs/security.md); kullanici girdisi sayfaya yalniz {{ }} ile girer.
-from flask import g, redirect, render_template_string, request, session
+# burada yalniz HTTP: oturum cerezi, yonlendirme, giris ekrani. Ekran web/templates/login.html'de,
+# otomatik kacisla (docs/security.md, spec 0032); kullanici girdisi sayfaya yalniz {{ }} ile girer.
+from flask import g, redirect, render_template, request, session
 
 from domain.errors import LoginRefused, SessionExpired
 
@@ -18,26 +18,10 @@ LOGIN_KEYS = ("hesap", "giris", "_permanent")
 # ?durum= yalniz bu sabit eslemeden ileti secer; bilinmeyen deger yok sayilir (plan 0019 Risk 8)
 STATUS_MESSAGES = {"sure": MSG_EXPIRED, "cikis": MSG_LOGGED_OUT}
 
-LOGIN_PAGE = """
-<html><head><meta charset="utf-8"><title>Giriş</title>
-<style>body{font-family:Arial;margin:30px}</style>
-</head><body>
-<h2>LeaveManager</h2>
-<h3>Giriş</h3>
-{% if message %}<p{% if error %} style='color:red'{% endif %}>{{ message }}</p>{% endif %}
-<form method="post" action="/giris">
-{%- if config.get("WTF_CSRF_ENABLED", True) %}<input type='hidden' name='csrf_token' value='{{ csrf_token() }}'>{% endif %}
-    <label for="eposta">E-posta</label>: <input type="text" id="eposta" name="eposta" value="{{ email }}" autocomplete="username"><br><br>
-    <label for="sifre">Şifre</label>: <input type="password" id="sifre" name="sifre" autocomplete="current-password"><br><br>
-    <input type="submit" value="Giriş Yap"></form>
-<p>{{ note }}</p>
-</body></html>
-"""
-
 
 def login_page(message=None, error=False, email=""):
-    return render_template_string(LOGIN_PAGE, message=message, error=error, email=email,
-                                  note=MSG_LOCK_NOTE)
+    return render_template("login.html", message=message, error=error, email=email,
+                           note=MSG_LOCK_NOTE)
 
 
 def register_auth(app, logins):
