@@ -1,6 +1,6 @@
 # Spec 0031 — log-adi-mimari-testi (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0031-plan.md`
 - Source: spec 0030 G-2 (`specs/done/0030-refactor-karar-log-adi.md`, Self-critique: "Yeni test
@@ -38,20 +38,20 @@ kalıbı).
 none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 
 ## Preserved behavior
-- [ ] PB-1 — **Ad kuralı:** `web/` altındaki hiçbir dosya yetki katmanının log adlarını
+- [x] PB-1 — **Ad kuralı:** `web/` altındaki hiçbir dosya yetki katmanının log adlarını
   (`domain.access` içindeki `ACTION_` önekli adlar) kullanmaz: ne adla içe aktarır
   (`from domain.access import ACTION_…`, takma adla da), ne yıldızla içe aktarır
   (`from domain.access import *`), ne de modülü içe aktarıp öznitelik olarak erişir
   (`import domain.access` / `from domain import access` → `….ACTION_…`). Bugünkü kod uyar; kural
   ihlal edilirse test dosyayı ve satırı adlandırarak kırmızıya düşer.
-- [ ] PB-2 — **Boşuna geçmez:** yetki katmanında `ACTION_` önekli en az bir modül düzeyi ad yoksa
+- [x] PB-2 — **Boşuna geçmez:** yetki katmanında `ACTION_` önekli en az bir modül düzeyi ad yoksa
   (adlar yeniden adlandırılır ya da taşınırsa) test de kırmızıdır; kural sessizce boş kalmaz.
-- [ ] PB-3 — **Test gerçekten sınar** (VERIFY'da mutantla, repo dışı kopyada): web'e
+- [x] PB-3 — **Test gerçekten sınar** (VERIFY'da mutantla, repo dışı kopyada): web'e
   `from domain.access import ACTION_APPROVE` (düz ve takma adla), yıldızlı import,
   `from domain import access` + `access.ACTION_REJECT` ve `import domain.access` +
   `domain.access.ACTION_BALANCE` eklenirse; yetki katmanındaki adlar `LOG_` önekine çevrilirse test
   kırmızı; bugünkü kod yeşil.
-- [ ] PB-4 — Üretim kodu değişmez (`git diff main...HEAD -- domain web storage app.py` boş);
+- [x] PB-4 — Üretim kodu değişmez (`git diff main...HEAD -- domain web storage app.py` boş);
   mevcut testlerin hiçbiri değişmez, zayıflatılmaz ya da silinmez (yeni test eklenir); `scripts/check`
   full yeşil.
 
@@ -100,8 +100,17 @@ none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior
 - **G-4 Test edilebilirlik:** PB-1, PB-2 yeni testle; PB-3 VERIFY mutantlarıyla; PB-4 diff + check.
 - **G-5 Boyut:** Tek kural, 4 kriter — bölme gerekmez.
 
+## Verification (VERIFY, 2026-11-13, HEAD `50c4abd`)
+PB-1…PB-4 Pass; full `CHECK GREEN (full, 3 steps, 53 s)` (714 passed, 5 skipped). Mutantlar repo
+dışı kopyada (plan Risk 4), yalnız `tests/test_architecture.py`: düz, takma adlı ve yıldızlı import,
+`from domain import access` + öznitelik, `import domain.access` + öznitelik, `ACTION_` → `LOG_`
+yeniden adlandırma → yeni test kırmızı (diğer 7 mimari test yeşil); değişmemiş kopya ve web'e yerel
+`ACTION_FOO` sabiti → yeşil. Üretim diff'i boş, `tests/` diff'i yalnız ekleme (50/0). Review round 1
+(read-only reviewer): temiz; F-1 (`import domain` + `domain.access.ACTION_…`) noise. UI değişmedi;
+ekran görüntüsü gerekmez. Ayrıntı: `specs/plans/0031-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
