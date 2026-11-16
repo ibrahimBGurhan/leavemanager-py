@@ -16,7 +16,8 @@ from email.utils import parsedate_to_datetime
 import pytest
 
 import app as leave_app
-from conftest import controls, headings, submit_labels, visible_text
+from conftest import (BOOTSTRAP_JS, controls, form_bs_attrs, headings, scripts, submit_labels,
+                      visible_text)
 
 pytestmark = pytest.mark.usefixtures("logged_out")
 
@@ -504,7 +505,9 @@ def test_keyboard_path(client):
     html = client.get("/giris").get_data(as_text=True)
     form = html.split("<form")[1].split("</form>")[0]
     assert form.index('id="eposta"') < form.index('id="sifre"') < form.index('type="submit"')
-    assert "tabindex" not in html and "<script" not in html
+    assert "tabindex" not in html
+    assert scripts(html) in ([], [(BOOTSTRAP_JS, "")])          # at most Bootstrap's bundle, no inline JS
+    assert form_bs_attrs(html) == []                            # and no form control bound to it
 
 
 # --- AC-11: cookie ----------------------------------------------------------------------------

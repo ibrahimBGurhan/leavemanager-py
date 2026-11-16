@@ -16,7 +16,7 @@ from html.parser import HTMLParser
 import pytest
 
 import app as leave_app
-from conftest import table_rows, visible_text
+from conftest import BOOTSTRAP_JS, form_bs_attrs, scripts, table_rows, visible_text
 from domain.auth import LoginService
 
 A, A_NAME = 1, "Ayse Yilmaz"
@@ -135,7 +135,9 @@ def test_new_request_keyboard_order(client, as_account, acc, order):
     forms = forms_of(html)
     assert len(forms) == 1
     assert control_names(forms[0]) == order
-    assert "tabindex" not in html.lower() and "<script" not in html.lower()
+    assert "tabindex" not in html.lower()
+    assert scripts(html) == [(BOOTSTRAP_JS, "")]                # only Bootstrap's bundle, no inline JS
+    assert form_bs_attrs(html) == []                            # and no form control bound to it
 
 
 # --- PB-3: linked staff without requests --------------------------------------------------------

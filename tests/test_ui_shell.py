@@ -5,8 +5,13 @@ by SHA-256 (plan 0034 "Sabitlenen özetler"). Static files need no login; screen
 """
 import hashlib
 import pathlib
+import re
 
 import pytest
+
+import app as leave_app
+from conftest import BOOTSTRAP_JS, current_links, page_links, scripts, visible_text
+from domain.auth import LoginService
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 VENDOR = ROOT / "web" / "static" / "vendor" / "bootstrap-5.3.8"
@@ -41,3 +46,126 @@ def test_static_serves_only_files_under_static(client):
     """G-3: the open endpoint does not reach outside web/static/."""
     for path in ("/static/../app.py", "/static/..%2fapp.py", "/static/vendor/../../templates/base.html"):
         assert client.get(path).status_code == 404, path
+
+
+# --- step 3: the shell -------------------------------------------------------------------------
+CSS = ["/static/vendor/bootstrap-5.3.8/bootstrap.min.css", "/static/app.css"]
+NOSCRIPT = "/static/noscript.css"
+EXTERNAL = re.compile(r"""(?:src|href)\s*=\s*["']\s*(?:[a-z][a-z0-9+.-]*:|//)""", re.IGNORECASE)
+
+
+def account(role, employee_id, email):
+    return {"email": email, "password_hash": "", "role": role, "employee_id": employee_id,
+            "active": True, "failed_attempts": 0, "locked_until": None}
+
+
+HR = account("IK", None, "ik@firma.com")
+MANAGER = account("Yonetici", 4, "mudur@firma.com")
+STAFF = account("Personel", 1, "ayse@firma.com")
+ROLES = [pytest.param(HR, id="IK"), pytest.param(MANAGER, id="Yonetici"),
+         pytest.param(STAFF, id="Personel")]
+SCREENS = ["/", "/requests", "/new", "/personel/yeni"]
+MENU = [("Ana Sayfa", "/"), ("Talepler", "/requests"), ("Yeni Talep", "/new")]
+
+
+@pytest.fixture
+def as_account(monkeypatch):
+    def use(acc):
+        monkeypatch.setattr(LoginService, "session_account", lambda self, email, login_at: acc)
+    return use
+
+
+def html_of(resp):
+    return resp.get_data(as_text=True)
+
+
+@pytest.mark.parametrize("acc", ROLES)
+def test_assets_load_from_own_server(client, as_account, acc):
+    """AC-1: every screen links Bootstrap's CSS, its JS bundle and app.css from the app itself;
+    nothing points to another server (no scheme, no protocol-relative URL)."""
+    as_account(acc)
+    for path in SCREENS:
+        html = html_of(client.get(path))
+        for href in CSS:
+            assert f'href="{href}"' in html, (path, href)
+        assert scripts(html) == [(BOOTSTRAP_JS, "")], path
+        assert not EXTERNAL.search(html), (path, EXTERNAL.search(html))
+    for asset in CSS + [BOOTSTRAP_JS, NOSCRIPT]:
+        assert client.get(asset).status_code == 200, asset
+
+
+@pytest.mark.parametrize("acc, links", [
+    pytest.param(HR, MENU + [("Yeni Personel", "/personel/yeni")], id="IK"),
+    pytest.param(MANAGER, MENU, id="Yonetici"),
+    pytest.param(STAFF, MENU, id="Personel"),
+])
+def test_menu_links_per_role(client, as_account, acc, links):
+    """AC-3: same targets, same order; Yeni Personel only for an account that can add employees;
+    e-mail and Çıkış in the bar."""
+    as_account(acc)
+    for path in ("/", "/requests", "/new"):
+        html = html_of(client.get(path))
+        assert page_links(html) == links, path
+        text = visible_text(html)
+        assert acc["email"] in text and "Çıkış" in text, path
+
+
+@pytest.mark.parametrize("method, path, current", [
+    ("get", "/", ("Ana Sayfa", "/")),
+    ("get", "/requests", ("Talepler", "/requests")),
+    ("get", "/requests?sonuc=onaylandi&talep=1", ("Talepler", "/requests")),
+    ("post", "/requests/999/approve", ("Talepler", "/requests")),      # 404 screen
+    ("post", "/requests/1/approve", ("Talepler", "/requests")),        # 400 screen
+    ("get", "/new", ("Yeni Talep", "/new")),
+    ("post", "/new", ("Yeni Talep", "/new")),                          # 400 screen
+    ("get", "/personel/yeni", ("Yeni Personel", "/personel/yeni")),
+    ("post", "/personel/yeni", ("Yeni Personel", "/personel/yeni")),   # 400 screen
+])
+def test_current_page_is_marked(client, as_account, method, path, current):
+    """AC-3, G-4: the screen that is drawn marks its own menu item, error screens included —
+    exactly one link, also for screen readers (aria-current)."""
+    as_account(HR)
+    html = html_of(getattr(client, method)(path))
+    assert current_links(html) == [current]
+
+
+def test_csrf_error_screen_marks_requests(as_account, monkeypatch):
+    """G-4: a refused /cikis (no token) draws the Talepler screen, so Talepler is marked."""
+    as_account(HR)
+    monkeypatch.setitem(leave_app.app.config, "WTF_CSRF_ENABLED", True)
+    leave_app.app.testing = True
+    with leave_app.app.test_client() as c:
+        resp = c.post("/cikis")
+    assert resp.status_code == 400
+    assert current_links(html_of(resp)) == [("Talepler", "/requests")]
+
+
+def test_staff_on_employee_screen_marks_nothing(client, as_account):
+    """G-4: the Yeni Personel screen of an account without the link marks no item."""
+    as_account(STAFF)
+    resp = client.get("/personel/yeni")
+    assert resp.status_code == 403 and current_links(html_of(resp)) == []
+
+
+def test_mobile_menu_toggle(client):
+    """AC-5 (markup part; the 360 px view is VERIFY's screenshot): viewport meta, and a toggle
+    button with an accessible name that controls the menu and reports open/closed."""
+    html = html_of(client.get("/"))
+    assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in html
+    toggles = re.findall(r"<button[^>]*navbar-toggler[^>]*>", html)
+    assert len(toggles) == 1
+    toggle = toggles[0]
+    assert 'aria-label="Menüyü aç/kapat"' in toggle and 'aria-expanded="false"' in toggle
+    menu_id = re.search(r'aria-controls="([^"]+)"', toggle).group(1)
+    assert f'id="{menu_id}"' in html and f'data-bs-target="#{menu_id}"' in toggle
+
+
+def test_menu_without_javascript(client):
+    """AC-6 (markup part; the JS-off view is VERIFY's screenshot): a stylesheet that only loads
+    when JavaScript is off opens the narrow menu and hides the useless toggle."""
+    html = html_of(client.get("/"))
+    assert f'<noscript><link rel="stylesheet" href="{NOSCRIPT}"></noscript>' in html
+    css = client.get(NOSCRIPT).get_data(as_text=True)
+    rule = re.search(r"@media \(max-width: 767\.98px\) \{(.*)\}", css, re.S).group(1)
+    assert re.search(r"\.navbar-collapse\.collapse \{ display: block !important; \}", rule)
+    assert re.search(r"\.navbar-toggler \{ display: none; \}", rule)

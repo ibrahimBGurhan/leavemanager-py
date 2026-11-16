@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set current_menu = "employee" %}{# menu ogesi (spec 0034 G-4) #}
 {% from "_macros.html" import message_line, csrf_field with context %}
 {# Yeni Personel (spec 0022 R-1; spec 0032). Yetkisiz hesaba form cizilmez, yalniz ileti (plan 0022 Risk 4). Ad, birim ve birim onerileri otomatik kacisla (R-6, G-6); bozuk tarih geri basilmaz (spec 0015 K-3). #}
 {% block body %}{% if message is not none %}{{ message_line(message, message_color) }}{% endif %}<h3>Yeni Personel</h3>

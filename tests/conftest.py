@@ -246,11 +246,20 @@ class _Page(HTMLParser):
     def __init__(self):
         super().__init__()
         self.controls, self.links, self.headings, self.labels = [], [], [], {}
-        self._open = None   # ("button" | "a" | "h" | "label", record, label target)
+        self.scripts, self.form_bs_attrs, self._forms = [], [], 0
+        self._open = None   # ("button" | "a" | "h" | "label" | "script", record, label target)
 
     def handle_starttag(self, tag, attrs):
         a = {k: (v if v is not None else "") for k, v in attrs}
-        if tag in ("input", "select", "textarea", "button"):
+        if tag == "form":
+            self._forms += 1
+        if self._forms:
+            self.form_bs_attrs += [k for k in a if k.startswith("data-bs-")]
+        if tag == "script":
+            script = {"src": a.get("src"), "text": ""}
+            self.scripts.append(script)
+            self._open = ("script", script, None)
+        elif tag in ("input", "select", "textarea", "button"):
             control = {"tag": tag, **a}
             if tag == "button":
                 control.setdefault("type", "submit")
@@ -273,10 +282,13 @@ class _Page(HTMLParser):
             self._open[1]["text"] += data
 
     def handle_endtag(self, tag):
+        if tag == "form" and self._forms:
+            self._forms -= 1
         if self._open is None:
             return
         kind, record, target = self._open
-        if (kind, tag) in (("button", "button"), ("a", "a"), ("label", "label")) or (
+        if (kind, tag) in (("button", "button"), ("a", "a"), ("label", "label"),
+                           ("script", "script")) or (
                 kind == "h" and tag in ("h1", "h2", "h3")):
             record["text"] = _normalize(record["text"])
             if kind == "label" and target:
@@ -314,3 +326,22 @@ def page_links(html):
 def headings(html):
     """Texts of the page's h1–h3 headings, in order."""
     return [h["text"] for h in _page(html).headings]
+
+
+BOOTSTRAP_JS = "/static/vendor/bootstrap-5.3.8/bootstrap.bundle.min.js"
+
+
+def scripts(html):
+    """Every <script> as (src, inline text): spec 0034 allows only Bootstrap's vendored bundle."""
+    return [(s["src"], s["text"].strip()) for s in _page(html).scripts]
+
+
+def form_bs_attrs(html):
+    """data-bs-* attributes inside forms: Bootstrap's JS bound to a form control (spec 0034)."""
+    return _page(html).form_bs_attrs
+
+
+def current_links(html):
+    """Links marked as the current page (aria-current="page"), as (text, href)."""
+    return [(link["text"], link["href"]) for link in _page(html).links
+            if link["aria-current"] == "page"]
