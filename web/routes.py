@@ -55,16 +55,16 @@ NEW_EMPLOYEE_PATH = "/personel/yeni"
 RESULTS = {"onaylandi": (APPROVED, MSG_APPROVED), "reddedildi": (REJECTED, MSG_REJECTED)}
 
 
-def status_color(status):
-    # Durum rozetinin rengi (UI isi); rozet _macros.html'de (spec 0032)
-    color = "#999"
+def status_kind(status):
+    # Durum rozetinin turu (UI isi); renk degil, gorunum Bootstrap'ta (spec 0035 R-6, plan Risk 5)
+    kind = "secondary"
     if status == APPROVED:
-        color = "green"
+        kind = "success"
     if status.lower() == PENDING.lower():  # harfe duyarsiz (karakterizasyon, 0012 PB-4)
-        color = "orange"
+        kind = "warning"
     if status == REJECTED:
-        color = "red"
-    return color
+        kind = "danger"
+    return kind
 
 
 def parse_date(text):
@@ -122,10 +122,10 @@ def register_routes(app, svc):
             emp = [e for e in employees if e["id"] == r["employee_id"]][0]
             rows.append({"id": r["id"], "name": emp["name"], "start": r["start"], "end": r["end"],
                          "days": v.calc_days(r["start"], r["end"]), "reason": r["reason"],
-                         "status": r["status"], "color": status_color(r["status"]),
+                         "status": r["status"], "kind": status_kind(r["status"]),
                          "can_decide": v.can_decide_request(r)})
         return render_template("requests.html", rows=rows, message=message,
-                               message_color="green" if success else "red")
+                               message_kind="success" if success else "danger")
 
     def success_message():
         # Mesaj yalniz talebin gercek durumu parametreyle eslesirse gosterilir (plan 0010 Risk 2)
@@ -260,7 +260,7 @@ def register_routes(app, svc):
             # Ustte yalniz yetki iletisinden farkli bir ileti (ör. CSRF), kirmizi
             return render_template(
                 "new_employee.html", forbidden=True, forbidden_text=MSG_FORBIDDEN,
-                message=message if message != MSG_FORBIDDEN else None, message_color="red")
+                message=message if message != MSG_FORBIDDEN else None, message_kind="danger")
         values = values or {}
         # Oneri listesi: kayitli birimler, her biri bir kez, yazildigi gibi, Turkce alfabe sirasiyla
         # (G-4, spec 0028)
@@ -269,7 +269,7 @@ def register_routes(app, svc):
         hire = values.get("hire_date")
         return render_template(
             "new_employee.html", forbidden=False, message=message,
-            message_color="green" if success else "red", units=units,
+            message_kind="success" if success else "danger", units=units,
             name=values.get("name", ""), department=values.get("department", ""),
             hire_date=hire.isoformat() if hire else "")
 

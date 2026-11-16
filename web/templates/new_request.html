@@ -2,7 +2,7 @@
 {% set current_menu = "new" %}{# menu ogesi (spec 0034 G-4) #}
 {% from "_macros.html" import message_line, csrf_field with context %}
 {# Yeni Talep (spec 0032). IK personel secer; Personel / Yonetici icin kendi adi sabit metin (R-4); bagli personel kaydi yoksa form yok, yalniz bilgi (R-7, G-1). Geri basilan degerler otomatik kacisla (spec 0015 K-3). #}
-{% block body %}{% if message is not none %}{{ message_line(message, "red") }}{% endif %}<h3>Yeni Talep</h3>
+{% block body %}{% if message is not none %}{{ message_line(message, "danger") }}{% endif %}<h3>Yeni Talep</h3>
 {%- if no_employee %}<p>{{ no_employee_text }}</p>{% else %}<form method="post">{{ csrf_field() }}
     Personel: {% if employees is not none %}<select name="employee_id">{% for e in employees %}<option value='{{ e.id }}'{% if e.id == selected %} selected{% endif %}>{{ e.name }}</option>{% endfor %}</select>{% else %}{{ own_name }}{% endif %}<br><br>
     Baslangic: <input type="date" name="start" value="{{ start }}"><br><br>
