@@ -36,8 +36,10 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
   kapının açık uç listesinde yalnız `static`). Bootstrap projede:
   `web/static/vendor/bootstrap-5.3.8/` (CSS + JS paketi + `LICENSE`; özetler
   `tests/test_ui_shell.py`'de sabit, satır sonu dönüşümü yok — `.gitattributes`). Uygulamanın kendi
-  CSS'i `app.css`; `noscript.css` yalnız JavaScript kapalıyken menüyü açık tutar. İskelet ve giriş
-  şablonunda satır içi stil/betik yok (spec 0034, ADR-0003).
+  CSS'i `app.css`; `noscript.css` yalnız JavaScript kapalıyken menüyü açık tutar. Hiçbir şablonda
+  satır içi stil/betik yok (spec 0034, 0035; ADR-0003). Durum rozetinin ve iletinin türünü
+  (`success`, `warning`, `danger`, `secondary`) Python seçer, görünümü Bootstrap verir; kodda CSS
+  rengi yok (spec 0035).
 - **`web/auth.py`:** giriş ekranı, çıkış ve her istekten önce çalışan kapı (varsayılan kapalı,
   spec 0019); kurallar için yalnız `LoginService`'i çağırır.
 - **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati
@@ -62,7 +64,7 @@ geçer. Kalıcı depo SQLite olacak (ADR-0001).
 
 | Module | Single responsibility | Owns |
 |---|---|---|
-| `web` | HTTP: route'lar, form girdisinin ayrıştırılması/doğrulanması, Jinja şablonları ve statik dosyalar ([ADR-0003](decisions/0003-on-yuz-bootstrap.md)), kullanıcı mesajları | Sunum (HTML, durum rozeti renkleri, Türkçe UI metinleri) |
+| `web` | HTTP: route'lar, form girdisinin ayrıştırılması/doğrulanması, Jinja şablonları ve statik dosyalar ([ADR-0003](decisions/0003-on-yuz-bootstrap.md)), kullanıcı mesajları | Sunum (HTML, durum rozeti ve ileti türleri, Türkçe UI metinleri) |
 | `domain` | İş kuralları: kıdem, hak, kullanılan, kalan, talep oluşturma ve durum geçişleri | Kural ve kavramlar (`docs/domain.md`); tipli domain istisnaları |
 | `storage` | Kalıcılık: repository arayüzü ve uygulamaları (bugün SQLite, [ADR-0001](decisions/0001-kalicilik-sqlite.md); bellek deposu yalnız test/geliştirme) | Personel, izin talebi ve kullanıcı hesabı kayıtları (şema sürümü 2, spec 0018) |
 
