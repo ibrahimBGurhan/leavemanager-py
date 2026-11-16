@@ -13,7 +13,7 @@ from html.parser import HTMLParser
 import pytest
 
 import app as leave_app
-from conftest import page_links, table_rows, visible_text
+from conftest import headings, page_links, submit_labels, table_rows, visible_text
 from domain.accounts import AccountService
 from domain.auth import LoginService
 from domain.errors import InvalidEmployee, NotAuthorized
@@ -261,7 +261,7 @@ def test_hr_sees_link_and_form(client):
     assert f.labels == {"ad": "Ad", "birim": "Birim", "ise-giris": "İşe giriş tarihi"}
     assert [f.inputs[n]["id"] for n in ("name", "department", "hire_date")] == [
         "ad", "birim", "ise-giris"]
-    assert '<input type="submit" value="Kaydet">' in html
+    assert "Kaydet" in submit_labels(html)
 
 
 def test_hr_adds_employee_with_next_number(client):
@@ -508,7 +508,8 @@ def test_add_employee_needs_csrf_token(csrf_client, token):
     assert resp.status_code == 400
     html = page(resp)
     assert MSG_CSRF in visible_text(html)
-    assert html.index(MSG_CSRF) < html.index("<h3>Yeni Personel")
+    assert "Yeni Personel" in headings(html)
+    assert html.index(MSG_CSRF) < html.index(">Yeni Personel</h")
     assert form_of(html).inputs["name"]["value"] == ""  # values are not echoed (spec 0015 K-2)
     assert employee_ids() == before
 

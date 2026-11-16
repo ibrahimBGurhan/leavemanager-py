@@ -13,7 +13,7 @@ import re
 import pytest
 
 import app as leave_app
-from conftest import table_rows, visible_text
+from conftest import controls, table_rows, visible_text
 from domain.auth import LoginService
 
 A, B = 1, 2
@@ -96,7 +96,8 @@ def test_hr_sees_everything(client, as_account, full_statuses, employee_id):
     pending = sum(r["status"] == "Beklemede" for r in all_requests)
     assert page.count("value='Onayla'") == pending and page.count("value='Reddet'") == pending
     form = client.get("/new").get_data(as_text=True)
-    assert '<select name="employee_id">' in form and form.count("<option") == 5
+    selects = [c for c in controls(form) if c["tag"] == "select" and c.get("name") == "employee_id"]
+    assert len(selects) == 1 and form.count("<option") == 5
 
 
 # --- AC-2, AC-3: Personel reads only their own ------------------------------------------------

@@ -1,6 +1,6 @@
 # Spec 0035 — bootstrap-ekran-govdeleri
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0035-plan.md`
 
