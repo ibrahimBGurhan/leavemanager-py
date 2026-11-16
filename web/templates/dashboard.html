@@ -8,6 +8,6 @@
 <div class="col"><div class="card"><div class="card-body">Reddedilen: <b>{{ rejected }}</b></div></div></div>
 </div>
 <h1 class="h4 mb-3">Personel Bakiyeleri</h1>
-<div class="table-responsive"><table class="table table-sm table-bordered table-striped align-middle"><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanılan</th><th>Kalan</th><th>Bekleyen</th></tr>
-{%- for row in rows %}<tr><td>{{ row.name }}</td><td>{{ row.department }}</td>{% for n in row.balance %}<td>{{ n }}</td>{% endfor %}</tr>{% endfor %}</table></div>
+<div class="table-responsive"><table class="table table-sm table-bordered table-striped align-middle"><thead><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanılan</th><th>Kalan</th><th>Bekleyen</th></tr></thead><tbody>
+{%- for row in rows %}<tr><td>{{ row.name }}</td><td>{{ row.department }}</td>{% for n in row.balance %}<td>{{ n }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
 {% endblock %}

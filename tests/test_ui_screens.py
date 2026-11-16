@@ -246,7 +246,10 @@ def test_tables_scroll_in_their_own_box(client):
     """AC-8 (markup part; the 360 px measurement is VERIFY's): every table sits in a box that
     scrolls sideways, so the page itself does not."""
     for path in ("/", "/requests"):
-        assert table_wrapped(html_of(client.get(path))) == [True], path
+        html = html_of(client.get(path))
+        assert table_wrapped(html) == [True], path
+        # review 0035 F-2: the header row sits in <thead>, so the stripes start at the data
+        assert re.search(r"<thead><tr><th>[^<]+</th>.*?</tr></thead><tbody>", html, re.S), path
 
 
 @pytest.mark.parametrize("acc", [HR, MANAGER, STAFF])
