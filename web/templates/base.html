@@ -1,0 +1,15 @@
+{# Sayfa iskeleti (spec 0032; menu spec 0019, 0022). E-posta otomatik kacisla (G-5); cikis formu sayfanin sonunda, dugmesi menude (form= ozniteligi), boylece ekranlardaki formlarin sirasi degismez (plan 0019 Risk 2). "Yeni Personel" yalniz personel ekleyebilen hesaba (spec 0022 R-7). #}
+<html><head><meta charset="utf-8"><title>LeaveManager</title>
+<style>body{font-family:Arial;margin:30px} table{border-collapse:collapse}
+td,th{border:1px solid #ccc;padding:6px 10px} .kutu{display:inline-block;border:1px solid #ccc;padding:10px 20px;margin-right:10px}</style>
+</head><body>
+<h2>LeaveManager</h2>
+<p><a href="/">Ana Sayfa</a> | <a href="/requests">Talepler</a> | <a href="/new">Yeni Talep</a>
+{%- if can_add_employees %} | <a href="/personel/yeni">Yeni Personel</a>{% endif %}
+{%- if g.account %} | {{ g.account.email }} <button type="submit" form="cikis-formu">Çıkış</button>{% endif %}</p>
+{% block body %}{% endblock %}
+{%- if g.account %}
+<form id="cikis-formu" method="post" action="/cikis">
+{%- if config.get("WTF_CSRF_ENABLED", True) %}<input type='hidden' name='csrf_token' value='{{ csrf_token() }}'>{% endif %}</form>
+{%- endif %}
+</body></html>

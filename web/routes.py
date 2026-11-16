@@ -1,10 +1,9 @@
-# HTTP: route'lar, form girdisi, sayfa ve durum rozeti. Veriye yalniz servis uzerinden erisir.
+# HTTP: route'lar, form girdisi, sablona verilen veri. Veriye yalniz servis uzerinden erisir.
 import logging
 from datetime import datetime
 
-from flask import current_app, g, request, redirect, render_template_string
-from flask_wtf.csrf import CSRFError, generate_csrf
-from markupsafe import escape
+from flask import g, request, redirect, render_template
+from flask_wtf.csrf import CSRFError
 
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
                            InvalidEmployee, NoWorkingDays, NotAuthorized, RequestAlreadyDecided,
@@ -48,33 +47,16 @@ EMPLOYEE_ERRORS = {
 MSG_EMPLOYEE_UNEXPECTED = "Personel kaydedilemedi. Lütfen daha sonra tekrar deneyin."
 NEW_EMPLOYEE_PATH = "/personel/yeni"
 
-# Menu (spec 0019): kullanicinin e-postasi Jinja kacisiyla (G-5); cikis formu sayfanin sonunda,
-# dugmesi menude (form= ozniteligi), boylece ekranlardaki formlarin sirasi degismez (plan 0019 Risk 2).
-# "Yeni Personel" yalniz personel ekleyebilen hesaba (spec 0022 R-7; bayrak gorunumden, plan Risk 3).
+# Sayfalar web/templates/ altinda, otomatik kacisla (ADR-0003, spec 0032): burada HTML yok, yalniz
+# sablona verilen veri. Menu iskelette (base.html); "Yeni Personel" bayragi gorunumden (spec 0022
+# R-7, plan Risk 3).
 
 # Basari parametresi (PRG): sonuc -> (beklenen gercek durum, mesaj)
 RESULTS = {"onaylandi": (APPROVED, MSG_APPROVED), "reddedildi": (REJECTED, MSG_REJECTED)}
 
-PAGE = """
-<html><head><meta charset="utf-8"><title>LeaveManager</title>
-<style>body{font-family:Arial;margin:30px} table{border-collapse:collapse}
-td,th{border:1px solid #ccc;padding:6px 10px} .kutu{display:inline-block;border:1px solid #ccc;padding:10px 20px;margin-right:10px}</style>
-</head><body>
-<h2>LeaveManager</h2>
-<p><a href="/">Ana Sayfa</a> | <a href="/requests">Talepler</a> | <a href="/new">Yeni Talep</a>
-{%- if can_add_employees %} | <a href="/personel/yeni">Yeni Personel</a>{% endif %}
-{%- if g.account %} | {{ g.account.email }} <button type="submit" form="cikis-formu">Çıkış</button>{% endif %}</p>
-{{ body|safe }}
-{%- if g.account %}
-<form id="cikis-formu" method="post" action="/cikis">
-{%- if config.get("WTF_CSRF_ENABLED", True) %}<input type='hidden' name='csrf_token' value='{{ csrf_token() }}'>{% endif %}</form>
-{%- endif %}
-</body></html>
-"""
 
-
-def status_badge(status):
-    # renkler: UI isi
+def status_color(status):
+    # Durum rozetinin rengi (UI isi); rozet _macros.html'de (spec 0032)
     color = "#999"
     if status == APPROVED:
         color = "green"
@@ -82,15 +64,7 @@ def status_badge(status):
         color = "orange"
     if status == REJECTED:
         color = "red"
-    return "<b style='color:%s'>%s</b>" % (color, status)
-
-
-def csrf_field():
-    # Durum degistiren her formda token (spec 0011 CB-1). Koruma kapaliyken alan uretilmez:
-    # token'in anlami yok ve ortak test istemcisi korumayi kapatir (plan 0011 Risk 2)
-    if not current_app.config.get("WTF_CSRF_ENABLED", True):
-        return ""
-    return "<input type='hidden' name='csrf_token' value='%s'>" % escape(generate_csrf())
+    return color
 
 
 def parse_date(text):
@@ -112,14 +86,6 @@ def form_values(form):
             "end": parse_date(form.get("end")), "reason": form.get("reason", "")}
 
 
-def decision_buttons(request_id):
-    # Durum hucresinde; dugme etiketi value ozniteliginde ("Kaydet" kalibi, plan 0010 Risk 1)
-    return "".join(
-        " <form method='post' action='/requests/%d/%s' style='display:inline'>%s"
-        "<input type='submit' value='%s'></form>" % (request_id, action, csrf_field(), label)
-        for action, label in (("approve", "Onayla"), ("reject", "Reddet")))
-
-
 def register_routes(app, svc):
 
     def view():
@@ -138,33 +104,28 @@ def register_routes(app, svc):
         v = view()
         reqs = v.requests()
         # Uc kutu talep sayisidir, gun degil; Personel icin yalniz kendi talepleri (R-2, G-5)
-        bekleyen = len([r for r in reqs if r["status"] == PENDING])
-        onaylanan = len([r for r in reqs if r["status"] == APPROVED])
-        reddedilen = len([r for r in reqs if r["status"] == REJECTED])
-        body = "<div class='kutu'>Bekleyen: <b>%d</b></div><div class='kutu'>Onaylanan: <b>%d</b></div><div class='kutu'>Reddedilen: <b>%d</b></div>" % (bekleyen, onaylanan, reddedilen)
-        body += "<h3>Personel Bakiyeleri</h3><table><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanilan</th><th>Kalan</th><th>Bekleyen</th></tr>"
-        for e in v.employees():
-            body += "<tr><td>%s</td><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>" % (
-                (escape(e["name"]), escape(e["department"])) + v.balance(e))
-        body += "</table>"
-        return render_template_string(PAGE, body=body)
+        rows = [{"name": e["name"], "department": e["department"], "balance": v.balance(e)}
+                for e in v.employees()]
+        return render_template(
+            "dashboard.html", rows=rows,
+            pending=len([r for r in reqs if r["status"] == PENDING]),
+            approved=len([r for r in reqs if r["status"] == APPROVED]),
+            rejected=len([r for r in reqs if r["status"] == REJECTED]))
 
     def requests_page(message=None, success=False):
         # Hata ve CSRF sayfalari da buradan: her yolda suzulmus liste (R-3, R-8)
         v = view()
         employees = v.employees()
         # Dugme yalniz sonuclandirabilecegi talepte (0020 R-3, 0021 R-4); asil engel domain'de
-        body = "<h3>Izin Talepleri</h3><table><tr><th>Personel</th><th>Baslangic</th><th>Bitis</th><th>Gun</th><th>Neden</th><th>Durum</th></tr>"
+        rows = []
         for r in v.requests():
             emp = [e for e in employees if e["id"] == r["employee_id"]][0]
-            body += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>" % (
-                escape(emp["name"]), r["start"], r["end"], v.calc_days(r["start"], r["end"]), escape(r["reason"]),
-                status_badge(r["status"]) + (decision_buttons(r["id"]) if v.can_decide_request(r) else ""))
-        body += "</table>"
-        if message is not None:
-            color = "green" if success else "red"
-            body = "<p style='color:%s'>%s</p>" % (color, escape(message)) + body
-        return render_template_string(PAGE, body=body)
+            rows.append({"id": r["id"], "name": emp["name"], "start": r["start"], "end": r["end"],
+                         "days": v.calc_days(r["start"], r["end"]), "reason": r["reason"],
+                         "status": r["status"], "color": status_color(r["status"]),
+                         "can_decide": v.can_decide_request(r)})
+        return render_template("requests.html", rows=rows, message=message,
+                               message_color="green" if success else "red")
 
     def success_message():
         # Mesaj yalniz talebin gercek durumu parametreyle eslesirse gosterilir (plan 0010 Risk 2)
@@ -221,33 +182,25 @@ def register_routes(app, svc):
     def new_request_form(message=None, values=None):
         v = values or {}
         acc = view()
+        employees = own_name = None
+        no_employee = False
         if acc.sees_everyone():
-            options = "".join("<option value='%d'%s>%s</option>" % (
-                e["id"], " selected" if e["id"] == v.get("employee_id") else "", escape(e["name"]))
-                for e in acc.employees())
-            employee_field = "<select name=\"employee_id\">%s</select>" % options
+            employees = acc.employees()
         else:
             own = acc.own_employee()
             if own is None:
                 # Bagli personel kaydi yok: form yok, yalniz bilgi (R-7, G-1)
-                body = "<h3>Yeni Talep</h3><p>%s</p>" % escape(MSG_NO_EMPLOYEE)
-                if message is not None:
-                    body = "<p style='color:red'>%s</p>" % escape(message) + body
-                return render_template_string(PAGE, body=body)
-            # Secim yok, kendi adi sabit metin; talep her zaman kendi adina (R-4)
-            employee_field = escape(own["name"])
-        start = v["start"].isoformat() if v.get("start") else ""
-        end = v["end"].isoformat() if v.get("end") else ""
-        body = """<h3>Yeni Talep</h3><form method="post">%s
-    Personel: %s<br><br>
-    Baslangic: <input type="date" name="start" value="%s"><br><br>
-    Bitis: <input type="date" name="end" value="%s"><br><br>
-    Neden: <input type="text" name="reason" value="%s"><br><br>
-    <input type="submit" value="Kaydet"></form>""" % (csrf_field(), employee_field, start, end,
-                                                       escape(v.get("reason", "")))
-        if message is not None:
-            body = "<p style='color:red'>%s</p>" % escape(message) + body
-        return render_template_string(PAGE, body=body)
+                no_employee = True
+            else:
+                # Secim yok, kendi adi sabit metin; talep her zaman kendi adina (R-4)
+                own_name = own["name"]
+        return render_template(
+            "new_request.html", message=message, no_employee=no_employee,
+            no_employee_text=MSG_NO_EMPLOYEE, employees=employees,
+            selected=v.get("employee_id"), own_name=own_name,
+            start=v["start"].isoformat() if v.get("start") else "",
+            end=v["end"].isoformat() if v.get("end") else "",
+            reason=v.get("reason", ""))
 
     @app.route("/new", methods=["GET", "POST"])
     def new_request():
@@ -303,31 +256,22 @@ def register_routes(app, svc):
         # (plan Risk 4). Ad ve birim geri basilirken kacislanir (R-6, G-6); bozuk tarih geri
         # basilmaz (spec 0015 K-3).
         v = view()
-        body = "<h3>Yeni Personel</h3>"
         if not v.can_add_employees():
-            body += "<p style='color:red'>%s</p>" % escape(MSG_FORBIDDEN)
-            if message is not None and message != MSG_FORBIDDEN:
-                body = "<p style='color:red'>%s</p>" % escape(message) + body
-            return render_template_string(PAGE, body=body)
+            # Ustte yalniz yetki iletisinden farkli bir ileti (ör. CSRF), kirmizi
+            return render_template(
+                "new_employee.html", forbidden=True, forbidden_text=MSG_FORBIDDEN,
+                message=message if message != MSG_FORBIDDEN else None, message_color="red")
         values = values or {}
         # Oneri listesi: kayitli birimler, her biri bir kez, yazildigi gibi, Turkce alfabe sirasiyla
         # (G-4, spec 0028)
         units = sorted({e["department"] for e in v.employees() if e["department"].strip()},
                        key=turkish_sort_key)
-        options = "".join("<option value=\"%s\"></option>" % escape(u) for u in units)
         hire = values.get("hire_date")
-        body += """<form method="post">%s
-    <label for="ad">Ad</label>: <input type="text" id="ad" name="name" value="%s"><br><br>
-    <label for="birim">Birim</label>: <input type="text" id="birim" name="department" list="birimler" value="%s">
-    <datalist id="birimler">%s</datalist><br><br>
-    <label for="ise-giris">İşe giriş tarihi</label>: <input type="date" id="ise-giris" name="hire_date" value="%s"><br><br>
-    <input type="submit" value="Kaydet"></form>""" % (
-            csrf_field(), escape(values.get("name", "")), escape(values.get("department", "")),
-            options, hire.isoformat() if hire else "")
-        if message is not None:
-            color = "green" if success else "red"
-            body = "<p style='color:%s'>%s</p>" % (color, escape(message)) + body
-        return render_template_string(PAGE, body=body)
+        return render_template(
+            "new_employee.html", forbidden=False, message=message,
+            message_color="green" if success else "red", units=units,
+            name=values.get("name", ""), department=values.get("department", ""),
+            hire_date=hire.isoformat() if hire else "")
 
     def employee_added_message():
         # Ileti URL'deki numaradan degil kayittan kurulur; gorunur bir personele eslesmezse ileti

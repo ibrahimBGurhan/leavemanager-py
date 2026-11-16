@@ -26,8 +26,11 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
   personel. `LeaveService.for_account` ile alınır. Yetkisiz denemelerin log adlarını (`ACTION_*`)
   yalnız bu modül bilir; web onları kullanmaz, yetkiyi adıyla sorar (`authorize_approve` …)
   (`tests/test_architecture.py`).
-- **`web/routes.py`:** route'lar, sayfa ve durum rozeti burada; veriye ve işlemlere yalnız
+- **`web/routes.py`:** route'lar ve şablona verilen veri burada; veriye ve işlemlere yalnız
   `svc.for_account(g.account)` ile ulaşır (`tests/test_architecture.py`).
+- **`web/templates/`:** sayfaların HTML'i — iskelet (`base.html`), ortak parçalar (`_macros.html`)
+  ve ekran başına bir şablon; otomatik kaçış açık. Python'da HTML yok (spec 0032,
+  `tests/test_architecture.py`).
 - **`web/auth.py`:** giriş ekranı, çıkış ve her istekten önce çalışan kapı (varsayılan kapalı,
   spec 0019); kurallar için yalnız `LoginService`'i çağırır.
 - **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati

@@ -215,3 +215,44 @@ def test_web_does_not_use_the_decision_log_names():
                     and ast.unparse(node.value) in bound):
                 bad.append(f"{where(f, node.lineno)} {ast.unparse(node)}")
     assert bad == []
+
+
+TEMPLATES = ROOT / "web" / "templates"
+# {% autoescape off %} da kapatir (tanimsiz ad false sayilir): true disindaki her deger (review F-1)
+UNESCAPED = re.compile(r"\|\s*safe\b|\bMarkup\b|\bautoescape\s+(?!true\b)", re.IGNORECASE)
+
+
+def test_web_html_lives_only_in_templates():
+    """Spec 0032 (ADR-0003, docs/security.md Input & output): page HTML lives only in
+    web/templates/, autoescaped. web/*.py holds no string constant with an HTML tag and never
+    names render_template_string; Flask route rules ("/requests/<request_id>/approve") are URL
+    patterns, not HTML. web/*.py neither names Markup nor imports markupsafe. Every file under
+    web/templates/ is .html (Flask autoescapes by extension) and uses neither |safe, Markup nor
+    autoescape with anything but true (review 0032 F-1)."""
+    bad = []
+    for f in layer_files("web"):
+        tree = parse(f)
+        rules = {id(node.args[0]) for node in ast.walk(tree)
+                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                 and node.func.attr == "route" and node.args}
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                    and id(node) not in rules and HTML_TAG.search(node.value)):
+                bad.append(f"{where(f, node.lineno)} HTML {node.value[:40]!r}")
+            name = (node.id if isinstance(node, ast.Name) else node.attr
+                    if isinstance(node, ast.Attribute) else node.name
+                    if isinstance(node, ast.alias) else None)
+            if name in ("render_template_string", "Markup"):
+                bad.append(f"{where(f, getattr(node, 'lineno', 0))} {name}")
+        bad += [f"{where(f, line)} import {module}" for line, module in imports(f)
+                if top(module) == "markupsafe"]
+    bad += [f"{t.relative_to(ROOT).as_posix()} not .html (no autoescape)"
+            for t in sorted(TEMPLATES.rglob("*")) if t.is_file() and t.suffix != ".html"]
+    templates = sorted(TEMPLATES.rglob("*.html"))
+    if not templates:
+        bad.append("no templates under web/templates/")
+    for t in templates:
+        for line, text in enumerate(t.read_text(encoding="utf-8").splitlines(), 1):
+            if UNESCAPED.search(text):
+                bad.append(f"{t.relative_to(ROOT).as_posix()}:{line} {text.strip()[:60]!r}")
+    assert bad == []

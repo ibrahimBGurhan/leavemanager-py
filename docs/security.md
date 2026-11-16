@@ -26,7 +26,8 @@
 ## Input & output
 - **Çıktı:** HTML yalnızca Jinja şablonlarında, otomatik kaçış (autoescape) açık olarak üretilir.
   Kullanıcı verisini içeren HTML'de string birleştirme ve `|safe` / `Markup` yasaktır.
-  *Mevcut kod ihlal ediyor:* `{{ body|safe }}` ve `reason` alanı kaçışsız basılıyor → **stored XSS**.
+  Sayfalar `web/templates/` altında ([ADR-0003](decisions/0003-on-yuz-bootstrap.md), spec 0032);
+  kural `tests/test_architecture.py` ile sınanır.
 - **Girdi:** form verisi web katmanında, sınırda doğrulanır: tarih formatı (`YYYY-MM-DD`),
   bitiş ≥ başlangıç, personel kimliği var olan bir personel, `reason` için uzunluk sınırı.
   Geçersiz girdi kullanıcıya anlaşılır bir mesajla döner; sessizce yönlendirilmez.
