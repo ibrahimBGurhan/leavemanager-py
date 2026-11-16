@@ -150,12 +150,18 @@ def boom(*_args, **_kwargs):
      None, [(*DANGER, routes.MSG_NO_WORKING_DAYS)]),
     (HR, "post", "/new", {"employee_id": "2", "start": "2026-11-16", "end": "2026-11-16", "reason": "x"},
      "add_request", [(*DANGER, routes.MSG_UNEXPECTED)]),
+    (HR, "post", "/new", {"employee_id": "5", "start": "2026-11-16", "end": "2026-11-16", "reason": "x"},
+     None, [(*DANGER, routes.MSG_INSUFFICIENT_BALANCE % (0, 0, 1))]),    # review 0035 F-1
     (STAFF, "post", "/new", {"employee_id": "2", "start": "2026-11-16", "end": "2026-11-16", "reason": "x"},
      None, [(*DANGER, routes.MSG_FORBIDDEN)]),
     (UNLINKED, "get", "/new", None, None, [("info", "", routes.MSG_NO_EMPLOYEE)]),
     (HR, "get", "/personel/yeni?eklendi=1", None, None, [(*SUCCESS, "Personel #1 eklendi: Ayse Yilmaz (IT).")]),
     (HR, "get", "/personel/yeni?eklendi=777", None, None, []),
     (HR, "post", "/personel/yeni", {"name": "", "department": "IT", "hire_date": "2020-01-01"}, None, "danger"),
+    (HR, "post", "/personel/yeni", {"name": "X", "department": "", "hire_date": "2020-01-01"}, None, "danger"),
+    (HR, "post", "/personel/yeni", {"name": "X", "department": "IT", "hire_date": "2020-13-45"}, None, "danger"),
+    (HR, "post", "/personel/yeni", {"name": "X", "department": "IT", "hire_date": ""}, None, "danger"),
+    (HR, "post", "/personel/yeni", {"name": "X", "department": "IT", "hire_date": "1949-12-31"}, None, "danger"),
     (HR, "post", "/personel/yeni", {"name": "X", "department": "IT", "hire_date": "2020-01-01"},
      "add_employee", [(*DANGER, routes.MSG_EMPLOYEE_UNEXPECTED)]),
     (STAFF, "get", "/personel/yeni", None, None, [(*DANGER, routes.MSG_FORBIDDEN)]),
@@ -175,6 +181,18 @@ def test_message_boxes(client, as_account, monkeypatch, acc, method, path, data,
         assert len(boxes) == 1 and boxes[0][:2] == DANGER
     else:
         assert boxes == expected
+
+
+def test_approve_insufficient_message_box(client):
+    """AC-5 (review 0035 F-1): approving a request the balance no longer covers shows the
+    refusal in a red, announced box."""
+    request_id = leave_app.storage.next_request_id()
+    leave_app.storage.add_request({    # Elif: Kalan 0; straight into storage (seam)
+        "id": request_id, "employee_id": 5, "start": dt.date(2026, 11, 16),
+        "end": dt.date(2026, 11, 16), "reason": "x", "status": "Beklemede"})
+    resp = client.post(f"/requests/{request_id}/approve")
+    assert resp.status_code == 400
+    assert message_boxes(html_of(resp)) == [(*DANGER, routes.MSG_APPROVE_INSUFFICIENT % (0, 1))]
 
 
 @pytest.mark.parametrize("path, data", [
