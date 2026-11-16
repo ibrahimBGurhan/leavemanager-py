@@ -1,6 +1,6 @@
 # Spec 0034 — bootstrap-iskelet-giris
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0034-plan.md`
 
@@ -86,28 +86,28 @@ etkileşim, marka teması ve Sass derlemesi yok.
 - **Split:** proposed 0034 (bu) → 0035 (ekran gövdeleri); kabul — İbrahim Gürhan, 2026-11-16.
 
 ## Acceptance criteria
-- [ ] AC-1 — Her ekran (giriş dahil) Bootstrap CSS'ini, JS paketini ve `app.css`'i uygulamanın kendi
+- [x] AC-1 — Her ekran (giriş dahil) Bootstrap CSS'ini, JS paketini ve `app.css`'i uygulamanın kendi
   adresinden yükler ve dosyalar 200 ile döner; hiçbir sayfa başka bir sunucuya (`http://`,
   `https://`, `//` ile başlayan) kaynak bağlantısı içermez.
-- [ ] AC-2 — Projedeki Bootstrap dosyalarının SHA-256 özeti planda sabitlenen değerlerle aynıdır; bir
+- [x] AC-2 — Projedeki Bootstrap dosyalarının SHA-256 özeti planda sabitlenen değerlerle aynıdır; bir
   bayt değişirse test kırmızıya düşer.
-- [ ] AC-3 — Gezinme çubuğu: İK hesabında Ana Sayfa, Talepler, Yeni Talep, Yeni Personel bağlantıları,
+- [x] AC-3 — Gezinme çubuğu: İK hesabında Ana Sayfa, Talepler, Yeni Talep, Yeni Personel bağlantıları,
   e-posta ve Çıkış; Yönetici ve Personelde Yeni Personel yok. Hedefler ve sıra bugünküyle aynı;
   bulunulan ekranın bağlantısı "geçerli sayfa" olarak işaretli (ekran okuyucu dahil).
-- [ ] AC-4 — Çıkış: menüdeki düğme `/cikis`'e CSRF token'lı bir POST gönderir, oturum kapanır, giriş
+- [x] AC-4 — Çıkış: menüdeki düğme `/cikis`'e CSRF token'lı bir POST gönderir, oturum kapanır, giriş
   ekranına "Çıkış yapıldı" bilgi iletisiyle dönülür; token'sız istek bugünkü gibi reddedilir.
-- [ ] AC-5 — Dar ekran: 360 px genişlikte çerçeve ve giriş ekranı yatay kaydırma gerektirmez; menü
+- [x] AC-5 — Dar ekran: 360 px genişlikte çerçeve ve giriş ekranı yatay kaydırma gerektirmez; menü
   aç/kapa düğmesine dönüşür, düğmenin erişilebilir adı ve açık/kapalı durumu vardır.
-- [ ] AC-6 — JavaScript kapalı: dar ve geniş ekranda bütün menü bağlantıları ve Çıkış görünür ve
+- [x] AC-6 — JavaScript kapalı: dar ve geniş ekranda bütün menü bağlantıları ve Çıkış görünür ve
   çalışır; giriş formu Enter ile ve düğmeyle gönderilir.
-- [ ] AC-7 — Giriş ekranı durumları: boş form; hatalı giriş (401, hata, e-posta geri basılı, şifre boş);
+- [x] AC-7 — Giriş ekranı durumları: boş form; hatalı giriş (401, hata, e-posta geri basılı, şifre boş);
   CSRF hatası (400, hata); süre doldu ve çıkış yapıldı (bilgi); bilinmeyen `?durum=` (ileti yok);
   menü yok. Metinler bugünküyle aynı.
-- [ ] AC-8 — İleti dili: hata iletileri hemen duyurulan bir uyarı kutusunda, bilgi iletileri
+- [x] AC-8 — İleti dili: hata iletileri hemen duyurulan bir uyarı kutusunda, bilgi iletileri
   duyurulmayan bir bilgi kutusunda; ayrım renge bağlı değildir.
-- [ ] AC-9 — `base.html` ve `login.html`'de satır içi `<style>`, `style=`, satır içi `<script>` ve
+- [x] AC-9 — `base.html` ve `login.html`'de satır içi `<style>`, `style=`, satır içi `<script>` ve
   `on…=` öznitelikleri yok; bir mimari testi bunu sabitler.
-- [ ] AC-10 — Davranış aynı: tüm suite yeşil; işaretlemeye bakan ve değişen her assert planda eski →
+- [x] AC-10 — Davranış aynı: tüm suite yeşil; işaretlemeye bakan ve değişen her assert planda eski →
   yeni listelenmiş, aynı davranışı soruyor (zayıflatma yok); diğer ekranların görünen metni ve
   durum kodları bugünküyle aynı.
 
@@ -144,17 +144,17 @@ etkileşim, marka teması ve Sass derlemesi yok.
 - **G-6 Boyut:** 10 kriter — sınırda ama tek yetenek (ortak çerçeve); bölmeye gerek yok.
 
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 0 (onaydan sonra; plan sapmaları R-07 ile planda, 3 adet) |
+| Fix rounds | 1 |
+| Review findings: real / noise | 1 / 0 (F-1) |
+| Regressions introduced | 0 |
+| Bugs escaped to production | 0 (ship anında) |
