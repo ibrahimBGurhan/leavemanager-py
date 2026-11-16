@@ -1,6 +1,6 @@
 # Spec 0033 — sablon-kacis-kelime-yasagi (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0033-plan.md`
 - Source: spec 0032 review round 2 I-1 (`specs/plans/0032-plan.md`, "Triage (review round 2)":
@@ -47,18 +47,18 @@ none — no observable behavior change (ekranlar, HTTP, loglar aynı). Değişen
 kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 
 ## Preserved behavior
-- [ ] PB-1 — **Kelime kuralı:** `web/templates/` altındaki hiçbir şablonda `autoescape` ve `safe`
+- [x] PB-1 — **Kelime kuralı:** `web/templates/` altındaki hiçbir şablonda `autoescape` ve `safe`
   kelimeleri hiçbir biçimde geçmez (büyük/küçük harf duyarsız, kelime olarak; parantezli, ifadeli,
   satır sonuyla bölünmüş, yorum içinde de). `Markup` yasağı aynen sürer. İhlalde test dosyayı ve
   satırı adlandırarak kırmızıya düşer.
-- [ ] PB-2 — **Gözlemdeki her atlatma yakalanır:** Gözlem tablosundaki beş kaçışsız yazımın her
+- [x] PB-2 — **Gözlemdeki her atlatma yakalanır:** Gözlem tablosundaki beş kaçışsız yazımın her
   biri (ve `|safe`, `autoescape false`, `autoescape off`) bir şablona eklenince test kırmızı
   (VERIFY'da repo dışı kopyada mutantla).
-- [ ] PB-3 — **0032 kuralının geri kalanı aynen sürer:** `web/*.py`'de HTML etiketli string sabiti,
+- [x] PB-3 — **0032 kuralının geri kalanı aynen sürer:** `web/*.py`'de HTML etiketli string sabiti,
   `render_template_string`, `Markup` adı ve `markupsafe` importu yasak; `web/templates/` altındaki
   her dosya `.html`; en az bir şablon bulunmalı. 0032 VERIFY'daki mutantlar (HTML sabiti,
   `render_template_string`, `.txt` şablon, `markupsafe`, `Markup = str`) yine kırmızı.
-- [ ] PB-4 — **Bugünkü kod yeşil, başka hiçbir şey değişmez:** üretim kodu ve şablonlar değişmez
+- [x] PB-4 — **Bugünkü kod yeşil, başka hiçbir şey değişmez:** üretim kodu ve şablonlar değişmez
   (`git diff main...HEAD -- web app.py domain storage` boş); `tests/` altında yalnız
   `test_web_html_lives_only_in_templates` ve onun deseni değişir, başka test değişmez, silinmez,
   zayıflatılmaz; `scripts/check` full yeşil.
@@ -101,8 +101,20 @@ kanıtı aşağıdaki Preserved behavior kriterleri taşır.
   0032'nin mutant listesiyle, PB-4 `git diff` ve full check ile. Kanıtsız kriter yok.
 - **G-4 Boyut:** Tek kural, 4 kriter, tek dosya — bölme gerekmez.
 
+## Verification (VERIFY, 2026-11-16, HEAD `df1c24d`)
+PB-1…PB-4 Pass; full `CHECK GREEN (full, 3 steps, 57 s)` (715 passed, 5 skipped). Mutantlar repo
+dışı kopyalarda (`git archive`), `test_web_html_lives_only_in_templates`: Gözlemdeki beş atlatma
+`main`'de eski testle yeşil, dalda kırmızı; `|safe`, `| safe`, `autoescape false/off`, yorumda
+`Markup` / `autoescape`, `|SAFE`, `filter safe` dalda kırmızı; 0032'nin py/dosya mutantları
+(`.txt` şablon, `render_template_string`, HTML sabiti, `markupsafe`, `Markup = str`,
+`escape as Markup`) kırmızı; zararsız `safe_name`, `unsafe`, `safely` yeşil. Üretim diff'i boş;
+`tests/` diff'i yalnız bu testin şablon bölümü (10/7). Review round 1: F-1 noise (Intent iddiası
+yalnız kelime yoluyla kapatma için geçerli; `__class__` yolu kapsam dışı, takip işi), F-2 real
+(fixed `b644d3f`); round 2 temiz. UI değişmedi; ekran görüntüsü gerekmez. Ayrıntı:
+`specs/plans/0033-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
