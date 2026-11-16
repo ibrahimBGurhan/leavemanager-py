@@ -236,3 +236,112 @@ def status_cell_html(html, marker):
     rows = [row for row in html.split("<tr>") if marker in row]
     assert len(rows) == 1, f"expected one row with {marker!r}, got {len(rows)}"
     return rows[0].split("<td>")[-1].split("</td>")[0]
+
+
+# --- spec 0034: assertions read behavior, not markup -------------------------------------------
+class _Page(HTMLParser):
+    """What a browser offers on the page: controls (with their labels and button text), links
+    and headings. Class names and attribute order do not matter (spec 0034 R-8)."""
+
+    def __init__(self):
+        super().__init__()
+        self.controls, self.links, self.headings, self.labels = [], [], [], {}
+        self.scripts, self.form_bs_attrs, self._forms = [], [], 0
+        self._open = None   # ("button" | "a" | "h" | "label" | "script", record, label target)
+
+    def handle_starttag(self, tag, attrs):
+        a = {k: (v if v is not None else "") for k, v in attrs}
+        if tag == "form":
+            self._forms += 1
+        if self._forms:
+            self.form_bs_attrs += [k for k in a if k.startswith("data-bs-")]
+        if tag == "script":
+            script = {"src": a.get("src"), "text": ""}
+            self.scripts.append(script)
+            self._open = ("script", script, None)
+        elif tag in ("input", "select", "textarea", "button"):
+            control = {"tag": tag, **a}
+            if tag == "button":
+                control.setdefault("type", "submit")
+                control["text"] = ""
+                self._open = ("button", control, None)
+            self.controls.append(control)
+        elif tag == "a":
+            link = {"href": a.get("href"), "aria-current": a.get("aria-current"), "text": ""}
+            self.links.append(link)
+            self._open = ("a", link, None)
+        elif tag in ("h1", "h2", "h3"):
+            heading = {"tag": tag, "text": ""}
+            self.headings.append(heading)
+            self._open = ("h", heading, None)
+        elif tag == "label":
+            self._open = ("label", {"text": ""}, a.get("for"))
+
+    def handle_data(self, data):
+        if self._open is not None:
+            self._open[1]["text"] += data
+
+    def handle_endtag(self, tag):
+        if tag == "form" and self._forms:
+            self._forms -= 1
+        if self._open is None:
+            return
+        kind, record, target = self._open
+        if (kind, tag) in (("button", "button"), ("a", "a"), ("label", "label"),
+                           ("script", "script")) or (
+                kind == "h" and tag in ("h1", "h2", "h3")):
+            record["text"] = _normalize(record["text"])
+            if kind == "label" and target:
+                self.labels[target] = record["text"]
+            self._open = None
+
+
+def _page(html):
+    p = _Page()
+    p.feed(html)
+    for control in p.controls:
+        if control.get("id") in p.labels:
+            control["label"] = p.labels[control["id"]]
+    return p
+
+
+def controls(html):
+    """Form controls and buttons as dicts of their attributes; a <button> also has "text", a
+    control with a <label for=…> also has "label"."""
+    return _page(html).controls
+
+
+def submit_labels(html):
+    """Labels of the page's submit controls: <input type=submit value=…> or a button's text."""
+    return [c.get("value") if c["tag"] == "input" else c["text"]
+            for c in controls(html) if c.get("type") == "submit"]
+
+
+def page_links(html):
+    """Every link the user can follow, in page order, as (text, href); today only the menu has
+    links."""
+    return [(link["text"], link["href"]) for link in _page(html).links]
+
+
+def headings(html):
+    """Texts of the page's h1–h3 headings, in order."""
+    return [h["text"] for h in _page(html).headings]
+
+
+BOOTSTRAP_JS = "/static/vendor/bootstrap-5.3.8/bootstrap.bundle.min.js"
+
+
+def scripts(html):
+    """Every <script> as (src, inline text): spec 0034 allows only Bootstrap's vendored bundle."""
+    return [(s["src"], s["text"].strip()) for s in _page(html).scripts]
+
+
+def form_bs_attrs(html):
+    """data-bs-* attributes inside forms: Bootstrap's JS bound to a form control (spec 0034)."""
+    return _page(html).form_bs_attrs
+
+
+def current_links(html):
+    """Links marked as the current page (aria-current="page"), as (text, href)."""
+    return [(link["text"], link["href"]) for link in _page(html).links
+            if link["aria-current"] == "page"]

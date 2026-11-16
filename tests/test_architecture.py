@@ -259,3 +259,25 @@ def test_web_html_lives_only_in_templates():
             line = text.count("\n", 0, m.start()) + 1
             bad.append(f"{t.relative_to(ROOT).as_posix()}:{line} {lines[line - 1].strip()[:60]!r}")
     assert bad == []
+
+
+SHELL_TEMPLATES = ("base.html", "login.html")  # spec 0034; ekran govdeleri 0035'te eklenir
+# <style>, style=, on…= olay ozniteligi, src'siz <script> ya da src'li ama ici dolu <script> (CSP'ye hazirlik)
+INLINE = re.compile(r"<style\b|\sstyle\s*=|\son[a-z]+\s*=|<script\b(?![^>]*\bsrc\s*=)[^>]*>"
+                    r"|<script\b[^>]*>\s*[^<\s]", re.IGNORECASE)
+
+
+def test_shell_templates_have_no_inline_style_or_script():
+    """Spec 0034 AC-9 (ADR-0003 ilke 3-4): the page shell and the login screen carry no inline
+    <style>, style= attribute, inline <script> or on…= event attribute — styling lives in
+    web/static/app.css, behaviour in Bootstrap's vendored bundle. The whole file is scanned."""
+    bad = []
+    for name in SHELL_TEMPLATES:
+        path = TEMPLATES / name
+        assert path.is_file(), name
+        text = path.read_text(encoding="utf-8")
+        lines = text.split("\n")
+        for m in INLINE.finditer(text):
+            line = text.count("\n", 0, m.start()) + 1
+            bad.append(f"web/templates/{name}:{line} {lines[line - 1].strip()[:60]!r}")
+    assert bad == []

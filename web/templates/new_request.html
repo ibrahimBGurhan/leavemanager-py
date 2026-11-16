@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set current_menu = "new" %}{# menu ogesi (spec 0034 G-4) #}
 {% from "_macros.html" import message_line, csrf_field with context %}
 {# Yeni Talep (spec 0032). IK personel secer; Personel / Yonetici icin kendi adi sabit metin (R-4); bagli personel kaydi yoksa form yok, yalniz bilgi (R-7, G-1). Geri basilan degerler otomatik kacisla (spec 0015 K-3). #}
 {% block body %}{% if message is not none %}{{ message_line(message, "red") }}{% endif %}<h3>Yeni Talep</h3>

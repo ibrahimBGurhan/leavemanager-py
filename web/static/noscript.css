@@ -1,0 +1,7 @@
+/* Yalniz JavaScript kapaliyken yuklenir (base.html <noscript>; spec 0034 AC-6, plan Risk 3).
+   Bootstrap'in ac/kapa menusu JS olmadan kapali kalir: dar ekranda menu acik gosterilir, islevsiz
+   ac/kapa dugmesi gizlenir. md (768px) ve ustunde Bootstrap menuyu zaten yatay ve acik gosterir. */
+@media (max-width: 767.98px) {
+  .navbar-collapse.collapse { display: block !important; }
+  .navbar-toggler { display: none; }
+}

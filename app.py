@@ -75,8 +75,8 @@ def cookie_secure(environ):
     return environ.get("SESSION_COOKIE_SECURE") == "1"
 
 
-# Sayfalar web/templates/ altinda, otomatik kacisla (ADR-0003, spec 0032)
-app = Flask(__name__, template_folder="web/templates")
+# Sayfalar web/templates/ altinda, otomatik kacisla (ADR-0003, spec 0032); statik dosyalar web/static/ (spec 0034)
+app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
 app.config["SECRET_KEY"] = load_secret_key(os.environ)
 app.config["WTF_CSRF_TIME_LIMIT"] = None        # token tarayici oturumu boyunca gecerli (K-2)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"   # HttpOnly varsayilan (K-3)

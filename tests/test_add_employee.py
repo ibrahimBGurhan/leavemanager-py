@@ -13,7 +13,7 @@ from html.parser import HTMLParser
 import pytest
 
 import app as leave_app
-from conftest import table_rows, visible_text
+from conftest import page_links, table_rows, visible_text
 from domain.accounts import AccountService
 from domain.auth import LoginService
 from domain.errors import InvalidEmployee, NotAuthorized
@@ -196,7 +196,7 @@ def test_first_employee_in_empty_database_gets_number_one_and_an_account(tmp_pat
 PATH = "/personel/yeni"
 MSG_CSRF = "Form geçersiz ya da süresi dolmuş. Lütfen sayfayı yenileyip tekrar deneyin."
 FORM = {"name": "Deniz Ak", "department": "IT", "hire_date": "2023-03-01"}
-LINK = '<a href="/personel/yeni">Yeni Personel</a>'
+LINK = ("Yeni Personel", "/personel/yeni")
 
 
 @pytest.fixture
@@ -250,7 +250,7 @@ def warnings(caplog):
 
 
 def test_hr_sees_link_and_form(client):
-    assert LINK in page(client.get("/"))
+    assert LINK in page_links(page(client.get("/")))
     html = page(client.get(PATH))
     f = form_of(html)
     assert f.forms == 1
@@ -451,12 +451,13 @@ def test_link_hidden_for_other_roles(client, as_account, acc):
     for path in ("/", "/requests", "/new"):
         html = page(client.get(path))
         assert "Yeni Personel" not in html
-        assert "Ana Sayfa | Talepler | Yeni Talep | " in visible_text(html)  # the rest stays
+        assert page_links(html) == [("Ana Sayfa", "/"), ("Talepler", "/requests"),
+                                ("Yeni Talep", "/new")]                  # the rest stays
 
 
 def test_unlinked_hr_can_add(client, as_account):
     as_account(HR)
-    assert LINK in page(client.get("/"))
+    assert LINK in page_links(page(client.get("/")))
     assert post(client).status_code == 302
     assert employee_ids()[-1] == 6
 

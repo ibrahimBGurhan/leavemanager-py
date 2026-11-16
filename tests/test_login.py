@@ -16,7 +16,8 @@ from email.utils import parsedate_to_datetime
 import pytest
 
 import app as leave_app
-from conftest import visible_text
+from conftest import (BOOTSTRAP_JS, controls, form_bs_attrs, headings, scripts, submit_labels,
+                      visible_text)
 
 pytestmark = pytest.mark.usefixtures("logged_out")
 
@@ -146,7 +147,8 @@ def test_logged_in_pages_show_email_and_logout(client, account):
     for path in ("/", "/requests", "/new"):
         html = client.get(path).get_data(as_text=True)
         assert EMAIL in visible_text(html), path
-        assert '<button type="submit" form="cikis-formu">Çıkış</button>' in html
+        assert any(c["tag"] == "button" and c["type"] == "submit" and c.get("form") == "cikis-formu"
+                   and c["text"] == "Çıkış" for c in controls(html))
         assert '<form id="cikis-formu" method="post" action="/cikis">' in html
     assert "Bekleyen:" in visible_text(client.get("/").get_data(as_text=True))
     assert "Izin Talepleri" in visible_text(client.get("/requests").get_data(as_text=True))
@@ -187,7 +189,9 @@ def test_refusals_look_the_same(client, account, case):
     assert MSG_FAILED in visible_text(html)
     assert f'value="{email}"' in html
     assert password not in html or not password
-    assert 'name="sifre" autocomplete="current-password">' in html     # empty password field
+    sifre = [c for c in controls(html) if c.get("name") == "sifre"]
+    assert len(sifre) == 1 and sifre[0].get("autocomplete") == "current-password"
+    assert not sifre[0].get("value")                                    # empty password field
     assert goes_to(client.get("/"), "/giris")
 
 
@@ -344,11 +348,12 @@ def test_logout_by_get_is_not_allowed(client, account):
 
 def test_login_page_shape(csrf_client):
     html = csrf_client.get("/giris").get_data(as_text=True)
-    assert "<title>Giriş</title>" in html and "<h3>Giriş</h3>" in html
-    assert '<input type="submit" value="Giriş Yap">' in html
+    assert "<title>Giriş</title>" in html and "Giriş" in headings(html)
+    assert "Giriş Yap" in submit_labels(html)
     assert 'href="/requests"' not in html and "cikis" not in html          # no menu
-    assert '<label for="eposta">' in html and 'id="eposta"' in html
-    assert '<label for="sifre">' in html and 'id="sifre"' in html and 'type="password"' in html
+    fields = {c.get("id"): c for c in controls(html)}
+    assert fields["eposta"].get("label") and fields["sifre"].get("label")   # labelled (for=id)
+    assert fields["sifre"].get("type") == "password"
     assert 'autocomplete="username"' in html and 'autocomplete="current-password"' in html
     assert MSG_LOCK_NOTE in visible_text(html)
     assert TOKEN.search(html)
@@ -500,7 +505,9 @@ def test_keyboard_path(client):
     html = client.get("/giris").get_data(as_text=True)
     form = html.split("<form")[1].split("</form>")[0]
     assert form.index('id="eposta"') < form.index('id="sifre"') < form.index('type="submit"')
-    assert "tabindex" not in html and "<script" not in html
+    assert "tabindex" not in html
+    assert scripts(html) == [(BOOTSTRAP_JS, "")]                # only Bootstrap's bundle, no inline JS
+    assert form_bs_attrs(html) == []                            # and no form control bound to it
 
 
 # --- AC-11: cookie ----------------------------------------------------------------------------

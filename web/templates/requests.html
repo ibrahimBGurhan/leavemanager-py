@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set current_menu = "requests" %}{# menu ogesi (spec 0034 G-4) #}
 {% from "_macros.html" import message_line, status_badge, decision_buttons with context %}
 {# Talepler (spec 0032). Dugme yalniz sonuclandirabilecegi talepte; karar Python'da (can_decide; 0020 R-3, 0021 R-4). #}
 {% block body %}{% if message is not none %}{{ message_line(message, message_color) }}{% endif %}<h3>Izin Talepleri</h3><table><tr><th>Personel</th><th>Baslangic</th><th>Bitis</th><th>Gun</th><th>Neden</th><th>Durum</th></tr>
