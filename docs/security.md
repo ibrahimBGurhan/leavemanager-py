@@ -109,6 +109,12 @@
 - Kontroller: lisans MIT/BSD/Apache-2.0 uyumlu olmalı, aktif bakımda olmalı, `pip-audit` bilinen
   bir CVE göstermemeli.
 - Sürümler `requirements*.txt` içinde `==` ile sabitlenir. Yükseltmeler ayrı ve dar commit'lerle yapılır.
+- **Bootstrap 5.3.8** (MIT, ön yüz; ADR-0003, spec 0034): pip paketi değil, projeye konmuş
+  (`web/static/vendor/bootstrap-5.3.8/`). Kaynak: resmi GitHub release zip'i; zip özeti ve dosyaların
+  SRI (SHA-384) değerleri yayımlananla doğrulandı (`specs/plans/0034-plan.md`, "Sabitlenen özetler").
+  SHA-256 özetleri `tests/test_ui_shell.py`'de sabit — bir bayt değişirse check kırmızı. `pip-audit`
+  Bootstrap'ı görmez: güvenlik duyuruları (github.com/twbs/bootstrap/security) elle izlenir;
+  yükseltme ayrı ve dar commit'le, özetler yeniden doğrulanarak yapılır. CDN kullanılmaz.
 
 ## Review lens
 Security is a mandatory dimension of every independent review (see `prompts/review.md`), not a

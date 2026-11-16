@@ -30,7 +30,14 @@ veritabanı geçişi yalnızca storage katmanını değiştirmeli.
   `svc.for_account(g.account)` ile ulaşır (`tests/test_architecture.py`).
 - **`web/templates/`:** sayfaların HTML'i — iskelet (`base.html`), ortak parçalar (`_macros.html`)
   ve ekran başına bir şablon; otomatik kaçış açık. Python'da HTML yok (spec 0032,
-  `tests/test_architecture.py`).
+  `tests/test_architecture.py`). Her ekran şablonu menüdeki kendi öğesini
+  `{% set current_menu = "…" %}` ile bildirir (spec 0034).
+- **`web/static/`:** statik dosyalar, oturumsuz da verilir (giriş ekranı stilini alabilsin diye;
+  kapının açık uç listesinde yalnız `static`). Bootstrap projede:
+  `web/static/vendor/bootstrap-5.3.8/` (CSS + JS paketi + `LICENSE`; özetler
+  `tests/test_ui_shell.py`'de sabit, satır sonu dönüşümü yok — `.gitattributes`). Uygulamanın kendi
+  CSS'i `app.css`; `noscript.css` yalnız JavaScript kapalıyken menüyü açık tutar. İskelet ve giriş
+  şablonunda satır içi stil/betik yok (spec 0034, ADR-0003).
 - **`web/auth.py`:** giriş ekranı, çıkış ve her istekten önce çalışan kapı (varsayılan kapalı,
   spec 0019); kurallar için yalnız `LoginService`'i çağırır.
 - **`app.py`:** yalnızca kurulum noktası (composition root). Flask uygulamasını, saati
