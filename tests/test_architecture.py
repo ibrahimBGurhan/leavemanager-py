@@ -254,7 +254,7 @@ def test_web_html_lives_only_in_templates():
         bad.append("no templates under web/templates/")
     for t in templates:
         text = t.read_text(encoding="utf-8")
-        lines = text.splitlines()
+        lines = text.split("\n")  # satir numarasiyla ayni ayirici: splitlines \x0c'de de boler (F-2)
         for m in UNESCAPED.finditer(text):
             line = text.count("\n", 0, m.start()) + 1
             bad.append(f"{t.relative_to(ROOT).as_posix()}:{line} {lines[line - 1].strip()[:60]!r}")
