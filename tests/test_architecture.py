@@ -218,8 +218,9 @@ def test_web_does_not_use_the_decision_log_names():
 
 
 TEMPLATES = ROOT / "web" / "templates"
-# {% autoescape off %} da kapatir (tanimsiz ad false sayilir): true disindaki her deger (review F-1)
-UNESCAPED = re.compile(r"\|\s*safe\b|\bMarkup\b|\bautoescape\s+(?!true\b)", re.IGNORECASE)
+# Kacisi kapatan kelimeler hicbir bicimde gecmez (spec 0033): autoescape(false), map('safe'), satir
+# sonuyla bolunmus "| safe" … Hicbir sablon bunlara ihtiyac duymaz; desen inceltmek yeniden acik birakir.
+UNESCAPED = re.compile(r"\b(?:autoescape|safe|Markup)\b", re.IGNORECASE)
 
 
 def test_web_html_lives_only_in_templates():
@@ -227,8 +228,8 @@ def test_web_html_lives_only_in_templates():
     web/templates/, autoescaped. web/*.py holds no string constant with an HTML tag and never
     names render_template_string; Flask route rules ("/requests/<request_id>/approve") are URL
     patterns, not HTML. web/*.py neither names Markup nor imports markupsafe. Every file under
-    web/templates/ is .html (Flask autoescapes by extension) and uses neither |safe, Markup nor
-    autoescape with anything but true (review 0032 F-1)."""
+    web/templates/ is .html (Flask autoescapes by extension) and never names autoescape, safe or
+    Markup in any form; the whole file is scanned, so a line break does not hide one (spec 0033)."""
     bad = []
     for f in layer_files("web"):
         tree = parse(f)
@@ -252,7 +253,9 @@ def test_web_html_lives_only_in_templates():
     if not templates:
         bad.append("no templates under web/templates/")
     for t in templates:
-        for line, text in enumerate(t.read_text(encoding="utf-8").splitlines(), 1):
-            if UNESCAPED.search(text):
-                bad.append(f"{t.relative_to(ROOT).as_posix()}:{line} {text.strip()[:60]!r}")
+        text = t.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        for m in UNESCAPED.finditer(text):
+            line = text.count("\n", 0, m.start()) + 1
+            bad.append(f"{t.relative_to(ROOT).as_posix()}:{line} {lines[line - 1].strip()[:60]!r}")
     assert bad == []

@@ -1,6 +1,6 @@
 # Spec 0033 — sablon-kacis-kelime-yasagi (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0033-plan.md`
 - Source: spec 0032 review round 2 I-1 (`specs/plans/0032-plan.md`, "Triage (review round 2)":
