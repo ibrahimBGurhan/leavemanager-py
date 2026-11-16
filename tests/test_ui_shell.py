@@ -169,3 +169,54 @@ def test_menu_without_javascript(client):
     rule = re.search(r"@media \(max-width: 767\.98px\) \{(.*)\}", css, re.S).group(1)
     assert re.search(r"\.navbar-collapse\.collapse \{ display: block !important; \}", rule)
     assert re.search(r"\.navbar-toggler \{ display: none; \}", rule)
+
+
+# --- step 4: the login screen ------------------------------------------------------------------
+MSG_FAILED = "E-posta ya da şifre hatalı."
+MSG_CSRF = "Form geçersiz ya da süresi dolmuş. Lütfen sayfayı yenileyip tekrar deneyin."
+MSG_EXPIRED = "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın."
+MSG_LOGGED_OUT = "Çıkış yapıldı."
+ALERT = re.compile(r"<div class=\"alert alert-(\w+)\"( role=\"alert\")?>([^<]*)</div>")
+
+
+def alerts(html):
+    """Message boxes on the page as (kind, announced, text)."""
+    return [(kind, bool(role), text) for kind, role, text in ALERT.findall(html)]
+
+
+@pytest.fixture
+def anonymous(logged_out, monkeypatch):
+    monkeypatch.setitem(leave_app.app.config, "WTF_CSRF_ENABLED", True)
+    leave_app.app.testing = True
+    with leave_app.app.test_client() as c:
+        yield c
+
+
+@pytest.mark.parametrize("path", ["/giris", "/giris?durum=sure", "/giris?durum=cikis",
+                                  "/giris?durum=bilinmez"])
+def test_login_has_no_menu(anonymous, path):
+    """AC-7: the login screen carries no navigation and no logout; its assets still load."""
+    html = html_of(anonymous.get(path))
+    assert "<nav" not in html and page_links(html) == [] and "cikis" not in html
+    assert scripts(html) == [(BOOTSTRAP_JS, "")]
+    for href in CSS:
+        assert f'href="{href}"' in html
+    assert not EXTERNAL.search(html)
+
+
+def test_error_messages_announce_info_messages_do_not(anonymous):
+    """AC-8 (and AC-7 states): failed login and CSRF error are announced error boxes; expired
+    and logged-out are quiet info boxes; an unknown ?durum= and the empty form show no box. The
+    distinction does not rest on colour alone (role=alert)."""
+    failed = anonymous.post("/giris", data={"eposta": "x@firma.com", "sifre": "yanlis parola 1"})
+    assert failed.status_code == 400                               # no token yet: CSRF first
+    assert alerts(html_of(failed)) == [("danger", True, MSG_CSRF)]
+    token = re.search(r"name='csrf_token' value='([^']+)'", html_of(anonymous.get("/giris"))).group(1)
+    failed = anonymous.post("/giris", data={"eposta": "x@firma.com", "sifre": "yanlis parola 1",
+                                            "csrf_token": token})
+    assert failed.status_code == 401
+    assert alerts(html_of(failed)) == [("danger", True, MSG_FAILED)]
+    assert alerts(html_of(anonymous.get("/giris?durum=sure"))) == [("info", False, MSG_EXPIRED)]
+    assert alerts(html_of(anonymous.get("/giris?durum=cikis"))) == [("info", False, MSG_LOGGED_OUT)]
+    assert alerts(html_of(anonymous.get("/giris?durum=bilinmez"))) == []
+    assert alerts(html_of(anonymous.get("/giris"))) == []

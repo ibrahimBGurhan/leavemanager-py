@@ -506,7 +506,7 @@ def test_keyboard_path(client):
     form = html.split("<form")[1].split("</form>")[0]
     assert form.index('id="eposta"') < form.index('id="sifre"') < form.index('type="submit"')
     assert "tabindex" not in html
-    assert scripts(html) in ([], [(BOOTSTRAP_JS, "")])          # at most Bootstrap's bundle, no inline JS
+    assert scripts(html) == [(BOOTSTRAP_JS, "")]                # only Bootstrap's bundle, no inline JS
     assert form_bs_attrs(html) == []                            # and no form control bound to it
 
 

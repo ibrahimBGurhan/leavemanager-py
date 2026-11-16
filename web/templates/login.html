@@ -1,14 +1,33 @@
-{# Giris ekrani (spec 0019). Otomatik kacis acik; kullanici girdisi yalniz {{ }} ile (docs/security.md). #}
-<html><head><meta charset="utf-8"><title>Giriş</title>
-<style>body{font-family:Arial;margin:30px}</style>
-</head><body>
-<h2>LeaveManager</h2>
-<h3>Giriş</h3>
-{% if message %}<p{% if error %} style='color:red'{% endif %}>{{ message }}</p>{% endif %}
+{% extends "base.html" %}
+{# Giris ekrani (spec 0019; gorunum spec 0034 R-4). Hesap yok: iskelet menu cizmez. Otomatik kacis acik; kullanici girdisi yalniz {{ }} ile
+   (docs/security.md). Hata iletisi hemen duyurulur (role=alert), bilgi iletisi duyurulmaz; ikisi de kutu icinde (AC-8). #}
+{% block title %}Giriş{% endblock %}
+{% block body %}
+<div class="giris-karti mx-auto mt-5">
+<div class="card shadow-sm">
+<div class="card-body p-4">
+<h1 class="h4 mb-3">Giriş</h1>
+{%- if message %}
+{%- if error %}
+<div class="alert alert-danger" role="alert">{{ message }}</div>
+{%- else %}
+<div class="alert alert-info">{{ message }}</div>
+{%- endif %}
+{%- endif %}
 <form method="post" action="/giris">
 {%- if config.get("WTF_CSRF_ENABLED", True) %}<input type='hidden' name='csrf_token' value='{{ csrf_token() }}'>{% endif %}
-    <label for="eposta">E-posta</label>: <input type="text" id="eposta" name="eposta" value="{{ email }}" autocomplete="username"><br><br>
-    <label for="sifre">Şifre</label>: <input type="password" id="sifre" name="sifre" autocomplete="current-password"><br><br>
-    <input type="submit" value="Giriş Yap"></form>
-<p>{{ note }}</p>
-</body></html>
+<div class="mb-3">
+<label for="eposta" class="form-label">E-posta</label>
+<input type="text" class="form-control" id="eposta" name="eposta" value="{{ email }}" autocomplete="username">
+</div>
+<div class="mb-3">
+<label for="sifre" class="form-label">Şifre</label>
+<input type="password" class="form-control" id="sifre" name="sifre" autocomplete="current-password">
+</div>
+<button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
+</form>
+<p class="text-body-secondary small mt-3 mb-0">{{ note }}</p>
+</div>
+</div>
+</div>
+{% endblock %}
