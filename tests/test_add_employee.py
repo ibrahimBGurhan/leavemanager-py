@@ -509,7 +509,7 @@ def test_add_employee_needs_csrf_token(csrf_client, token):
     html = page(resp)
     assert MSG_CSRF in visible_text(html)
     assert "Yeni Personel" in headings(html)
-    assert html.index(MSG_CSRF) < html.index(">Yeni Personel</h")
+    assert html.index(MSG_CSRF) < html.index(">Yeni Personel</h1>")
     assert form_of(html).inputs["name"]["value"] == ""  # values are not echoed (spec 0015 K-2)
     assert employee_ids() == before
 

@@ -129,7 +129,7 @@ def test_unlinked_staff_sees_empty_screens(client, as_account, employee_id):
     as_account(account("Personel", employee_id))
     home = client.get("/").get_data(as_text=True)
     assert counts(visible_text(home)) == (0, 0, 0)
-    assert table_rows(home) == [["Ad", "Birim", "Hak", "Kullanilan", "Kalan", "Bekleyen"]]
+    assert table_rows(home) == [["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"]]
     assert len(table_rows(client.get("/requests").get_data(as_text=True))) == 1
 
 
@@ -180,7 +180,7 @@ def test_staff_new_request_has_fixed_name(client, as_account):
     as_account(STAFF)
     html = client.get("/new").get_data(as_text=True)
     assert "<select" not in html and 'name="employee_id"' not in html
-    assert "Personel: %s" % A_NAME in visible_text(html)
+    assert "Personel %s" % A_NAME in visible_text(html)
     for other in (B_NAME, "Zeynep Kaya", "Ahmet Celik", "Elif Sahin"):
         assert other not in html
 
@@ -207,7 +207,7 @@ def test_staff_rule_errors_keep_fixed_name(client, as_account, data, message):
     before = snapshot()
     resp = client.post("/new", data=dict(data, reason="x"))
     assert resp.status_code == 400 and message in text(resp)
-    assert "Personel: %s" % A_NAME in text(resp) and "<select" not in resp.get_data(as_text=True)
+    assert "Personel %s" % A_NAME in text(resp) and "<select" not in resp.get_data(as_text=True)
     assert snapshot() == before
 
 
@@ -222,7 +222,7 @@ def test_staff_cannot_request_for_others(client, as_account, employee_id):
     assert resp.status_code == 403 and MSG_FORBIDDEN in text(resp)
     assert snapshot() == before
     html = resp.get_data(as_text=True)
-    assert "Personel: %s" % A_NAME in text(resp) and "<select" not in html      # G-2
+    assert "Personel %s" % A_NAME in text(resp) and "<select" not in html      # G-2
     assert 'value="2026-11-16"' in html and 'value="2026-11-17"' in html and "Baskasi icin" in html
     assert_no_b_data(text(resp))
 

@@ -21,7 +21,7 @@ NEW_FORM = {"employee_id": "2", "start": "2026-11-16", "end": "2026-11-16", "rea
 
 # (name, page that holds the form, POST path, form data, marker the message must precede)
 ACTIONS = [
-    ("new", "/new", "/new", NEW_FORM, ">Yeni Talep</h"),  # G-1: the Yeni Talep page, not any form
+    ("new", "/new", "/new", NEW_FORM, ">Yeni Talep</h1>"),  # G-1: the Yeni Talep page, not any form
     ("approve", "/requests", "/requests/2/approve", {}, "<table"),
     ("reject", "/requests", "/requests/4/reject", {}, "<table"),
 ]

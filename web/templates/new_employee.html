@@ -2,10 +2,15 @@
 {% set current_menu = "employee" %}{# menu ogesi (spec 0034 G-4) #}
 {% from "_macros.html" import message_line, csrf_field with context %}
 {# Yeni Personel (spec 0022 R-1; spec 0032). Yetkisiz hesaba form cizilmez, yalniz ileti (plan 0022 Risk 4). Ad, birim ve birim onerileri otomatik kacisla (R-6, G-6); bozuk tarih geri basilmaz (spec 0015 K-3). #}
-{% block body %}{% if message is not none %}{{ message_line(message, message_kind) }}{% endif %}<h3>Yeni Personel</h3>
-{%- if forbidden %}{{ message_line(forbidden_text, "danger") }}{% else %}<form method="post">{{ csrf_field() }}
-    <label for="ad">Ad</label>: <input type="text" id="ad" name="name" value="{{ name }}"><br><br>
-    <label for="birim">Birim</label>: <input type="text" id="birim" name="department" list="birimler" value="{{ department }}">
-    <datalist id="birimler">{% for u in units %}<option value="{{ u }}"></option>{% endfor %}</datalist><br><br>
-    <label for="ise-giris">İşe giriş tarihi</label>: <input type="date" id="ise-giris" name="hire_date" value="{{ hire_date }}"><br><br>
-    <input type="submit" value="Kaydet"></form>{% endif %}{% endblock %}
+{% block body %}
+{%- if message is not none %}{{ message_line(message, message_kind) }}{% endif %}
+<h1 class="h4 mb-3">Yeni Personel</h1>
+{%- if forbidden %}{{ message_line(forbidden_text, "danger") }}{% else %}
+<form method="post">{{ csrf_field() }}
+<div class="mb-3"><label for="ad" class="form-label">Ad</label><input type="text" class="form-control" id="ad" name="name" value="{{ name }}"></div>
+<div class="mb-3"><label for="birim" class="form-label">Birim</label><input type="text" class="form-control" id="birim" name="department" list="birimler" value="{{ department }}">
+<datalist id="birimler">{% for u in units %}<option value="{{ u }}"></option>{% endfor %}</datalist></div>
+<div class="mb-3"><label for="ise-giris" class="form-label">İşe giriş tarihi</label><input type="date" class="form-control" id="ise-giris" name="hire_date" value="{{ hire_date }}"></div>
+<input type="submit" value="Kaydet" class="btn btn-primary">
+</form>{% endif %}
+{% endblock %}
