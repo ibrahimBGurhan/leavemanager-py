@@ -1,6 +1,6 @@
 # Spec 0032 — refactor-jinja-sablonlari (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0032-plan.md`
 - Source: [ADR-0003](../../docs/decisions/0003-on-yuz-bootstrap.md) ilke 1 (Jinja şablonları) ve
@@ -35,21 +35,21 @@ zemini (ADR-0003).
 none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 
 ## Preserved behavior
-- [ ] PB-1 — **Her ekranın HTML'i bayt bayt aynı** (CSRF token değeri hariç): Ana Sayfa; Talepler
+- [x] PB-1 — **Her ekranın HTML'i bayt bayt aynı** (CSRF token değeri hariç): Ana Sayfa; Talepler
   (iletisiz, onay/red başarı iletisi, 403 / 404 / 400 / 500 hata iletileri, CSRF hatası);
   Yeni Talep (İK: personel seçimli; Personel/Yönetici: kendi adı sabit; bağlı personel kaydı yok;
   hata ekranında geri basılan değerler; CSRF hatası); Yeni Personel (boş form, birim önerileri,
   başarı iletisi, hata iletisi ve geri basılan değerler, yetkisiz, CSRF hatası); Giriş (boş,
   hatalı giriş, süre doldu, çıkış yapıldı, CSRF hatası) — İK, Yönetici ve Personel hesaplarıyla.
-- [ ] PB-2 — **Kaçış aynı:** kullanıcı verisi (personel adı, birim, neden, e-posta, form değerleri)
+- [x] PB-2 — **Kaçış aynı:** kullanıcı verisi (personel adı, birim, neden, e-posta, form değerleri)
   her ekranda bugünkü gibi kaçışlı basılır; HTML/script enjeksiyonu testleri aynı sonucu verir.
-- [ ] PB-3 — **HTTP davranışı aynı:** durum kodları, yönlendirmeler, log satırları, CSRF ve yetki
+- [x] PB-3 — **HTTP davranışı aynı:** durum kodları, yönlendirmeler, log satırları, CSRF ve yetki
   davranışı değişmez.
-- [ ] PB-4 — **Yapı hedefi:** `web/` altındaki Python dosyaları HTML içermez (HTML etiketi içeren
+- [x] PB-4 — **Yapı hedefi:** `web/` altındaki Python dosyaları HTML içermez (HTML etiketi içeren
   string sabiti yok) ve `render_template_string` kullanmaz; HTML yalnız `web/templates/` altındaki
   şablonlarda, otomatik kaçış açık; şablonlarda `|safe`, `Markup` ve `autoescape false` yok. Yeni
   bir mimari testi bunu sabitler (S-4).
-- [ ] PB-5 — **Mevcut testler dokunulmaz:** `tests/` altında var olan hiçbir satır değişmez,
+- [x] PB-5 — **Mevcut testler dokunulmaz:** `tests/` altında var olan hiçbir satır değişmez,
   silinmez, zayıflatılmaz; tek fark `tests/test_architecture.py`'ye eklenen yeni test (yalnız ekleme
   satırları). `scripts/check` full yeşil.
 
@@ -104,8 +104,18 @@ none — no observable behavior change. Kanıtı aşağıdaki Preserved behavior
 - **G-4 Boyut:** Tek yetenek, 5 kriter; dosya sayısı yüksek (2 Python + `app.py` + 7 şablon + 1 test)
   ama her adım bağımsız commit — bölme gerekmez.
 
+## Verification (VERIFY, 2026-11-16, HEAD `2bfde87`)
+PB-1…PB-5 Pass; full `CHECK GREEN (full, 3 steps, 57 s)` (715 passed, 5 skipped). Anlık görüntü
+(S-3) repo dışı kopyalarda: `main` (`cec6160`) ↔ dal, 261 dosya (ekran × rol × durum, CSRF yolları,
+giriş akışları; durum kodu, `Location` ve log satırları dahil) → `diff -r` boş; tek boşluk mutantı
+10/10 farkı yakaladı. Yeni mimari testi `main` kopyasında kırmızı (37 ihlal), dalda yeşil; 11/11
+mutant doğru nedenle kırmızı; `|safe` mutantlarında `test_security` / `test_add_employee` kaçış
+testleri kırmızı. `tests/` diff'i yalnız ekleme (41/0); 719 → 720 test. Review round 1 F-1 real
+(fixed `b766697`), F-2 noise; round 2 I-1 noise. Önce/sonra ekran görüntüleri (Talepler): PR #57.
+Ayrıntı: `specs/plans/0032-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
