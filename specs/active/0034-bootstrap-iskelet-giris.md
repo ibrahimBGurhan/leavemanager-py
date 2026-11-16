@@ -1,6 +1,6 @@
 # Spec 0034 — bootstrap-iskelet-giris
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0034-plan.md`
 

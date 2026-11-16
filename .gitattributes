@@ -6,3 +6,5 @@ scripts/* text eol=lf
 *.md text
 *.yml text
 *.json text
+# Third-party files are served byte for byte: no line-ending conversion (spec 0034, plan Risk 9).
+web/static/vendor/** -text
