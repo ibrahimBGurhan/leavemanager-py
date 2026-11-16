@@ -204,6 +204,12 @@ def test_login_has_no_menu(anonymous, path):
     assert not EXTERNAL.search(html)
 
 
+@pytest.mark.parametrize("path", ["/giris", "/giris?durum=sure", "/giris?durum=cikis"])
+def test_login_shows_app_name(anonymous, path):
+    """AC-7 (review 0034 F-1): the login screen still names the application, without the menu."""
+    assert "LeaveManager" in visible_text(html_of(anonymous.get(path)))
+
+
 def test_error_messages_announce_info_messages_do_not(anonymous):
     """AC-8 (and AC-7 states): failed login and CSRF error are announced error boxes; expired
     and logged-out are quiet info boxes; an unknown ?durum= and the empty form show no box. The
