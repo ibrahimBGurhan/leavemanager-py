@@ -432,3 +432,47 @@ def test_templates_never_use_indent_text_or_translate():
            for p in paths
            for line, what in indent_translate_violations(p.read_text(encoding="utf-8"))]
     assert bad == []
+
+
+# Spec 0037 S-4 (yukseltme bekcisi): ANALYZE taramasi (spec 0037 Gozlem) Jinja 3.1.6, MarkupSafe
+# 3.0.4, Flask 3.1.3 ve Python 3.13'te bu adlarin her birini kullanici metniyle denedi; kacisi
+# kapatan yalniz indent ve translate cikti. Kume degisirse yeni ad taranmamistir.
+SCANNED_FILTERS = (
+    "abs", "attr", "batch", "capitalize", "center", "count", "d", "default", "dictsort", "e",
+    "escape", "filesizeformat", "first", "float", "forceescape", "format", "groupby", "indent",
+    "int", "items", "join", "last", "length", "list", "lower", "map", "max", "min", "pprint",
+    "random", "reject", "rejectattr", "replace", "reverse", "round", "safe", "select",
+    "selectattr", "slice", "sort", "string", "striptags", "sum", "title", "tojson", "trim",
+    "truncate", "unique", "upper", "urlencode", "urlize", "wordcount", "wordwrap", "xmlattr")
+SCANNED_MARKUP_METHODS = (
+    "capitalize", "casefold", "center", "count", "encode", "endswith", "escape", "expandtabs",
+    "find", "format", "format_map", "index", "isalnum", "isalpha", "isascii", "isdecimal",
+    "isdigit", "isidentifier", "islower", "isnumeric", "isprintable", "isspace", "istitle",
+    "isupper", "join", "ljust", "lower", "lstrip", "maketrans", "partition", "removeprefix",
+    "removesuffix", "replace", "rfind", "rindex", "rjust", "rpartition", "rsplit", "rstrip",
+    "split", "splitlines", "startswith", "strip", "striptags", "swapcase", "title", "translate",
+    "unescape", "upper", "zfill")
+
+
+def name_set_difference(found, scanned):
+    """'added [...], removed [...]' between the names found now and the scanned list; '' when equal."""
+    added, removed = sorted(set(found) - set(scanned)), sorted(set(scanned) - set(found))
+    return f"added {added}, removed {removed}" if added or removed else ""
+
+
+def test_template_library_surface_is_known():
+    """Spec 0037 PB-6 (S-4, G-1…G-3): the filter names in a bare Flask application's template
+    environment and the public names of markupsafe.Markup equal the lists scanned in ANALYZE.
+    An upgrade of Jinja, Flask, MarkupSafe or Python that adds or removes a name turns this red,
+    naming the difference: re-run the observation scan of spec 0037 before updating the lists.
+    The application itself (app.py) is not imported."""
+    import flask  # kutuphane, uretim kodu degil: mimari testleri app.py'yi import etmez
+    import markupsafe
+
+    filters = flask.Flask("bekci").jinja_env.filters
+    methods = [name for name in dir(markupsafe.Markup) if not name.startswith("_")]
+    bad = [f"{what}: {diff} — spec 0037 Gozlem taramasini yeniden kos"
+           for what, diff in (("filters", name_set_difference(filters, SCANNED_FILTERS)),
+                              ("Markup methods", name_set_difference(methods, SCANNED_MARKUP_METHODS)))
+           if diff]
+    assert bad == []
