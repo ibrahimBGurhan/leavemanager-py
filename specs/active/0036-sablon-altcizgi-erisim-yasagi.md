@@ -48,10 +48,14 @@ Repo dışı bir betikte, otomatik kaçışı açık bir Jinja ortamında `x = "
   2026-11-17):** ANALYZE'daki "altçizgisiz yollar kaçışlı" sonucu yanlıştı — `indent` yalnız
   `x|indent` biçiminde (girdi olarak) denenmişti. Girdi `Markup` iken metin olarak verilen girinti
   genişliği ve Markup'ın `.translate()` metoduna verilen sözlük değerleri kaçışsız basılır; ikisi
-  altçizgi kullanmaz, bu spec'in kuralının dışındadır (Out of scope, takip spec'i 0037).
-- Metinde `__` aramak beş yolu kaçırıyor: ad, çalışma anında hesaplanıyor ve metinde `__` geçmiyor.
-- Jinja'nın sandbox ortamı bu yolların hepsini çalışma anında `SecurityError` ile reddediyor
-  (karşılaştırma için; S-4 gereği kapsam dışı).
+  altçizgi kullanmaz, bu spec'in kuralının dışındadır (Out of scope, takip spec'i 0037). S-1 ve
+  PB-3'teki "10 yol/yazım", tablonun altçizgili ilk 10 satırıdır; F-1'in iki satırı VERIFY'da
+  kırmızı beklenmez (0037) (review round 2 R2-F-1).
+- Metinde `__` aramak altçizgili yollardan beşini kaçırıyor: ad, çalışma anında hesaplanıyor ve
+  metinde `__` geçmiyor.
+- Jinja'nın sandbox ortamı altçizgili yolların hepsini çalışma anında `SecurityError` ile
+  reddediyor; F-1'deki iki yolu (`indent`, `.translate`) reddetmiyor, ikisi sandbox'ta da kaçışsız
+  basıyor (karşılaştırma için; S-4 gereği kapsam dışı; review round 2 R2-F-1).
 - Bugün `web/templates/` altındaki 7 şablonun hiçbirinde `__`, `attr`, `format` ya da köşeli
   parantezle erişim yok; köşeli parantez yalnız `base.html:17-18`'de liste yazımı olarak geçiyor.
 
