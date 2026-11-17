@@ -14,7 +14,7 @@ from conftest import end_after_workdays, table_rows, visible_text
 from domain.errors import InsufficientBalance
 
 START = dt.date(2026, 12, 1)
-BALANCE_HEADER = ["Ad", "Birim", "Hak", "Kullanilan", "Kalan", "Bekleyen"]
+BALANCE_HEADER = ["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"]
 
 
 def by_name(name):

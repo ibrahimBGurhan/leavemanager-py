@@ -9,7 +9,7 @@ import pytest
 
 from conftest import table_rows, visible_text
 
-REQUESTS_HEADER = ["Personel", "Baslangic", "Bitis", "Gun", "Neden", "Durum"]
+REQUESTS_HEADER = ["Personel", "Başlangıç", "Bitiş", "Gün", "Neden", "Durum"]
 OPENING_REQUESTS = [
     ["Ayse Yilmaz", "2026-07-06", "2026-07-17", "9", "Yaz tatili", "Onaylandi"],  # 0014 T1: iş günü, 15 Tem
     ["Mehmet Demir", "2026-11-02", "2026-11-04", "3", "Aile ziyareti", "Beklemede"],
@@ -49,7 +49,7 @@ def test_dashboard_counts_and_balances(client):
     assert "Onaylanan: 1" in text
     assert "Reddedilen: 3" in text
     assert table_rows(html) == [
-        ["Ad", "Birim", "Hak", "Kullanilan", "Kalan", "Bekleyen"],
+        ["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"],
         ["Ayse Yilmaz", "IT", "26", "9", "17", "3"],  # 0014 T2: iş günü
         ["Mehmet Demir", "Muhasebe", "20", "0", "20", "3"],
         ["Zeynep Kaya", "IK", "14", "0", "14", "1"],

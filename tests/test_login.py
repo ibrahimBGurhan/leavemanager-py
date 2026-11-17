@@ -151,7 +151,7 @@ def test_logged_in_pages_show_email_and_logout(client, account):
                    and c["text"] == "Çıkış" for c in controls(html))
         assert '<form id="cikis-formu" method="post" action="/cikis">' in html
     assert "Bekleyen:" in visible_text(client.get("/").get_data(as_text=True))
-    assert "Izin Talepleri" in visible_text(client.get("/requests").get_data(as_text=True))
+    assert "İzin Talepleri" in visible_text(client.get("/requests").get_data(as_text=True))
     assert "Kaydet" in client.get("/new").get_data(as_text=True)
 
 

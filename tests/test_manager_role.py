@@ -170,7 +170,7 @@ def test_manager_success_message_hides_other_unit(client, as_account):
 def test_manager_new_request_own_name_only(client, as_account):
     as_account(MANAGER)
     html = client.get("/new").get_data(as_text=True)
-    assert "<select" not in html and "Personel: Ahmet Celik" in visible_text(html)
+    assert "<select" not in html and "Personel Ahmet Celik" in visible_text(html)
     before = len(leave_app.storage.requests())
     assert client.post("/new", data={"start": DAY, "end": DAY, "reason": "Kendi"}).status_code == 302
     assert [r["employee_id"] for r in leave_app.storage.requests()[before:]] == [M]

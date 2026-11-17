@@ -22,7 +22,7 @@ from domain.auth import LoginService
 A, A_NAME = 1, "Ayse Yilmaz"
 C_NAME, C_DEPT = "Talepsiz Kisi", "Satis"
 OTHERS = ("Mehmet Demir", "Zeynep Kaya", "Ahmet Celik", "Elif Sahin", A_NAME)
-HEADER = ["Personel", "Baslangic", "Bitis", "Gun", "Neden", "Durum"]
+HEADER = ["Personel", "Başlangıç", "Bitiş", "Gün", "Neden", "Durum"]
 
 
 def account(role, employee_id, email):
@@ -106,7 +106,7 @@ def test_staff_new_request_form_has_dates_reason_and_save(client, as_account):
     assert fields["reason"]["type"] == "text"
     assert [c.get("value") for c in forms[0] if c.get("type") == "submit"] == ["Kaydet"]
     assert "<select" not in html
-    assert "Personel: %s" % A_NAME in visible_text(html)      # own name as plain text
+    assert "Personel %s" % A_NAME in visible_text(html)      # own name as plain text
 
 
 def test_hr_new_request_form_keeps_its_fields(client, as_account):

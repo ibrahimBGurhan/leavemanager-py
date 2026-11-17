@@ -1,11 +1,21 @@
 {% extends "base.html" %}
 {% set current_menu = "new" %}{# menu ogesi (spec 0034 G-4) #}
-{% from "_macros.html" import message_line, csrf_field with context %}
+{% from "_macros.html" import message_line, info_box, csrf_field with context %}
 {# Yeni Talep (spec 0032). IK personel secer; Personel / Yonetici icin kendi adi sabit metin (R-4); bagli personel kaydi yoksa form yok, yalniz bilgi (R-7, G-1). Geri basilan degerler otomatik kacisla (spec 0015 K-3). #}
-{% block body %}{% if message is not none %}{{ message_line(message, "red") }}{% endif %}<h3>Yeni Talep</h3>
-{%- if no_employee %}<p>{{ no_employee_text }}</p>{% else %}<form method="post">{{ csrf_field() }}
-    Personel: {% if employees is not none %}<select name="employee_id">{% for e in employees %}<option value='{{ e.id }}'{% if e.id == selected %} selected{% endif %}>{{ e.name }}</option>{% endfor %}</select>{% else %}{{ own_name }}{% endif %}<br><br>
-    Baslangic: <input type="date" name="start" value="{{ start }}"><br><br>
-    Bitis: <input type="date" name="end" value="{{ end }}"><br><br>
-    Neden: <input type="text" name="reason" value="{{ reason }}"><br><br>
-    <input type="submit" value="Kaydet"></form>{% endif %}{% endblock %}
+{% block body %}
+{%- if message is not none %}{{ message_line(message, "danger") }}{% endif %}
+<h1 class="h4 mb-3">Yeni Talep</h1>
+{%- if no_employee %}{{ info_box(no_employee_text) }}{% else %}
+<form method="post">{{ csrf_field() }}
+<div class="mb-3">
+{%- if employees is not none %}<label for="personel" class="form-label">Personel</label>
+<select id="personel" name="employee_id" class="form-select">{% for e in employees %}<option value='{{ e.id }}'{% if e.id == selected %} selected{% endif %}>{{ e.name }}</option>{% endfor %}</select>
+{%- else %}<div class="form-label">Personel</div>
+<p class="form-control-plaintext mb-0">{{ own_name }}</p>{% endif %}
+</div>
+<div class="mb-3"><label for="baslangic" class="form-label">Başlangıç</label><input type="date" class="form-control" id="baslangic" name="start" value="{{ start }}"></div>
+<div class="mb-3"><label for="bitis" class="form-label">Bitiş</label><input type="date" class="form-control" id="bitis" name="end" value="{{ end }}"></div>
+<div class="mb-3"><label for="neden" class="form-label">Neden</label><input type="text" class="form-control" id="neden" name="reason" value="{{ reason }}"></div>
+<input type="submit" value="Kaydet" class="btn btn-primary">
+</form>{% endif %}
+{% endblock %}

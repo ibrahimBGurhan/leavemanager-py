@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 {% set current_menu = "home" %}{# menu ogesi (spec 0034 G-4) #}
 {# Ana Sayfa (spec 0032). Uc kutu talep sayisidir, gun degil (R-2, G-5). #}
-{% block body %}<div class='kutu'>Bekleyen: <b>{{ pending }}</b></div><div class='kutu'>Onaylanan: <b>{{ approved }}</b></div><div class='kutu'>Reddedilen: <b>{{ rejected }}</b></div><h3>Personel Bakiyeleri</h3><table><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanilan</th><th>Kalan</th><th>Bekleyen</th></tr>
-{%- for row in rows %}<tr><td>{{ row.name }}</td><td>{{ row.department }}</td>{% for n in row.balance %}<td>{{ n }}</td>{% endfor %}</tr>{% endfor %}</table>{% endblock %}
+{% block body %}
+<div class="row row-cols-1 row-cols-sm-3 g-3 mb-4">
+<div class="col"><div class="card"><div class="card-body">Bekleyen: <b>{{ pending }}</b></div></div></div>
+<div class="col"><div class="card"><div class="card-body">Onaylanan: <b>{{ approved }}</b></div></div></div>
+<div class="col"><div class="card"><div class="card-body">Reddedilen: <b>{{ rejected }}</b></div></div></div>
+</div>
+<h1 class="h4 mb-3">Personel Bakiyeleri</h1>
+<div class="table-responsive"><table class="table table-sm table-bordered table-striped align-middle"><thead><tr><th>Ad</th><th>Birim</th><th>Hak</th><th>Kullanılan</th><th>Kalan</th><th>Bekleyen</th></tr></thead><tbody>
+{%- for row in rows %}<tr><td>{{ row.name }}</td><td>{{ row.department }}</td>{% for n in row.balance %}<td>{{ n }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+{% endblock %}

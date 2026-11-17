@@ -8,6 +8,7 @@
 """
 import datetime as _dt
 import os
+import re
 import threading
 from html.parser import HTMLParser
 
@@ -345,3 +346,28 @@ def current_links(html):
     """Links marked as the current page (aria-current="page"), as (text, href)."""
     return [(link["text"], link["href"]) for link in _page(html).links
             if link["aria-current"] == "page"]
+
+
+# --- spec 0035: screen bodies ------------------------------------------------------------------
+_BADGE = re.compile(r"""<span class=["'][^"']*\btext-bg-(\w+)\b[^"']*["']>""")
+_BOX = re.compile(r"""<div class=["']alert alert-(\w+)["'](?: role=["'](\w+)["'])?>(.*?)</div>""", re.S)
+
+
+def badge_kind(cell_html):
+    """Kind of the status badge in a status cell (success, warning, danger, secondary); None if
+    the cell carries no badge (spec 0035 R-6)."""
+    m = _BADGE.search(cell_html)
+    return m.group(1) if m else None
+
+
+def message_boxes(html):
+    """Message boxes on the page as (kind, role, text): role "alert" is announced at once,
+    "status" quietly, "" not at all (spec 0035 R-7)."""
+    return [(kind, role or "", _normalize(text)) for kind, role, text in _BOX.findall(html)]
+
+
+def table_wrapped(html):
+    """For every <table>, whether it sits directly in a horizontally scrollable box (R-5)."""
+    return [bool(re.search(r"""<div class=["'][^"']*\btable-responsive\b[^"']*["']>\s*$""",
+                           html[:m.start()]))
+            for m in re.finditer(r"<table\b", html)]

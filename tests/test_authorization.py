@@ -13,7 +13,7 @@ import re
 import pytest
 
 import app as leave_app
-from conftest import table_rows, visible_text
+from conftest import controls, table_rows, visible_text
 from domain.auth import LoginService
 
 A, B = 1, 2
@@ -96,7 +96,8 @@ def test_hr_sees_everything(client, as_account, full_statuses, employee_id):
     pending = sum(r["status"] == "Beklemede" for r in all_requests)
     assert page.count("value='Onayla'") == pending and page.count("value='Reddet'") == pending
     form = client.get("/new").get_data(as_text=True)
-    assert '<select name="employee_id">' in form and form.count("<option") == 5
+    selects = [c for c in controls(form) if c["tag"] == "select" and c.get("name") == "employee_id"]
+    assert len(selects) == 1 and form.count("<option") == 5
 
 
 # --- AC-2, AC-3: Personel reads only their own ------------------------------------------------
@@ -128,7 +129,7 @@ def test_unlinked_staff_sees_empty_screens(client, as_account, employee_id):
     as_account(account("Personel", employee_id))
     home = client.get("/").get_data(as_text=True)
     assert counts(visible_text(home)) == (0, 0, 0)
-    assert table_rows(home) == [["Ad", "Birim", "Hak", "Kullanilan", "Kalan", "Bekleyen"]]
+    assert table_rows(home) == [["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"]]
     assert len(table_rows(client.get("/requests").get_data(as_text=True))) == 1
 
 
@@ -179,7 +180,7 @@ def test_staff_new_request_has_fixed_name(client, as_account):
     as_account(STAFF)
     html = client.get("/new").get_data(as_text=True)
     assert "<select" not in html and 'name="employee_id"' not in html
-    assert "Personel: %s" % A_NAME in visible_text(html)
+    assert "Personel %s" % A_NAME in visible_text(html)
     for other in (B_NAME, "Zeynep Kaya", "Ahmet Celik", "Elif Sahin"):
         assert other not in html
 
@@ -206,7 +207,7 @@ def test_staff_rule_errors_keep_fixed_name(client, as_account, data, message):
     before = snapshot()
     resp = client.post("/new", data=dict(data, reason="x"))
     assert resp.status_code == 400 and message in text(resp)
-    assert "Personel: %s" % A_NAME in text(resp) and "<select" not in resp.get_data(as_text=True)
+    assert "Personel %s" % A_NAME in text(resp) and "<select" not in resp.get_data(as_text=True)
     assert snapshot() == before
 
 
@@ -221,7 +222,7 @@ def test_staff_cannot_request_for_others(client, as_account, employee_id):
     assert resp.status_code == 403 and MSG_FORBIDDEN in text(resp)
     assert snapshot() == before
     html = resp.get_data(as_text=True)
-    assert "Personel: %s" % A_NAME in text(resp) and "<select" not in html      # G-2
+    assert "Personel %s" % A_NAME in text(resp) and "<select" not in html      # G-2
     assert 'value="2026-11-16"' in html and 'value="2026-11-17"' in html and "Baskasi icin" in html
     assert_no_b_data(text(resp))
 

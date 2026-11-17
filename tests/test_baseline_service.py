@@ -8,7 +8,7 @@ import datetime as dt
 import pytest
 
 import app as leave_app
-from conftest import TODAY, status_cell_html
+from conftest import TODAY, badge_kind, status_cell_html
 from domain.errors import EmployeeNotFound
 
 
@@ -154,23 +154,25 @@ def test_create_request_unknown_employee_raises(svc):
 # --- AC-6 -----------------------------------------------------------------------------------
 
 @pytest.mark.parametrize(
-    "status, color",
+    "status, kind",
     [
-        ("Onaylandi", "green"),
-        ("Beklemede", "orange"),
-        ("Reddedildi", "red"),
-        ("BEKLEMEDE", "orange"),  # turuncu kuralı büyük/küçük harfe duyarsız
-        ("onaylandi", "#999"),    # diğerleri duyarlı
-        ("reddedildi", "#999"),
-        ("Iptal", "#999"),        # bilinmeyen durum gri
+        ("Onaylandi", "success"),
+        ("Beklemede", "warning"),
+        ("Reddedildi", "danger"),
+        ("BEKLEMEDE", "warning"),  # uyarı kuralı büyük/küçük harfe duyarsız
+        ("onaylandi", "secondary"),  # diğerleri duyarlı
+        ("reddedildi", "secondary"),
+        ("Iptal", "secondary"),      # bilinmeyen durum nötr
     ],
 )
-def test_status_badge(client, status, color):
-    """AC-6: rozet rengi ve metni — talepler ekranında, kullanıcının gördüğü yerde (spec 0005)."""
+def test_status_badge(client, status, kind):
+    """AC-6: rozet türü ve metni — talepler ekranında, kullanıcının gördüğü yerde (spec 0005;
+    renk yerine tür, spec 0035 R-6)."""
     leave_app.storage.add_request({
         "id": 99, "employee_id": 1, "start": dt.date(2026, 11, 16),
         "end": dt.date(2026, 11, 16), "reason": "rozet-testi", "status": status,
     })
     badge = status_cell_html(client.get("/requests").get_data(as_text=True), "rozet-testi")
-    assert f"color:{color}" in badge
+    assert badge_kind(badge) == kind
+    assert "color" not in badge
     assert status in badge

@@ -1,15 +1,19 @@
-{# Ekranlarin ortak parcalari (spec 0032). Ciktilari bugunku isaretlemeyle bayt bayt ayni. #}
+{# Ekranlarin ortak parcalari (spec 0032; gorunum spec 0035). Satir ici stil yok (spec 0035 R-10). #}
 
 {# Durum degistiren her formda token (spec 0011 CB-1). Koruma kapaliyken alan uretilmez (plan 0011 Risk 2). #}
 {% macro csrf_field() %}{% if config.get("WTF_CSRF_ENABLED", True) %}<input type='hidden' name='csrf_token' value='{{ csrf_token() }}'>{% endif %}{% endmacro %}
 
-{# Durum rozeti; renk Python'da secilir (status_color), metin kacislanir (spec 0032 S-5). #}
-{% macro status_badge(status, color) %}<b style='color:{{ color }}'>{{ status }}</b>{% endmacro %}
+{# Durum rozeti; tur Python'da secilir (status_kind: success, warning, danger, secondary), metin kacislanir (spec 0035 R-6). #}
+{% macro status_badge(status, kind) %}<span class="badge text-bg-{{ kind }}">{{ status }}</span>{% endmacro %}
 
-{# Durum hucresinde; dugme etiketi value ozniteliginde ("Kaydet" kalibi, plan 0010 Risk 1). #}
-{% macro decision_buttons(request_id) %}
-{%- for action, label in (("approve", "Onayla"), ("reject", "Reddet")) %} <form method='post' action='/requests/{{ request_id }}/{{ action }}' style='display:inline'>{{ csrf_field() }}<input type='submit' value='{{ label }}'></form>{% endfor %}
+{# Durum hucresinde; her eylem ayri POST formu, JS yok (spec 0035 R-8). Gorunen etiket value'da; ekran okuyucu adi
+   talebi tanimlar (aria-label, plan Risk 1; tarihler tablodaki bicimde, G-2). #}
+{% macro decision_buttons(row) %}
+{%- for action, label, verb, style in (("approve", "Onayla", "onayla", "success"), ("reject", "Reddet", "reddet", "danger")) %} <form method='post' action='/requests/{{ row.id }}/{{ action }}' class='d-inline'>{{ csrf_field() }}<input type='submit' value='{{ label }}' class='btn btn-sm btn-outline-{{ style }}' aria-label='{{ row.name }}, {{ row.start }} – {{ row.end }} talebini {{ verb }}'></form>{% endfor %}
 {%- endmacro %}
 
-{# Ekranin ustundeki ileti satiri: basari yesil, hata kirmizi. #}
-{% macro message_line(text, color) %}<p style='color:{{ color }}'>{{ text }}</p>{% endmacro %}
+{# Ekranin ustundeki ileti kutusu (spec 0035 R-7): hata kirmizi ve hemen duyurulur, basari yesil ve sessizce. #}
+{% macro message_line(text, kind) %}<div class="alert alert-{{ kind }}" role="{{ 'alert' if kind == 'danger' else 'status' }}">{{ text }}</div>{% endmacro %}
+
+{# Bilgi kutusu: duyurulmaz (spec 0035 R-7). #}
+{% macro info_box(text) %}<div class="alert alert-info">{{ text }}</div>{% endmacro %}

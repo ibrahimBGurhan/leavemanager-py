@@ -2,5 +2,9 @@
 {% set current_menu = "requests" %}{# menu ogesi (spec 0034 G-4) #}
 {% from "_macros.html" import message_line, status_badge, decision_buttons with context %}
 {# Talepler (spec 0032). Dugme yalniz sonuclandirabilecegi talepte; karar Python'da (can_decide; 0020 R-3, 0021 R-4). #}
-{% block body %}{% if message is not none %}{{ message_line(message, message_color) }}{% endif %}<h3>Izin Talepleri</h3><table><tr><th>Personel</th><th>Baslangic</th><th>Bitis</th><th>Gun</th><th>Neden</th><th>Durum</th></tr>
-{%- for r in rows %}<tr><td>{{ r.name }}</td><td>{{ r.start }}</td><td>{{ r.end }}</td><td>{{ r.days }}</td><td>{{ r.reason }}</td><td>{{ status_badge(r.status, r.color) }}{% if r.can_decide %}{{ decision_buttons(r.id) }}{% endif %}</td></tr>{% endfor %}</table>{% endblock %}
+{% block body %}
+{%- if message is not none %}{{ message_line(message, message_kind) }}{% endif %}
+<h1 class="h4 mb-3">İzin Talepleri</h1>
+<div class="table-responsive"><table class="table table-sm table-bordered table-striped align-middle"><thead><tr><th>Personel</th><th>Başlangıç</th><th>Bitiş</th><th>Gün</th><th>Neden</th><th>Durum</th></tr></thead><tbody>
+{%- for r in rows %}<tr><td>{{ r.name }}</td><td>{{ r.start }}</td><td>{{ r.end }}</td><td>{{ r.days }}</td><td>{{ r.reason }}</td><td>{{ status_badge(r.status, r.kind) }}{% if r.can_decide %}{{ decision_buttons(r) }}{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}
