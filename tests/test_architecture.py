@@ -314,6 +314,12 @@ def field_reader_name(value):
     return any(part in FIELD_READERS for part in name_parts(value))
 
 
+def negative_index(arg):
+    """True for a negative whole number written as a constant (x[-1] parses as Neg(Const))."""
+    return (isinstance(arg, jinja2.nodes.Neg) and isinstance(arg.node, jinja2.nodes.Const)
+            and type(arg.node.value) is int)
+
+
 def template_access_violations(source):
     """(line, what) for every forbidden access in one template (spec 0036 PB-1, PB-2)."""
     try:
@@ -327,6 +333,8 @@ def template_access_violations(source):
             if node.attr.startswith("_") or node.attr in FIELD_READERS:
                 bad.append((node.lineno, f"attribute {node.attr!r}"))
         elif isinstance(node, jinja2.nodes.Getitem):
+            if negative_index(node.arg):  # x[-1] is an index written as a constant (review F-3)
+                continue
             if not isinstance(node.arg, jinja2.nodes.Const):
                 bad.append((node.lineno, "computed key"))
             elif isinstance(node.arg.value, str) and (node.arg.value.startswith("_")
