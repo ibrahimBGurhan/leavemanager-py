@@ -1,6 +1,6 @@
 # Spec 0035 — bootstrap-ekran-govdeleri
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0035-plan.md`
 
@@ -112,40 +112,40 @@ yenilemeden etkileşim ve marka teması yok. Clarify 1–7 önerildiği gibi kab
   12 (sınır).
 
 ## Acceptance criteria
-- [ ] AC-1 — Ana Sayfa: üç sayaç aynı metin ve sayılarla, ayrı kutularda; bakiye tablosu başlıkları
+- [x] AC-1 — Ana Sayfa: üç sayaç aynı metin ve sayılarla, ayrı kutularda; bakiye tablosu başlıkları
   "Ad, Birim, Hak, Kullanılan, Kalan, Bekleyen"; her rol için satırlar ve değerler bugünküyle aynı;
   personel yokken yalnız başlık satırı.
-- [ ] AC-2 — Talepler: tablo başlığı "İzin Talepleri", sütunlar "Personel, Başlangıç, Bitiş, Gün,
+- [x] AC-2 — Talepler: tablo başlığı "İzin Talepleri", sütunlar "Personel, Başlangıç, Bitiş, Gün,
   Neden, Durum"; her rol için satırlar bugünküyle aynı; onay/red düğmeleri tam olarak bugün
   gösterildiği satırlarda; talep yokken yalnız başlık satırı.
-- [ ] AC-3 — Durum rozeti: her satırda durum metni bugünkü değer; tür onaylandı → başarı,
+- [x] AC-3 — Durum rozeti: her satırda durum metni bugünkü değer; tür onaylandı → başarı,
   beklemede (harfe duyarsız) → uyarı, reddedildi → tehlike, bilinmeyen → nötr; hiçbir şablonda ve
   uygulama kodunda durum için CSS rengi yok.
-- [ ] AC-4 — Onayla/Reddet: her düğme ayrı bir POST formu, CSRF token'ı var, görünen etiket
+- [x] AC-4 — Onayla/Reddet: her düğme ayrı bir POST formu, CSRF token'ı var, görünen etiket
   "Onayla"/"Reddet"; ekran okuyucu adı personel adını ve iki tarihi içerir; düğmeye basınca sonuç
   (durum, ileti, yönlendirme, log) bugünküyle aynı; token'sız istek bugünkü gibi reddedilir.
-- [ ] AC-5 — İletiler: başarı iletileri yeşil, sessizce duyurulan kutuda; hata iletileri (Talepler,
+- [x] AC-5 — İletiler: başarı iletileri yeşil, sessizce duyurulan kutuda; hata iletileri (Talepler,
   Yeni Talep, Yeni Personel'in tüm hata durumları, CSRF, 403/404/500) kırmızı, hemen duyurulan
   kutuda; "personel kaydına bağlı değil" bilgi kutusunda; geçersiz `?sonuc=` ve `?eklendi=`
   bilinmeyen kayıt → ileti yok. Metinler bugünküyle aynı.
-- [ ] AC-6 — Yeni Talep: Personel, Başlangıç, Bitiş, Neden alanlarının her birinin görünür ve
+- [x] AC-6 — Yeni Talep: Personel, Başlangıç, Bitiş, Neden alanlarının her birinin görünür ve
   alana bağlı etiketi var; İK'da personel listesi (seçili değer geri basılı), Personel/Yönetici'de
   adı düz metin; hata sonrası değerler bugünkü gibi geri basılı; "Kaydet" birincil düğme; bağlı
   personel yokken form yok, bilgi iletisi var.
-- [ ] AC-7 — Yeni Personel: Ad, Birim, İşe giriş tarihi etiketli; birim önerileri mevcut
+- [x] AC-7 — Yeni Personel: Ad, Birim, İşe giriş tarihi etiketli; birim önerileri mevcut
   birimlerden; değerler bugünkü gibi geri basılı, bozuk tarih basılmaz; "Kaydet" birincil düğme;
   yetkisiz hesapta form yok, hata kutusu var; başarıda başarı kutusu.
-- [ ] AC-8 — Dar ekran: 360 px genişlikte dört ekranın hiçbiri sayfa düzeyinde yana kaymaz; geniş
+- [x] AC-8 — Dar ekran: 360 px genişlikte dört ekranın hiçbiri sayfa düzeyinde yana kaymaz; geniş
   tablolar kendi kutusu içinde kayar; sayaç kutuları alt alta dizilir.
-- [ ] AC-9 — JavaScript kapalı: onay, red, Yeni Talep ve Yeni Personel gönderimi çalışır (düğmeyle
+- [x] AC-9 — JavaScript kapalı: onay, red, Yeni Talep ve Yeni Personel gönderimi çalışır (düğmeyle
   ve Enter ile).
-- [ ] AC-10 — Metinler: R-9 düzeltmeleri görünür, eski yazımlar ("Izin", "Baslangic", "Bitis",
+- [x] AC-10 — Metinler: R-9 düzeltmeleri görünür, eski yazımlar ("Izin", "Baslangic", "Bitis",
   "Gun", "Kullanilan") dört ekranın görünen metninde yok; ileti metinleri ve durum değerleri
   değişmemiş.
-- [ ] AC-11 — Satır içi stil/betik yok: `web/templates/` altındaki **her** şablonda `<style>`,
+- [x] AC-11 — Satır içi stil/betik yok: `web/templates/` altındaki **her** şablonda `<style>`,
   `style=`, satır içi `<script>` ve `on…=` yok, bir mimari testi bunu sabitler; `app.css`'te 0034
   ara kuralları yok.
-- [ ] AC-12 — Davranış aynı: tüm suite yeşil; her ekran × rol × durum için durum kodu,
+- [x] AC-12 — Davranış aynı: tüm suite yeşil; her ekran × rol × durum için durum kodu,
   yönlendirme ve log satırları `main` ile aynı; görünen metin R-9 ve R-8 farkları dışında aynı;
   işaretlemeye bakan ve değişen her assert planda eski → yeni listelenmiş, aynı davranışı soruyor
   (zayıflatma yok).
@@ -180,8 +180,8 @@ yenilemeden etkileşim ve marka teması yok. Clarify 1–7 önerildiği gibi kab
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 1 (review round 2 bilgi notu: AC-5 "gelecek tarih" → "1950 öncesi tarih"; plan sapması R-07 ile planda, 1 adet) |
+| Fix rounds | 1 |
+| Review findings: real / noise | 2 / 0 (F-1, F-2) |
+| Regressions introduced | 0 |
+| Bugs escaped to production | 0 (ship anında) |
