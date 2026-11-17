@@ -1,6 +1,6 @@
 # Spec 0038 — kidem-tam-yil (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0038-plan.md`
 - Source: `docs/domain.md` OD-1, OD-2 (karar: İbrahim Gürhan, IK adına, 2026-11-17)
@@ -78,8 +78,19 @@ eder. Hak, Kalan ve yeni talepteki bakiye kontrolü bu doğru kıdemle çalış�
   kriterleriyle yerine konur — supersede, zayıflatma değil (Out of scope notu).
 - **Split:** tek yetenek, 9 kriter — bölünmez.
 
+## Verification (VERIFY, 2026-11-17, HEAD `a9aecd1`)
+CB-1…CB-5 ve PB-1…PB-4 Pass; full `CHECK GREEN (full, 3 steps, 73 s)` (813 passed, 5 skipped,
+`3297755`; sonrası yalnız spec/plan). Repo dışı kopyada (`git archive`) `domain/leave_service.py`'ye
+7 mutant: yıl dönümü günü sayılmaz 8, 29 Şubat düzeltmesi yok 1, artık yıl işe giriş yılına göre 1,
+29 Şubat → 1 Mart 1, eksi kıdem 2, tam 15 yıl yine 20 5, yıl farkı 8 test kırmızı; `main` kodu
+HEAD testleriyle 14 kırmızı. Üretim diff'i yalnız `domain/leave_service.py`; `tests/`'te silinen
+satırlar yalnız supersede edilen T1/T2. Review round 1 temiz, F-1 (Low, plan haritasında CB-1 test
+adı) real — kanıt tablosunda doğru adla kapatıldı, kod değişmedi. UI düzeni değişmedi, açılış
+verisinde sayı değişmez; ekran görüntüsü gerekmez. Ayrıntı: `specs/plans/0038-plan.md` "Triage" ve
+"Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
