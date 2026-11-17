@@ -1,6 +1,6 @@
 # Spec 0036 — sablon-altcizgi-erisim-yasagi (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0036-plan.md`
 - Source: spec 0033 review round 1 F-1 (`specs/plans/0033-plan.md`, "Triage (review round 1)":
@@ -82,29 +82,29 @@ none — no observable behavior change (ekranlar, HTTP, loglar aynı). Değişen
 kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 
 ## Preserved behavior
-- [ ] PB-1 — **Altçizgili ada erişim yok:** `web/templates/` altındaki hiçbir şablon `_` ile
+- [x] PB-1 — **Altçizgili ada erişim yok:** `web/templates/` altındaki hiçbir şablon `_` ile
   başlayan bir ada erişmez: noktayla (`x._a`, `x.__class__`), köşeli parantezle (`x['_a']`),
   `attr` süzgeciyle ve bir süzgecin ya da testin öznitelik adı argümanıyla (`map(attribute=…)`,
   `selectattr`, `rejectattr`, `sort`, `groupby`, `sum`, `unique`, `min`, `max` gibi). Metnin içinden
   alan okuyan `.format(…)` ve `.format_map(…)` metot çağrıları da yasaktır (G-1; `|format`
   süzgeci serbest). İhlalde test dosyayı ve satırı adlandırarak kırmızıya düşer; ayrıştırılamayan
   bir şablon atlanmaz, dosyayı adlandırarak kırmızıya düşer (G-2).
-- [ ] PB-2 — **Hesaplanan ad yok:** Köşeli parantezle erişimin anahtarı, `attr` süzgecinin adı ve
+- [x] PB-2 — **Hesaplanan ad yok:** Köşeli parantezle erişimin anahtarı, `attr` süzgecinin adı ve
   süzgeç/testlerin öznitelik adı argümanı şablonda sabit yazılmış bir değerdir; adı çalışma anında
   hesaplanan (değişken, birleştirme, `join`, kaçış dizisi içeren ifade) erişim kırmızıya düşer.
   Sabit anahtar ya da sıra numarasıyla erişim (`x['ad']`, `x[0]`) ve liste yazımı (`base.html`
   menüsü) serbesttir.
-- [ ] PB-3 — **Gözlemdeki her yol yakalanır:** Gözlem tablosundaki kaçışı kapatan 10 yazımın her
+- [x] PB-3 — **Gözlemdeki her yol yakalanır:** Gözlem tablosundaki kaçışı kapatan 10 yazımın her
   biri ve `lipsum.__globals__` erişimi bir şablona eklenince test kırmızı (VERIFY'da repo dışı
   kopyada mutantla).
-- [ ] PB-4 — **Yanlış alarm yok:** Bugünkü 7 şablon yeşil; görünen metinde ya da `{# … #}`
+- [x] PB-4 — **Yanlış alarm yok:** Bugünkü 7 şablon yeşil; görünen metinde ya da `{# … #}`
   yorumunda geçen `__` ve altçizgisiz erişimler (`row.name`, `config.get(…)`, `loop.index`,
   `x['ad']`, `x[0]`) testi kırmızıya düşürmez (VERIFY'da zararsız mutantlarla).
-- [ ] PB-5 — **0033 ve 0032 kuralları aynen sürer:** Şablonlarda `autoescape`, `safe`, `Markup`
+- [x] PB-5 — **0033 ve 0032 kuralları aynen sürer:** Şablonlarda `autoescape`, `safe`, `Markup`
   kelime yasağı; her şablon `.html`; `web/*.py`'de HTML sabiti, `render_template_string`, `Markup`,
   `markupsafe` yasağı değişmez. 0033 ve 0032 VERIFY mutantları yine kırmızı; hiçbir test silinmez,
   atlanmaz, zayıflatılmaz.
-- [ ] PB-6 — **Başka hiçbir şey değişmez:** Üretim kodu ve şablonlar değişmez
+- [x] PB-6 — **Başka hiçbir şey değişmez:** Üretim kodu ve şablonlar değişmez
   (`git diff main...HEAD -- web app.py domain storage` boş); `docs/security.md`'de yalnız S-5'teki
   tek cümle; `scripts/check` full yeşil.
 
@@ -138,8 +138,21 @@ kanıtı aşağıdaki Preserved behavior kriterleri taşır.
   0032 mutant listeleriyle; PB-6 `git diff` ve full check ile. Kanıtsız kriter yok.
 - **G-6 Boyut:** Tek kural, 6 kriter, bir test ve bir doküman cümlesi — bölme gerekmez.
 
+## Verification (VERIFY, 2026-11-17, HEAD `83e1bb7`)
+PB-1…PB-6 Pass; full `CHECK GREEN (full, 3 steps, 57 s)` (793 passed, 5 skipped). Mutantlar repo
+dışı kopyalarda (`git archive`), `test_templates_never_reach_underscore_names`: Gözlemin altçizgili
+10 yolu ve `lipsum.__globals__` `main`'de yeşil, dalda kırmızı; `.format`/`.format_map` her yoldan,
+noktalı/virgüllü adlar, tek altçizgi, `ns._a`, dilim, değişkenle anahtar/ad ve ayrıştırılamayan
+şablon dalda kırmızı (25/25); zararsız 11 yazım (`__` metin/yorumda, `x['ad']`, `x[0]`, `x[-1]`,
+`'%s'|format`, `_macros.html` importu…) yeşil; 0033 ve 0032 mutantları (19) eski testle kırmızı.
+Üretim diff'i boş; `tests/` diff'i yalnız ekleme. Review round 1: F-1 real (spec düzeltmesi, kod
+düzeltmesi yok — takip 0037: `indent(x, true)`, `.translate`), F-2 real (fixed `b100a6b`), F-3
+kısmen real (`x[-1]` fixed `7c07127`; `join`/`default` kabul edilen risk); round 2: R2-F-1 real
+(fixed `ae3bb78`); round 3 temiz. UI değişmedi; ekran görüntüsü gerekmez. Ayrıntı:
+`specs/plans/0036-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
