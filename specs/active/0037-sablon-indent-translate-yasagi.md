@@ -1,6 +1,6 @@
 # Spec 0037 — sablon-indent-translate-yasagi (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0037-plan.md`
 - Source: spec 0036 review round 1 F-1 (`specs/plans/0036-plan.md`, "Triage (review round 1)":
@@ -107,6 +107,9 @@ kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 - [ ] PB-8 — **Başka hiçbir şey değişmez:** Üretim kodu ve şablonlar değişmez
   (`git diff main...HEAD -- web app.py domain storage` boş); `docs/security.md`'de yalnız S-6'daki
   tek cümle; `scripts/check` full yeşil.
+  **Düzeltme (PLAN, R-10, plan Risk 2, onay: İbrahim Gürhan, 2026-11-17):** `requirements.txt`'e
+  `jinja2==3.1.6` ve `markupsafe==3.0.4` sabitlemesi eklenir — PB-6 bekçisinin ön koşulu (tarama
+  bu sürümler için geçerli; yükseltme bilinçli bir PR olur). Kriterler değişmez.
 
 ## Out of scope
 - İzin listesi (kapalı süzgeç/metot listesi) — S-1.
