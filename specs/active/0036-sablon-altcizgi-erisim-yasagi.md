@@ -1,6 +1,6 @@
 # Spec 0036 — sablon-altcizgi-erisim-yasagi (mini)
 
-- Status: Approved
+- Status: In progress
 - Mode: lite
 - Plan: `specs/plans/0036-plan.md`
 - Source: spec 0033 review round 1 F-1 (`specs/plans/0033-plan.md`, "Triage (review round 1)":
