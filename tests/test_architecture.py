@@ -364,3 +364,71 @@ def test_templates_never_reach_underscore_names():
            for p in paths
            for line, what in template_access_violations(p.read_text(encoding="utf-8"))]
     assert bad == []
+
+
+# Spec 0037 (0036 F-1 takibi): altcizgi kullanmadan kacisi kapatan iki yol. indent'e metin olarak
+# verilen genislik ve translate'e verilen tablonun degerleri Markup'in icine kacissiz girer:
+# ('a\nb'|e)|indent(x) -> 'a\n<b>b', ('a'|e).translate({97: x}) -> '<b>'. 0036'nin yardimcilari
+# yalniz okunur; 0036/0033/0032 kurallari degismez (PB-7).
+NO_ESCAPE_METHODS = ("translate",)  # spec 0037 S-3: tablo sabit olsa da ham '<' uretir
+
+
+def constant_whole_number(arg):
+    """True for a whole number written in the template (4, -1); a bool is not one (S-2)."""
+    return ((isinstance(arg, jinja2.nodes.Const) and type(arg.value) is int)
+            or negative_index(arg))
+
+
+def indent_width(node):
+    """The width argument of an indent filter node, positional or width=; None when absent."""
+    if node.args:
+        return node.args[0]
+    return next((kw.value for kw in node.kwargs if kw.key == "width"), None)
+
+
+def indent_translate_violations(source):
+    """(line, what) for every indent with a non-constant width, every translate access and every
+    map('indent', ...) in one template (spec 0037 PB-1, PB-2, PB-3)."""
+    try:
+        tree = jinja2.Environment().parse(source)
+    except jinja2.TemplateSyntaxError as e:  # 0036 G-2 ile ayni: sessizce atlanmaz
+        return [(e.lineno, f"not parseable: {e.message}")]
+    bad = []
+    for node in tree.find_all((jinja2.nodes.Getattr, jinja2.nodes.NSRef, jinja2.nodes.Getitem,
+                               jinja2.nodes.Filter)):  # Filter: |indent ve {% filter indent %}
+        if isinstance(node, (jinja2.nodes.Getattr, jinja2.nodes.NSRef)):
+            if node.attr in NO_ESCAPE_METHODS:
+                bad.append((node.lineno, f"attribute {node.attr!r}"))
+        elif isinstance(node, jinja2.nodes.Getitem):
+            if isinstance(node.arg, jinja2.nodes.Const) and node.arg.value in NO_ESCAPE_METHODS:
+                bad.append((node.lineno, f"key {node.arg.value!r}"))
+        elif node.name == "indent":
+            width = indent_width(node)
+            if node.dyn_args is not None or node.dyn_kwargs is not None:
+                bad.append((node.lineno, "indent: computed arguments"))
+            elif width is not None and not constant_whole_number(width):
+                bad.append((node.lineno, "indent: width is not a constant whole number"))
+        elif node.name in NAME_FILTERS:
+            if (node.name == "map" and node.args and isinstance(node.args[0], jinja2.nodes.Const)
+                    and node.args[0].value == "indent"):
+                bad.append((node.lineno, "map: filter 'indent'"))
+            for arg in node.args + [kw.value for kw in node.kwargs]:
+                if (isinstance(arg, jinja2.nodes.Const)
+                        and any(part in NO_ESCAPE_METHODS for part in name_parts(arg.value))):
+                    bad.append((node.lineno, f"{node.name}: {arg.value!r}"))
+    return bad
+
+
+def test_templates_never_use_indent_text_or_translate():
+    """Spec 0037 (follow-up of 0036 F-1; docs/security.md Input & output): indent takes no width
+    or a whole number written in the template — a text, variable, expression or true/false width
+    is refused, in |indent and {% filter indent %} alike, and so are *args / **kwargs. translate
+    is reached by no path (dot, brackets, attr, a filter's attribute argument), even with a
+    constant table. map('indent', ...) is refused whatever its arguments. Plain text and comments
+    may hold the words."""
+    paths = sorted(TEMPLATES.rglob("*.html"))
+    assert len(paths) >= 7
+    bad = [f"web/templates/{p.relative_to(TEMPLATES).as_posix()}:{line} {what}"
+           for p in paths
+           for line, what in indent_translate_violations(p.read_text(encoding="utf-8"))]
+    assert bad == []
