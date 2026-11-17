@@ -13,7 +13,7 @@
 | Birim (`department`) | Personelin bağlı olduğu departman (IT, Muhasebe, IK, Satis…) | |
 | İzin Talebi (`LeaveRequest`) | Bir personelin başlangıç–bitiş tarihli yıllık izin isteği ve nedeni | Yalnızca yıllık ücretli izin; başka izin türü yok |
 | Durum (`status`) | Talebin durumu: `Beklemede` · `Onaylandi` · `Reddedildi` | Veri değeridir: ASCII yazılır, Türkçe karakterli hali (`Onaylandı`) **farklı** bir değerdir. Geçişler: BR-10 |
-| Kıdem (`seniority`) | Personelin hizmet süresi, tam yıl olarak | Bugün kod yalnızca yıl farkını alıyor (BR-2) |
+| Kıdem (`seniority`) | Personelin tamamlanmış hizmet yılı | Yıl farkı değildir: yıl dönümü gelmeden artmaz (BR-2) |
 | Hak (`entitlement`) | Kıdeme göre bir yıl için hak edilen izin günü | "Kalan" ile karıştırılmamalı |
 | İzin günü | Bir talebin bakiyeden düşen gün sayısı; tam sayı | İş günüdür: hafta sonu ve resmî tatil sayılmaz (BR-3) |
 | Kullanılan (`used`) | `Onaylandi` durumundaki taleplerin izin günü toplamı | Bekleyenler dahil değil |
@@ -23,11 +23,10 @@
 ## Business rules
 
 - **BR-1 Hak (md. 53):** kıdem < 1 yıl → 0 · 1–5 yıl (5 dahil) → 14 · 5'ten fazla ve 15'ten az
-  → 20 · 15 yıl ve üzeri → 26 gün.
-  *Mevcut kod:* 1–5 → 14 (doğru; koddaki "15 gün" yorumu yanlış) · 6–15 → 20 · 16+ → 26.
-  **Tam 15 yıl kıdem kodda 20 gün, kanunda 26 gün** [IK onayı bekliyor].
-- **BR-2 Kıdem:** tamamlanmış hizmet yılıdır (işe giriş yıl dönümü geçilince artar)
-  [IK onayı bekliyor]. *Mevcut kod:* `bugün.yıl − giriş.yıl` (ay ve gün yok sayılıyor).
+  → 20 · 15 yıl ve üzeri (tam 15 dahil) → 26 gün (OD-1, spec 0038).
+- **BR-2 Kıdem:** işe giriş tarihinden bugüne tamamlanmış hizmet yılıdır; yıl, işe giriş yıl
+  dönümü **günü** tamamlanır. 29 Şubat'ta işe girenin yıl dönümü artık olmayan yıllarda 28
+  Şubat'tır. İşe giriş tarihi bugünden sonraysa kıdem 0'dır (OD-2, spec 0038).
 - **BR-3 İzin günü (md. 56):** izin günü iş günüdür: aralıktaki (başlangıç ve bitiş dahil)
   Pazartesi–Cuma günlerinden resmî tatil olmayanlar sayılır; Cumartesi ve Pazar hafta tatilidir
   (karar: İbrahim Gürhan, IK adına, 2026-11-05; spec 0014). Resmî tatiller 2026–2027 için kodda
@@ -88,9 +87,11 @@
 ## Open decisions
 Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davranış değişikliği) veya
 `/fix-bug` (anlaşılan kuraldan sapma) ile ele alınır.
-- **OD-1** Tam 15 yıl kıdem: 20 mi 26 mı? (BR-1) — öneri: 26, kanun gereği.
-- **OD-2** Kıdem tam yıl mı, yıl farkı mı? (BR-2) — öneri: tam yıl. 29 Şubat'ta işe girenlerin yıl
-  dönümü artık olmayan yıllarda 28 Şubat mı 1 Mart mı sayılacak?
+- **OD-1** ~~Tam 15 yıl kıdem: 20 mi 26 mı?~~ — **kapandı** (spec 0038, İbrahim Gürhan, IK adına,
+  2026-11-17): 26 gün, kanun gereği (BR-1).
+- **OD-2** ~~Kıdem tam yıl mı, yıl farkı mı?~~ — **kapandı** (spec 0038, İbrahim Gürhan, IK adına,
+  2026-11-17): tamamlanmış hizmet yılı, yıl dönümü günü dahil; 29 Şubat'ta işe girenin yıl dönümü
+  artık olmayan yıllarda 28 Şubat (BR-2).
 - **OD-3** ~~Bekleyen talepler Kalan'dan düşülsün mü?~~ — **kapandı** (spec 0013, İbrahim Gürhan,
   IK adına, 2026-11-05): yeni talep kontrolünde düşülür, bakiye tablosunda ayrı sütun; Kalan ve
   onay kontrolü değişmez (BR-5, BR-6, BR-10).
@@ -113,3 +114,6 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
 - **OD-10** Resmî tatil listesi yalnız 2026–2027'yi kapsıyor; sonraki yıllarda yalnız hafta sonu
   düşülür (spec 0014 K-4). Öneri: 2027 sonundan önce liste güncellensin ya da IK girişi (OD-8
   sonrası) yapılsın.
+- **OD-11** İzin yılı / hakkın yenilenmesi: Kullanılan tüm zamanların onaylı taleplerini sayıyor,
+  Hak tek bir yıllık değer ve yıl dönümünde yenilenmiyor (spec 0038 S-3). IK kararı bekler: izin
+  yılı neye göre başlar, kullanılmayan hak ne olur (OD-6 ile bağlantılı).

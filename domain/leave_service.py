@@ -1,5 +1,6 @@
 # Is kurallari: kidem, hak, kullanilan, kalan, talep olusturma, durum gecisleri (docs/domain.md).
 # Saat ve depo disaridan verilir; bu katman Flask'i, HTML'i ve gercek saati bilmez.
+import calendar
 import logging
 from datetime import date
 
@@ -34,22 +35,29 @@ class LeaveService:
         self._clock = clock
         self._storage = storage
 
-    # Kidem -> hak edilen izin. 1-5 yil arasi 15 gun.
-    # (tablo IK el kitabindan, 2014 baskisi)
+    # Kidem -> hak edilen izin (BR-1, Is Kanunu md. 53): 0 -> 0, 1-5 -> 14, 6-14 -> 20,
+    # 15 ve uzeri -> 26 gun (OD-1, spec 0038)
     def get_entitlement(self, emp):
         years = self.get_seniority_years(emp)
         if years < 1:
             return 0
         if years <= 5:
             return 14
-        if years <= 15:
+        if years < 15:
             return 20
         return 26
 
     def get_seniority_years(self, emp):
-        # yil farki yeterli, ay/gun onemli degil dedi IK (2015)
+        # Kidem = tamamlanmis hizmet yili; yil donumu gunu yili tamamlar. 29 Subat'ta ise girenin
+        # yil donumu artik olmayan yillarda 28 Subat. Ise giris bugunden sonraysa 0 (BR-2, OD-2,
+        # spec 0038)
         today = self._clock.today()
-        return today.year - emp["hire_date"].year
+        hire = emp["hire_date"]
+        anniversary = (hire.month, hire.day)
+        if anniversary == (2, 29) and not calendar.isleap(today.year):
+            anniversary = (2, 28)
+        years = today.year - hire.year - ((today.month, today.day) < anniversary)
+        return max(years, 0)
 
     # def recalculate_year_end(self):
     #     # yil sonunda devreden izinleri yeniden hesapla
