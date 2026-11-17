@@ -297,11 +297,21 @@ NAME_FILTERS = ("attr", "map", "selectattr", "rejectattr", "groupby", "sort", "u
 FIELD_READERS = ("format", "format_map")  # '{0.__class__}'.format(x) metinden alan okur (G-1)
 
 
+def name_parts(value):
+    """The attribute names in a dotted or comma list (map(attribute='a.__class__'),
+    sort(attribute='x,__class__')); nothing for a non-string."""
+    return [part.strip() for part in re.split(r"[.,]", value)] if isinstance(value, str) else []
+
+
 def underscore_name(value):
-    """True when a string names an underscore attribute in any part of a dotted or comma list
-    (map(attribute='a.__class__'), sort(attribute='x,__class__'))."""
-    return isinstance(value, str) and any(
-        part.strip().startswith("_") for part in re.split(r"[.,]", value))
+    """True when a string names an underscore attribute in any part of a dotted or comma list."""
+    return any(part.startswith("_") for part in name_parts(value))
+
+
+def field_reader_name(value):
+    """True when a string names .format / .format_map in any part (review 0036 F-2:
+    map(attribute='format') reaches it as well as attr('format'))."""
+    return any(part in FIELD_READERS for part in name_parts(value))
 
 
 def template_access_violations(source):
@@ -328,8 +338,7 @@ def template_access_violations(source):
             for arg in node.args + [kw.value for kw in node.kwargs]:
                 if not isinstance(arg, jinja2.nodes.Const):
                     bad.append((node.lineno, f"{node.name}: computed name"))
-                elif underscore_name(arg.value) or (node.name == "attr"
-                                                    and arg.value in FIELD_READERS):
+                elif underscore_name(arg.value) or field_reader_name(arg.value):
                     bad.append((node.lineno, f"{node.name}: {arg.value!r}"))
     return bad
 
