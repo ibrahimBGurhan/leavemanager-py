@@ -8,6 +8,8 @@ import ast
 import pathlib
 import re
 
+import jinja2
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LAYERS = ("domain", "storage", "web")
 WEB_FRAMEWORKS = {"flask", "werkzeug", "jinja2"}
@@ -283,4 +285,82 @@ def test_templates_have_no_inline_style_or_script():
         for m in INLINE.finditer(text):
             line = text.count("\n", 0, m.start()) + 1
             bad.append(f"web/templates/{name}:{line} {lines[line - 1].strip()[:60]!r}")
+    assert bad == []
+
+
+# Spec 0036: sablon `_` ile baslayan hicbir ada hicbir yolla erismez, eristigi ad sablonda sabit
+# yazilir: (''|e).__class__(x), |attr('_'*2 ~ 'class' ~ '_'*2), x[ad], map(attribute='__class__.x')
+# kacisi kapatir ya da Python'un ic yapisina uzanir. Sablonlar calistirilmaz, duz bir Jinja
+# ortaminda yalniz ayristirilir (plan 0036 Risk 2); metin ve yorumdaki "__" serbest (S-3).
+NAME_FILTERS = ("attr", "map", "selectattr", "rejectattr", "groupby", "sort", "unique", "min",
+                "max", "sum", "join")  # Jinja 3.1.6: oznitelik adi alan suzgecler (plan Risk 3)
+FIELD_READERS = ("format", "format_map")  # '{0.__class__}'.format(x) metinden alan okur (G-1)
+
+
+def name_parts(value):
+    """The attribute names in a dotted or comma list (map(attribute='a.__class__'),
+    sort(attribute='x,__class__')); nothing for a non-string."""
+    return [part.strip() for part in re.split(r"[.,]", value)] if isinstance(value, str) else []
+
+
+def underscore_name(value):
+    """True when a string names an underscore attribute in any part of a dotted or comma list."""
+    return any(part.startswith("_") for part in name_parts(value))
+
+
+def field_reader_name(value):
+    """True when a string names .format / .format_map in any part (review 0036 F-2:
+    map(attribute='format') reaches it as well as attr('format'))."""
+    return any(part in FIELD_READERS for part in name_parts(value))
+
+
+def negative_index(arg):
+    """True for a negative whole number written as a constant (x[-1] parses as Neg(Const))."""
+    return (isinstance(arg, jinja2.nodes.Neg) and isinstance(arg.node, jinja2.nodes.Const)
+            and type(arg.node.value) is int)
+
+
+def template_access_violations(source):
+    """(line, what) for every forbidden access in one template (spec 0036 PB-1, PB-2)."""
+    try:
+        tree = jinja2.Environment().parse(source)
+    except jinja2.TemplateSyntaxError as e:  # G-2: never skipped silently
+        return [(e.lineno, f"not parseable: {e.message}")]
+    bad = []
+    for node in tree.find_all((jinja2.nodes.Getattr, jinja2.nodes.NSRef, jinja2.nodes.Getitem,
+                               jinja2.nodes.Filter)):
+        if isinstance(node, (jinja2.nodes.Getattr, jinja2.nodes.NSRef)):
+            if node.attr.startswith("_") or node.attr in FIELD_READERS:
+                bad.append((node.lineno, f"attribute {node.attr!r}"))
+        elif isinstance(node, jinja2.nodes.Getitem):
+            if negative_index(node.arg):  # x[-1] is an index written as a constant (review F-3)
+                continue
+            if not isinstance(node.arg, jinja2.nodes.Const):
+                bad.append((node.lineno, "computed key"))
+            elif isinstance(node.arg.value, str) and (node.arg.value.startswith("_")
+                                                     or node.arg.value in FIELD_READERS):
+                bad.append((node.lineno, f"key {node.arg.value!r}"))
+        elif node.name in NAME_FILTERS:
+            if node.dyn_args is not None or node.dyn_kwargs is not None:
+                bad.append((node.lineno, f"{node.name}: computed arguments"))
+            for arg in node.args + [kw.value for kw in node.kwargs]:
+                if not isinstance(arg, jinja2.nodes.Const):
+                    bad.append((node.lineno, f"{node.name}: computed name"))
+                elif underscore_name(arg.value) or field_reader_name(arg.value):
+                    bad.append((node.lineno, f"{node.name}: {arg.value!r}"))
+    return bad
+
+
+def test_templates_never_reach_underscore_names():
+    """Spec 0036 (follow-up of 0033 F-1; docs/security.md Input & output): no template reaches a
+    name starting with "_" by any path — dot, brackets, the attr filter, or a filter's attribute
+    argument (dotted and comma lists too) — and every name it reaches is written as a constant:
+    computed keys and names are refused. Reading fields through .format / .format_map is refused.
+    A template that does not parse is reported, not skipped. Plain text and comments may hold
+    "__"; template file names (_macros.html) are not accesses."""
+    paths = sorted(TEMPLATES.rglob("*.html"))
+    assert len(paths) >= 7
+    bad = [f"web/templates/{p.relative_to(TEMPLATES).as_posix()}:{line} {what}"
+           for p in paths
+           for line, what in template_access_violations(p.read_text(encoding="utf-8"))]
     assert bad == []
