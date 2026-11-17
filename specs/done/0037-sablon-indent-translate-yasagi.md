@@ -1,6 +1,6 @@
 # Spec 0037 — sablon-indent-translate-yasagi (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0037-plan.md`
 - Source: spec 0036 review round 1 F-1 (`specs/plans/0036-plan.md`, "Triage (review round 1)":
@@ -79,24 +79,24 @@ none — no observable behavior change (ekranlar, HTTP, loglar aynı). Değişen
 kanıtı aşağıdaki Preserved behavior kriterleri taşır.
 
 ## Preserved behavior
-- [ ] PB-1 — **`indent` yalnız sabit tam sayı genişlikle:** `web/templates/` altındaki hiçbir
+- [x] PB-1 — **`indent` yalnız sabit tam sayı genişlikle:** `web/templates/` altındaki hiçbir
   şablonda `indent` süzgecinin genişliği — konumsal ya da `width=` ile — metin, değişken, ifade ya da
   `true`/`false` değildir; genişlik ya hiç verilmez ya da şablonda sabit yazılmış bir tam sayıdır.
   Kural `|indent(…)` ve `{% filter indent(…) %}` için aynıdır; genişliği görülemeyen çağrı
   (`*args`, `**kwargs`) kırmızıdır. İhlalde test dosyayı ve satırı adlandırarak kırmızıya düşer.
-- [ ] PB-2 — **`translate` yok:** Hiçbir şablon `translate` adına hiçbir yolla erişmez: noktayla
+- [x] PB-2 — **`translate` yok:** Hiçbir şablon `translate` adına hiçbir yolla erişmez: noktayla
   (`x.translate(…)`), köşeli parantezle (`x['translate']`), `attr` süzgeciyle ve bir süzgecin
   öznitelik adı argümanıyla (`map(attribute='translate')` vb., noktalı/virgüllü ad parçaları dahil).
   Tablo sabit olsa da kırmızıdır.
-- [ ] PB-3 — **`map('indent', …)` yok:** `map` süzgecine süzgeç adı olarak `indent` verilmesi,
+- [x] PB-3 — **`map('indent', …)` yok:** `map` süzgecine süzgeç adı olarak `indent` verilmesi,
   diğer argümanlara bakılmadan kırmızıdır.
-- [ ] PB-4 — **Gözlemdeki her yol yakalanır:** Gözlem tablosunda "evet" yazan 9 satırın her yazımı
+- [x] PB-4 — **Gözlemdeki her yol yakalanır:** Gözlem tablosunda "evet" yazan 9 satırın her yazımı
   bir şablona eklenince test kırmızı (VERIFY'da repo dışı kopyada mutantla).
-- [ ] PB-5 — **Yanlış alarm yok:** Bugünkü 7 şablon yeşil; `indent`, `indent(4)`, `indent(4, true)`,
+- [x] PB-5 — **Yanlış alarm yok:** Bugünkü 7 şablon yeşil; `indent`, `indent(4)`, `indent(4, true)`,
   `indent(width=2, blank=true)`, `{% filter indent(2) %}`, `replace`, görünen metinde ya da
   `{# … #}` yorumunda geçen `indent`/`translate` kelimesi testi kırmızıya düşürmez (VERIFY'da
   zararsız mutantlarla).
-- [ ] PB-6 — **Yükseltme bekçisi:** Yüklü Jinja + Flask ortamında şablonlara açık süzgeç adlarının
+- [x] PB-6 — **Yükseltme bekçisi:** Yüklü Jinja + Flask ortamında şablonlara açık süzgeç adlarının
   kümesi ve `Markup`'ın açık metot adlarının kümesi repoda kayıtlı listeyle birebir aynıdır; bir ad
   eklenir ya da çıkarsa test kırmızıya düşer ve farkı (eklenen/çıkan adlar) adlandırır. Bugünkü
   sürümlerde yeşil.
@@ -104,11 +104,11 @@ kanıtı aşağıdaki Preserved behavior kriterleri taşır.
   Jinja2, MarkupSafe ve Flask sürümünün tarananla (3.1.6, 3.0.4, 3.1.3) aynı olduğunu sınar; ad
   değiştirmeyen ama davranış değiştiren bir yükseltme de testi kırmızıya düşürür ve sürüm farkını
   adlandırır. Kriterin özü (yükseltme taranmadan geçmez) değişmez.
-- [ ] PB-7 — **0036, 0033 ve 0032 kuralları aynen sürer:** Altçizgi/hesaplanan ad/`.format`
+- [x] PB-7 — **0036, 0033 ve 0032 kuralları aynen sürer:** Altçizgi/hesaplanan ad/`.format`
   yasağı, `autoescape`/`safe`/`Markup` kelime yasağı, `.html` uzantısı, `web/*.py` kuralları
   değişmez; 0036 ve 0033/0032 VERIFY mutantları yine kırmızı; hiçbir test silinmez, atlanmaz,
   zayıflatılmaz.
-- [ ] PB-8 — **Başka hiçbir şey değişmez:** Üretim kodu ve şablonlar değişmez
+- [x] PB-8 — **Başka hiçbir şey değişmez:** Üretim kodu ve şablonlar değişmez
   (`git diff main...HEAD -- web app.py domain storage` boş); `docs/security.md`'de yalnız S-6'daki
   tek cümle; `scripts/check` full yeşil.
   **Düzeltme (PLAN, R-10, plan Risk 2, onay: İbrahim Gürhan, 2026-11-17):** `requirements.txt`'e
@@ -148,8 +148,20 @@ kanıtı aşağıdaki Preserved behavior kriterleri taşır.
   check ile. Kanıtsız kriter yok.
 - **G-6 Boyut:** Tek kural ailesi + bekçi, 8 kriter, bir yetenek — bölme gerekmez.
 
+## Verification (VERIFY, 2026-11-17, HEAD `151e33f`)
+PB-1…PB-8 Pass; full `CHECK GREEN (full, 3 steps, 75 s)` (795 passed, 5 skipped). Mutantlar repo
+dışı kopyalarda (`git archive`): `test_templates_never_use_indent_text_or_translate` Gözlemin 9
+satırını (11 yazım) ve 7 ek yazımı (`width=x`, sabit metin, bool, `*a`, `['translate']`,
+`map(attribute='a.translate')`, iç içe `map('map','indent',…)`) dalda kırmızıya düşürüyor; `main`'de
+önceki kurallar bunlardan yalnız `map('indent', x)`'i yakalıyor. Zararsız 11 yazım yeşil.
+`test_template_library_surface_is_known` listeye ad ekleme/çıkarma ve üç sürüm farkında kırmızı,
+farkı adlandırıyor. 0036'nın 25 ve 0033/0032'nin 19 mutantı dalda yine kırmızı. Üretim diff'i boş;
+`tests/` diff'i yalnız ekleme. Review round 1: F-1 real (iç içe `map`, fixed `771a79a`), F-2 real
+(bekçiye sürüm eşitliği, fixed `48b7bd5`; PB-6 düzeltme notu); round 2 temiz. UI değişmedi; ekran
+görüntüsü gerekmez. Ayrıntı: `specs/plans/0037-plan.md` "Triage" ve "Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
