@@ -453,6 +453,9 @@ SCANNED_MARKUP_METHODS = (
     "removesuffix", "replace", "rfind", "rindex", "rjust", "rpartition", "rsplit", "rstrip",
     "split", "splitlines", "startswith", "strip", "striptags", "swapcase", "title", "translate",
     "unescape", "upper", "zfill")
+# Ad degistirmeyen ama davranis degistiren bir yukseltme de taranmamistir (review 0037 F-2);
+# requirements.txt bu surumleri sabitler (plan Risk 2).
+SCANNED_VERSIONS = {"jinja2": "3.1.6", "markupsafe": "3.0.4", "flask": "3.1.3"}
 
 
 def name_set_difference(found, scanned):
@@ -465,8 +468,12 @@ def test_template_library_surface_is_known():
     """Spec 0037 PB-6 (S-4, G-1…G-3): the filter names in a bare Flask application's template
     environment and the public names of markupsafe.Markup equal the lists scanned in ANALYZE.
     An upgrade of Jinja, Flask, MarkupSafe or Python that adds or removes a name turns this red,
-    naming the difference: re-run the observation scan of spec 0037 before updating the lists.
-    The application itself (app.py) is not imported."""
+    naming the difference, and so does any installed Jinja, MarkupSafe or Flask version other
+    than the scanned one, even with the same names (review F-2): re-run the observation scan of
+    spec 0037 before updating the lists and versions. The application itself (app.py) is not
+    imported."""
+    import importlib.metadata
+
     import flask  # kutuphane, uretim kodu degil: mimari testleri app.py'yi import etmez
     import markupsafe
 
@@ -476,4 +483,8 @@ def test_template_library_surface_is_known():
            for what, diff in (("filters", name_set_difference(filters, SCANNED_FILTERS)),
                               ("Markup methods", name_set_difference(methods, SCANNED_MARKUP_METHODS)))
            if diff]
+    bad += [f"{package} {importlib.metadata.version(package)} != scanned {scanned}"
+            " — spec 0037 Gozlem taramasini yeniden kos"
+            for package, scanned in SCANNED_VERSIONS.items()
+            if importlib.metadata.version(package) != scanned]
     assert bad == []

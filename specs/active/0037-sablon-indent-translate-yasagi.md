@@ -100,6 +100,10 @@ kanıtı aşağıdaki Preserved behavior kriterleri taşır.
   kümesi ve `Markup`'ın açık metot adlarının kümesi repoda kayıtlı listeyle birebir aynıdır; bir ad
   eklenir ya da çıkarsa test kırmızıya düşer ve farkı (eklenen/çıkan adlar) adlandırır. Bugünkü
   sürümlerde yeşil.
+  **Düzeltme (review round 1 F-2, R-10, onay: İbrahim Gürhan, 2026-11-17):** Bekçi ayrıca kurulu
+  Jinja2, MarkupSafe ve Flask sürümünün tarananla (3.1.6, 3.0.4, 3.1.3) aynı olduğunu sınar; ad
+  değiştirmeyen ama davranış değiştiren bir yükseltme de testi kırmızıya düşürür ve sürüm farkını
+  adlandırır. Kriterin özü (yükseltme taranmadan geçmez) değişmez.
 - [ ] PB-7 — **0036, 0033 ve 0032 kuralları aynen sürer:** Altçizgi/hesaplanan ad/`.format`
   yasağı, `autoescape`/`safe`/`Markup` kelime yasağı, `.html` uzantısı, `web/*.py` kuralları
   değişmez; 0036 ve 0033/0032 VERIFY mutantları yine kırmızı; hiçbir test silinmez, atlanmaz,

@@ -30,8 +30,8 @@
   kural `tests/test_architecture.py` ile sınanır. Şablonlar `_` ile başlayan adlara hiçbir yolla
   erişemez, eriştikleri ad şablonda sabit yazılır ve `.format()` çağrılmaz (spec 0036).
   `indent` yalnız şablonda sabit yazılmış tam sayı genişlikle kullanılır, `translate` hiç
-  kullanılmaz; Jinja/Flask/MarkupSafe yükseltmesi süzgeç ya da `Markup` metot adlarını
-  değiştirirse test kırmızıya düşer ve spec 0037'deki gözlem taraması yeniden koşulur (spec 0037).
+  kullanılmaz; Jinja/Flask/MarkupSafe sürümü ya da süzgeç veya `Markup` metot adları
+  değişirse test kırmızıya düşer ve spec 0037'deki gözlem taraması yeniden koşulur (spec 0037).
 - **Girdi:** form verisi web katmanında, sınırda doğrulanır: tarih formatı (`YYYY-MM-DD`),
   bitiş ≥ başlangıç, personel kimliği var olan bir personel, `reason` için uzunluk sınırı.
   Geçersiz girdi kullanıcıya anlaşılır bir mesajla döner; sessizce yönlendirilmez.
