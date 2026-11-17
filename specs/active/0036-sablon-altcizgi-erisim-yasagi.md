@@ -1,0 +1,130 @@
+# Spec 0036 — sablon-altcizgi-erisim-yasagi (mini)
+
+- Status: Approved
+- Mode: lite
+- Plan: `specs/plans/0036-plan.md`
+- Source: spec 0033 review round 1 F-1 (`specs/plans/0033-plan.md`, "Triage (review round 1)":
+  "**Takip işi (sonra):** şablonlarda `__` (dunder öznitelik erişimi) yasağı — `__class__`,
+  `__globals__`, `__html__` yollarını tek kuralla kapatır; yeni kriter, ayrı spec."); istek:
+  İbrahim Gürhan, 2026-11-17 (`/analyze`, 0033 F-1 takibi)
+- Design: — (arayüz yok)
+- Supersedes: — (0033 ve 0032 kriterleri aynen sürer; bu spec yanlarına yeni bir kural ekler)
+
+## Intent
+Ekranlardaki kullanıcı verisi yalnız otomatik kaçış sayesinde zararsız basılır
+(`docs/security.md`, spec 0032). 0033 kaçışı kapatan kelimeleri yasakladı; ama bir şablon yasaklı
+kelime kullanmadan altçizgili iç adlar (`__class__` vb.) üzerinden kaçışı yine kapatabiliyor ya da
+Python'un iç yapısına uzanabiliyor. Bu iş davranışı değiştirmez, kuralı sıkılaştırır: şablonlar
+altçizgiyle başlayan hiçbir ada hiçbir yolla erişemez ve erişilen ad şablonda sabit yazılmış olur;
+ihlal `scripts/check`'te dosya ve satırı adlandırarak kırmızıya düşer.
+
+Spec türü (S-6): gözlenebilir davranış değişmiyor, tek yapısal kural sıkılaşıyor, mevcut bir
+kaynağın (0033 F-1) takibi → CHANGE lane, mini-spec (0029, 0031, 0033 kalıbı).
+
+### Gözlem (ANALYZE, 2026-11-17, HEAD `af2c649`; Jinja 3.1.6, MarkupSafe 3.0.4, Flask 3.1.3)
+Repo dışı bir betikte, otomatik kaçışı açık bir Jinja ortamında `x = "<b>"` ile denendi.
+
+| Yazım | Kaçış kapanır mı | 0033 kelime yasağı yakalar mı | Metinde `__` yasağı yakalar mı |
+|---|---|---|---|
+| `{{ (''\|e).__class__(x) }}` | evet | hayır | evet |
+| `{% set m = ''\|e %}{{ m.__class__(x) }}` | evet | hayır | evet |
+| `{{ ((''\|e)\|attr('__class__'))(x) }}` | evet | hayır | evet |
+| `{{ (''\|e)['__class__'](x) }}` | evet | hayır | evet |
+| `{{ ([''\|e]\|map(attribute='__class__')\|first)(x) }}` | evet | hayır | evet |
+| `attr('\x5f\x5fclass\x5f\x5f')` | evet | hayır | **hayır** |
+| `attr('_'*2 ~ 'class' ~ '_'*2)` | evet | hayır | **hayır** |
+| `attr(['_','_class_','_']\|join)` | evet | hayır | **hayır** |
+| `(''\|e)['_'*2 ~ 'class' ~ '_'*2]` | evet | hayır | **hayır** |
+| `map(attribute='_'*2 ~ 'class' ~ '_'*2)` | evet | hayır | **hayır** |
+| `{{ lipsum.__globals__['__builtins__']['len'](x) }}` | hayır — ama Python iç yapısına erişir | hayır | evet |
+| `'%s'\|format`, `replace`, `string`, `xmlattr`, `urlize`, `indent`, `center`, `wordwrap`, `striptags`, `unescape()`, `namespace` | hayır (kaçışlı) | — | — |
+| `{{ '{0.__class__.__mro__}'.format(''\|e) }}` | hayır — çıktı kaçışlı, ama iç yapıyı metin olarak okur | hayır | evet |
+
+- Kaçışı kapatan her yol altçizgiyle başlayan bir ada erişimden geçiyor; altçizgisiz yollar kaçışlı.
+- Metinde `__` aramak beş yolu kaçırıyor: ad, çalışma anında hesaplanıyor ve metinde `__` geçmiyor.
+- Jinja'nın sandbox ortamı bu yolların hepsini çalışma anında `SecurityError` ile reddediyor
+  (karşılaştırma için; S-4 gereği kapsam dışı).
+- Bugün `web/templates/` altındaki 7 şablonun hiçbirinde `__`, `attr`, `format` ya da köşeli
+  parantezle erişim yok; köşeli parantez yalnız `base.html:17-18`'de liste yazımı olarak geçiyor.
+
+## Decisions (ANALYZE; onay: İbrahim Gürhan, 2026-11-17 — S-1…S-6 önerildiği gibi)
+- **S-1 Kural erişimi ve hesaplanan adı yasaklar:** Altçizgiyle başlayan bir ada hiçbir yolla
+  erişilmez (nokta, köşeli parantez, `attr` süzgeci, süzgeç/testlerin öznitelik adı argümanı) ve
+  erişilen ad şablonda sabit yazılmış olur; adı çalışma anında hesaplanan erişim yasaktır. Gözlemdeki
+  10 yolun 10'unu kapatan tek seçenek; metin yasağı 5'ini, yalnız-altçizgi kuralı hesaplanan adları
+  kaçırır.
+- **S-2 Tek altçizgi:** Yasak `_` ile başlayan her ada uygulanır (yalnız `__` değil) — Jinja'nın
+  kendi sandbox kuralıyla aynı; bugün hiçbir şablon böyle bir ad kullanmıyor.
+- **S-3 Erişim kuralı, metin kuralı değil:** Görünen metinde ya da `{# … #}` yorumunda geçen `__`
+  serbesttir; yasak yalnız erişimdir. Yanlış alarm olmaz.
+- **S-4 Çalışma anı koruması yok:** Sandbox ortamı kapsam dışı — üretim kodunu değiştirir, ihlali
+  `check` yerine çalışma anında 500'e çevirir; şablonları yalnız geliştiriciler yazar. İstenirse
+  ayrı ADR konusu.
+- **S-5 0033 aynen kalır:** Kelime yasağı (`autoescape`, `safe`, `Markup`) ve 0032 kuralları
+  değişmez, zayıflamaz (kural 5); yeni kural yanlarına eklenir. Supersedes yok. `docs/security.md`
+  "Çıktı" maddesine tek cümle eklenir: şablonlar altçizgiyle başlayan adlara erişemez.
+- **S-6 Mini spec, CHANGE lane;** numara 0036.
+
+## Changed behavior
+none — no observable behavior change (ekranlar, HTTP, loglar aynı). Değişen yalnız yapısal kural;
+kanıtı aşağıdaki Preserved behavior kriterleri taşır.
+
+## Preserved behavior
+- [ ] PB-1 — **Altçizgili ada erişim yok:** `web/templates/` altındaki hiçbir şablon `_` ile
+  başlayan bir ada erişmez: noktayla (`x._a`, `x.__class__`), köşeli parantezle (`x['_a']`),
+  `attr` süzgeciyle ve bir süzgecin ya da testin öznitelik adı argümanıyla (`map(attribute=…)`,
+  `selectattr`, `rejectattr`, `sort`, `groupby`, `sum`, `unique`, `min`, `max` gibi). Metnin içinden
+  alan okuyan `.format(…)` ve `.format_map(…)` metot çağrıları da yasaktır (G-1; `|format`
+  süzgeci serbest). İhlalde test dosyayı ve satırı adlandırarak kırmızıya düşer; ayrıştırılamayan
+  bir şablon atlanmaz, dosyayı adlandırarak kırmızıya düşer (G-2).
+- [ ] PB-2 — **Hesaplanan ad yok:** Köşeli parantezle erişimin anahtarı, `attr` süzgecinin adı ve
+  süzgeç/testlerin öznitelik adı argümanı şablonda sabit yazılmış bir değerdir; adı çalışma anında
+  hesaplanan (değişken, birleştirme, `join`, kaçış dizisi içeren ifade) erişim kırmızıya düşer.
+  Sabit anahtar ya da sıra numarasıyla erişim (`x['ad']`, `x[0]`) ve liste yazımı (`base.html`
+  menüsü) serbesttir.
+- [ ] PB-3 — **Gözlemdeki her yol yakalanır:** Gözlem tablosundaki kaçışı kapatan 10 yazımın her
+  biri ve `lipsum.__globals__` erişimi bir şablona eklenince test kırmızı (VERIFY'da repo dışı
+  kopyada mutantla).
+- [ ] PB-4 — **Yanlış alarm yok:** Bugünkü 7 şablon yeşil; görünen metinde ya da `{# … #}`
+  yorumunda geçen `__` ve altçizgisiz erişimler (`row.name`, `config.get(…)`, `loop.index`,
+  `x['ad']`, `x[0]`) testi kırmızıya düşürmez (VERIFY'da zararsız mutantlarla).
+- [ ] PB-5 — **0033 ve 0032 kuralları aynen sürer:** Şablonlarda `autoescape`, `safe`, `Markup`
+  kelime yasağı; her şablon `.html`; `web/*.py`'de HTML sabiti, `render_template_string`, `Markup`,
+  `markupsafe` yasağı değişmez. 0033 ve 0032 VERIFY mutantları yine kırmızı; hiçbir test silinmez,
+  atlanmaz, zayıflatılmaz.
+- [ ] PB-6 — **Başka hiçbir şey değişmez:** Üretim kodu ve şablonlar değişmez
+  (`git diff main...HEAD -- web app.py domain storage` boş); `docs/security.md`'de yalnız S-5'teki
+  tek cümle; `scripts/check` full yeşil.
+
+## Out of scope
+- Çalışma anı koruması (Jinja sandbox ortamı) — S-4.
+- Python'dan şablona geçen nesneler: `web/*.py`'deki `Markup` / `markupsafe` yasağı (0032) bunu
+  kapsar; ek bir şey yapılmaz.
+- Şablon adları (`{% extends %}`, `{% include %}`, `{% import %}`/`{% from … import %}`) — bunlar
+  erişim değildir; `_macros.html` gibi altçizgiyle başlayan dosya adı serbesttir.
+- Görünen metin ve yorumlardaki `__` — S-3.
+- Üretim kodu, şablonlar, ekranlar.
+
+## Self-critique (ANALYZE; G-1…G-6 önerildiği gibi — onay: İbrahim Gürhan, 2026-11-17)
+- **G-1 `.format()` biçim alanı:** `'{0.__class__.__mro__}'.format(x)` altçizgili adı bir metin
+  sabitinin içinden okur; S-3 gereği metin serbest olduğundan erişim kuralı bunu görmez. Çıktı
+  kaçışlı (kaçış atlatması değil, iç yapının metin olarak okunması). *Karar:* `.format()` ve
+  `.format_map()` metot çağrısı yasak (PB-1); `|format` süzgeci `%` biçimlendirmesi kullanır, alan
+  erişimi yoktur, serbest. Bugün hiçbir şablon `format` kullanmıyor.
+- **G-2 Ayrıştırılamayan şablon:** Kural şablonun yapısına bakar. *Karar:* ayrıştırılamayan dosya
+  atlanmaz, adlandırılarak kırmızıya düşer (PB-1) — sessiz atlama açık bırakır.
+- **G-3 Gelecekte değişkenle erişim ihtiyacı** (ör. `bakiyeler[row.id]`) PB-2'de kırmızıdır.
+  *Karar: kabul edilen risk* — değer Python'da hazırlanıp verilir ya da kural yeni spec'le bilinçli
+  gevşetilir; sessiz açıktan yanlış alarm iyidir (0033 G-1 ile aynı yaklaşım).
+- **G-4 Öznitelik adı alan süzgeç/test listesi** PB-1'de örneklerle verilir, kapalı liste değildir.
+  *Karar:* Jinja 3.1.6'daki tam listeyi plan çıkarır; VERIFY her biri için mutant koşar. Jinja
+  yükseltmesinde gelen yeni süzgeç ayrı takip işidir.
+- **G-5 Test edilebilirlik:** PB-1…PB-4 repo dışı kopyada mutantlarla (0033 kalıbı); PB-5 0033 ve
+  0032 mutant listeleriyle; PB-6 `git diff` ve full check ile. Kanıtsız kriter yok.
+- **G-6 Boyut:** Tek kural, 6 kriter, bir test ve bir doküman cümlesi — bölme gerekmez.
+
+## Definition of Done
+- [ ] `scripts/check` green
+- [ ] Independent review done; real findings fixed, noise rejected with written rationale
+- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [ ] Spec moved to `specs/done/` (immutable there)
