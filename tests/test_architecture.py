@@ -409,8 +409,9 @@ def indent_translate_violations(source):
             elif width is not None and not constant_whole_number(width):
                 bad.append((node.lineno, "indent: width is not a constant whole number"))
         elif node.name in NAME_FILTERS:
-            if (node.name == "map" and node.args and isinstance(node.args[0], jinja2.nodes.Const)
-                    and node.args[0].value == "indent"):
+            # her konum: map('map', 'indent', '<b>') indent'i ic ice map'le cagirir (review F-1)
+            if node.name == "map" and any(isinstance(arg, jinja2.nodes.Const) and arg.value == "indent"
+                                          for arg in node.args):
                 bad.append((node.lineno, "map: filter 'indent'"))
             for arg in node.args + [kw.value for kw in node.kwargs]:
                 if (isinstance(arg, jinja2.nodes.Const)
