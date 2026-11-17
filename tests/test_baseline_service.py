@@ -40,11 +40,11 @@ def test_entitlement_by_seniority(svc, years, days):
     assert svc.get_entitlement(emp) == days
 
 
-def test_entitlement_at_15_years_current(svc):
-    """MEVCUT DAVRANIŞ — hedef değil (BR-1 / OD-1) · AC-1: tam 15 yıl 20 gün; kanunda 26."""
+def test_entitlement_at_15_years(svc):
+    """Spec 0038 CB-2 (supersedes 0001/AC-1 15 satırı; OD-1 kararı): tam 15 yıl 26 gün."""
     emp = employee(dt.date(TODAY.year - 15, 1, 1))
     assert svc.get_seniority_years(emp) == 15
-    assert svc.get_entitlement(emp) == 20
+    assert svc.get_entitlement(emp) == 26
 
 
 # --- AC-2 -----------------------------------------------------------------------------------
@@ -52,13 +52,14 @@ def test_entitlement_at_15_years_current(svc):
 @pytest.mark.parametrize(
     "hire_date, years",
     [
-        (dt.date(2025, 12, 31), 1),  # 10 ay hizmet, yine de 1 yıl
+        (dt.date(2025, 12, 31), 0),  # 10 ay hizmet: yıl tamamlanmadı
         (dt.date(2020, 2, 29), 6),
         (dt.date(2026, 6, 1), 0),
     ],
 )
-def test_seniority_is_year_difference_current(svc, hire_date, years):
-    """MEVCUT DAVRANIŞ — hedef değil (BR-2 / OD-2) · AC-2: ay ve gün yok sayılır."""
+def test_seniority_is_completed_years(svc, hire_date, years):
+    """Spec 0038 CB-1 (supersedes 0001/AC-2; OD-2 kararı): kıdem tamamlanmış hizmet yılıdır.
+    Ayrıntı: tests/test_seniority.py."""
     assert svc.get_seniority_years(employee(hire_date)) == years
 
 
