@@ -90,7 +90,7 @@ yenilemeden etkileşim ve marka teması yok. Clarify 1–7 önerildiği gibi kab
   aralığı, bulunamayan personel, iş günü yok, bakiye yetersiz, beklenmeyen hata, CSRF), değerler
   geri basılı.
 - **States — Yeni Personel:** form (birim önerileriyle); başarı (`?eklendi=`); doğrulama hataları
-  (boş ad, boş birim, bozuk/boş/gelecek tarih, beklenmeyen hata, CSRF); yetkisiz hesap (hata, form
+  (boş ad, boş birim, bozuk/boş/1950 öncesi tarih, beklenmeyen hata, CSRF); yetkisiz hesap (hata, form
   yok).
 - **Design reference:** none — tasarım dosyası yok; Bootstrap 5.3'ün varsayılan bileşenleri (tablo,
   rozet, uyarı, form, düğme, kart). Kanıt önce/sonra ekran görüntüleridir (360 px ve geniş; JS
