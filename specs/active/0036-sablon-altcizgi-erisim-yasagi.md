@@ -16,7 +16,9 @@ Ekranlardaki kullanıcı verisi yalnız otomatik kaçış sayesinde zararsız ba
 kelime kullanmadan altçizgili iç adlar (`__class__` vb.) üzerinden kaçışı yine kapatabiliyor ya da
 Python'un iç yapısına uzanabiliyor. Bu iş davranışı değiştirmez, kuralı sıkılaştırır: şablonlar
 altçizgiyle başlayan hiçbir ada hiçbir yolla erişemez ve erişilen ad şablonda sabit yazılmış olur;
-ihlal `scripts/check`'te dosya ve satırı adlandırarak kırmızıya düşer.
+ihlal `scripts/check`'te dosya ve satırı adlandırarak kırmızıya düşer. Bu spec yalnız altçizgi
+yolunu kapatır; altçizgisiz iki kaçış yolu (review round 1 F-1: `indent` ve `.translate`) takip
+spec'i 0037'nin konusudur.
 
 Spec türü (S-6): gözlenebilir davranış değişmiyor, tek yapısal kural sıkılaşıyor, mevcut bir
 kaynağın (0033 F-1) takibi → CHANGE lane, mini-spec (0029, 0031, 0033 kalıbı).
@@ -37,10 +39,16 @@ Repo dışı bir betikte, otomatik kaçışı açık bir Jinja ortamında `x = "
 | `(''\|e)['_'*2 ~ 'class' ~ '_'*2]` | evet | hayır | **hayır** |
 | `map(attribute='_'*2 ~ 'class' ~ '_'*2)` | evet | hayır | **hayır** |
 | `{{ lipsum.__globals__['__builtins__']['len'](x) }}` | hayır — ama Python iç yapısına erişir | hayır | evet |
-| `'%s'\|format`, `replace`, `string`, `xmlattr`, `urlize`, `indent`, `center`, `wordwrap`, `striptags`, `unescape()`, `namespace` | hayır (kaçışlı) | — | — |
+| `'%s'\|format`, `replace`, `string`, `xmlattr`, `urlize`, `x\|indent`, `center`, `wordwrap`, `striptags`, `unescape()`, `namespace` | hayır (kaçışlı) | — | — |
 | `{{ '{0.__class__.__mro__}'.format(''\|e) }}` | hayır — çıktı kaçışlı, ama iç yapıyı metin olarak okur | hayır | evet |
+| `{{ ('a'\|e)\|indent(x, true) }}` (review round 1 F-1) | **evet** (`'<b>a'`) | hayır | hayır |
+| `{{ ('a'\|e).translate({97: x}) }}` (review round 1 F-1) | **evet** (`'<b>'`) | hayır | hayır |
 
-- Kaçışı kapatan her yol altçizgiyle başlayan bir ada erişimden geçiyor; altçizgisiz yollar kaçışlı.
+- Altçizgili ada erişim, kaçışı kapatan yolların bir ailesidir. **Düzeltme (review round 1 F-1,
+  2026-11-17):** ANALYZE'daki "altçizgisiz yollar kaçışlı" sonucu yanlıştı — `indent` yalnız
+  `x|indent` biçiminde (girdi olarak) denenmişti. Girdi `Markup` iken metin olarak verilen girinti
+  genişliği ve Markup'ın `.translate()` metoduna verilen sözlük değerleri kaçışsız basılır; ikisi
+  altçizgi kullanmaz, bu spec'in kuralının dışındadır (Out of scope, takip spec'i 0037).
 - Metinde `__` aramak beş yolu kaçırıyor: ad, çalışma anında hesaplanıyor ve metinde `__` geçmiyor.
 - Jinja'nın sandbox ortamı bu yolların hepsini çalışma anında `SecurityError` ile reddediyor
   (karşılaştırma için; S-4 gereği kapsam dışı).
@@ -97,6 +105,9 @@ kanıtı aşağıdaki Preserved behavior kriterleri taşır.
   tek cümle; `scripts/check` full yeşil.
 
 ## Out of scope
+- Altçizgi kullanmadan kaçışsız sonuç üreten süzgeç/metot argümanları — `('a'|e)|indent(x, true)`,
+  `('a'|e).translate({97: x})` (review round 1 F-1): takip spec'i 0037. Bugün hiçbir şablon
+  `indent` ya da `translate` kullanmıyor.
 - Çalışma anı koruması (Jinja sandbox ortamı) — S-4.
 - Python'dan şablona geçen nesneler: `web/*.py`'deki `Markup` / `markupsafe` yasağı (0032) bunu
   kapsar; ek bir şey yapılmaz.
