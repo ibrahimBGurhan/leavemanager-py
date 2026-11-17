@@ -28,33 +28,33 @@ eder. Hak, Kalan ve yeni talepteki bakiye kontrolü bu doğru kıdemle çalış�
 
 ## Changed behavior
 Örneklerde bugün = 2026-10-23 (testlerin sabit tarihi).
-- [ ] CB-1 — **Kıdem tamamlanmış yıldır:** 2025-10-23'te işe giren → kıdem 1, hak 14;
+- [x] CB-1 — **Kıdem tamamlanmış yıldır:** 2025-10-23'te işe giren → kıdem 1, hak 14;
   2025-10-24'te işe giren → kıdem 0, hak 0; 2025-12-31'de işe giren → kıdem 0, hak 0 (bugün 1/14).
-- [ ] CB-2 — **Kademe sınırları yıl dönümüne göre:** 2020-10-23 → 6 / 20 gün; 2020-10-24 → 5 /
+- [x] CB-2 — **Kademe sınırları yıl dönümüne göre:** 2020-10-23 → 6 / 20 gün; 2020-10-24 → 5 /
   14 gün; 2011-10-23 → **15 / 26 gün** (bugün 20); 2011-10-24 → 14 / 20 gün.
-- [ ] CB-3 — **29 Şubat:** 2020-02-29'da işe giren için bugün 2027-02-27 → kıdem 6; 2027-02-28 →
+- [x] CB-3 — **29 Şubat:** 2020-02-29'da işe giren için bugün 2027-02-27 → kıdem 6; 2027-02-28 →
   7; 2028-02-28 → 7; 2028-02-29 → 8.
-- [ ] CB-4 — **Ekranlar yeni hakkı kullanır:** bugün tam 15 yıl kıdemli bir personel bakiye
+- [x] CB-4 — **Ekranlar yeni hakkı kullanır:** bugün tam 15 yıl kıdemli bir personel bakiye
   tablosunda Hak 26 ve (onaylı talebi yokken) Kalan 26 görünür; bu personelin 21–26 iş günlük
   yeni talebi bakiye yüzünden reddedilmez (bugün reddediliyor). Yıl dönümü henüz gelmemiş bir
   personelin hakkı, yeni talep bakiye kontrolünde de 0 kabul edilir.
-- [ ] CB-5 — **Alan dokümanı:** `docs/domain.md`'de BR-1 ve BR-2 kararı yazar ("IK onayı
+- [x] CB-5 — **Alan dokümanı:** `docs/domain.md`'de BR-1 ve BR-2 kararı yazar ("IK onayı
   bekliyor" ve "Mevcut kod" notları kalkar), OD-1 ve OD-2 kapandı olarak işaretlenir (karar,
   kişi, tarih, spec 0038); sözlükteki Kıdem satırı güncellenir. Yeni açık karar **OD-11 "İzin
   yılı / hakkın yenilenmesi"** eklenir (Kullanılan tüm zamanların onaylı taleplerini sayıyor, hak
   yıl dönümünde yenilenmiyor; IK kararı bekler).
 
 ## Preserved behavior
-- [ ] PB-1 — **Açılış verisi sayıları değişmez:** Ayse Yilmaz 26 / 9 / 17, Mehmet Demir 20 / 0 /
+- [x] PB-1 — **Açılış verisi sayıları değişmez:** Ayse Yilmaz 26 / 9 / 17, Mehmet Demir 20 / 0 /
   20, Zeynep Kaya 14 / 0 / 14, Ahmet Celik 20 / 0 / 20, Elif Sahin 0 / 0 / 0 (Hak / Kullanılan /
   Kalan) — hem 2026-10-23'te hem 2026-11-17'de (Zeynep'in 10 Kasım yıl dönümü bu iki tarihin
   arasında; hakkı ikisinde de 14).
-- [ ] PB-2 — **Yıl dönümüne göre değişmeyen kademeler:** 1 Ocak'ta işe girenler için kıdem 0 → 0,
+- [x] PB-2 — **Yıl dönümüne göre değişmeyen kademeler:** 1 Ocak'ta işe girenler için kıdem 0 → 0,
   1 → 14, 5 → 14, 6 → 20, 14 → 20, 16 → 26 (0001/AC-1'in 15 dışındaki satırları).
-- [ ] PB-3 — **Henüz başlamamış personel:** işe giriş tarihi bugünden sonra olan personelin
+- [x] PB-3 — **Henüz başlamamış personel:** işe giriş tarihi bugünden sonra olan personelin
   hakkı 0'dır — aynı yıl içinde de (2026-12-01), sonraki yıllarda da (2027-02-01; 0022 ekranı:
   `Deniz Ak, IT, 0, 0, 0, 0`).
-- [ ] PB-4 — **Geri kalan her şey aynı:** Kullanılan, Bekleyen, iş günü sayımı, talep/onay
+- [x] PB-4 — **Geri kalan her şey aynı:** Kullanılan, Bekleyen, iş günü sayımı, talep/onay
   akışının hata sırası ve mesajları, kim hangi satırı görür (IK / Yönetici / Personel), ekran
   düzeni ve mimari kurallar (domain gerçek saati okumaz) değişmez; `./scripts/check` yeşil.
 
