@@ -29,11 +29,12 @@
   Şubat'tır. İşe giriş tarihi bugünden sonraysa kıdem 0'dır (OD-2, spec 0038).
 - **BR-3 İzin günü (md. 56):** izin günü iş günüdür: aralıktaki (başlangıç ve bitiş dahil)
   Pazartesi–Cuma günlerinden resmî tatil olmayanlar sayılır; Cumartesi ve Pazar hafta tatilidir
-  (karar: İbrahim Gürhan, IK adına, 2026-11-05; spec 0014). Resmî tatiller 2026–2027 için kodda
-  sabit listededir (`domain/workdays.py`: 1 Ocak, 23 Nisan, 1 Mayıs, 19 Mayıs, 15 Temmuz,
-  30 Ağustos, 29 Ekim; Ramazan ve Kurban Bayramı günleri). Arife yarım günleri tam iş günü sayılır
-  (OD-9). Liste dışındaki yıllarda yalnız hafta sonu düşülür (OD-10). Bakiye, Kullanılan,
-  Bekleyen, onay ve Talepler ekranının "Gun" sütunu aynı hesabı kullanır.
+  (karar: İbrahim Gürhan, IK adına, 2026-11-05; spec 0014). Resmî tatiller 2026–2028 için kodda
+  sabit listededir (2028: spec 0039; `domain/workdays.py`: 1 Ocak, 23 Nisan, 1 Mayıs, 19 Mayıs,
+  15 Temmuz, 30 Ağustos, 29 Ekim; Ramazan ve Kurban Bayramı günleri). Arife yarım günleri tam iş
+  günü sayılır (OD-9). Liste dışındaki yıllarda (2026 öncesi, 2029 ve sonrası) yalnız hafta sonu
+  düşülür (OD-10). Bakiye, Kullanılan, Bekleyen, onay ve Talepler ekranının "Gun" sütunu aynı
+  hesabı kullanır.
 - **BR-4 Kullanılan:** yalnızca `Onaylandi` durumundaki taleplerin izin günleri toplanır.
 - **BR-5 Kalan ve Bekleyen:** Kalan = Hak − Kullanılan. Bekleyen = personelin `Beklemede`
   durumundaki taleplerinin izin günleri toplamı, tarihe bakılmaz (geçmiş tarihli de sayılır).
@@ -111,9 +112,9 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
 - **OD-9** Arife yarım günleri (Ramazan ve Kurban Bayramı arifesi, 28 Ekim) bugün tam iş günü
   sayılıyor (spec 0014 K-3). Yarım gün sayılması kesirli bakiye ister — öneri: IK isterse ayrı
   spec.
-- **OD-10** Resmî tatil listesi yalnız 2026–2027'yi kapsıyor; sonraki yıllarda yalnız hafta sonu
-  düşülür (spec 0014 K-4). Öneri: 2027 sonundan önce liste güncellensin ya da IK girişi (OD-8
-  sonrası) yapılsın.
+- **OD-10** Resmî tatil listesi 2028 sonuna kadar kapsıyor (2028 eklendi: İbrahim Gürhan,
+  2026-11-18; spec 0039); 2029 ve sonrasında yalnız hafta sonu düşülür (spec 0039 K-4). Öneri:
+  2029 listesi 2028 sonundan önce eklensin ya da IK girişi (OD-8 sonrası) yapılsın.
 - **OD-11** İzin yılı / hakkın yenilenmesi: Kullanılan tüm zamanların onaylı taleplerini sayıyor,
   Hak tek bir yıllık değer ve yıl dönümünde yenilenmiyor (spec 0038 S-3). IK kararı bekler: izin
   yılı neye göre başlar, kullanılmayan hak ne olur (OD-6 ile bağlantılı).
