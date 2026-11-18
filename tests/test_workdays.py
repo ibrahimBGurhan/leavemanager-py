@@ -58,15 +58,17 @@ def assert_refused(resp, message):
     (D(2026, 5, 30), D(2026, 5, 30), 0),     # Cumartesiye denk gelen bayram günü
     (D(2026, 11, 2), D(2026, 11, 1), 0),     # ters aralık (BR-9 önce yakalar)
     (D(2026, 11, 20), D(2026, 11, 2), 0),    # çok günlük ters aralık da 0, negatif değil (F-2)
-    (D(2028, 1, 3), D(2028, 1, 7), 5),       # liste dışı yıl: yalnız hafta sonu (K-4)
+    (D(2028, 1, 3), D(2028, 1, 7), 5),       # 2028'in tatilsiz haftası (0039 PB-2)
 ])
 def test_count_workdays(svc, start, end, days):
     assert svc.calc_days(start, end) == days
 
 
-def test_holidays_list_matches_k2():
+def test_holidays_2026_2027_match_k2():
+    """Spec 0039 PB-1 (supersedes 0014's list == K-2 proof): the part before 2028 is exactly K-2;
+    the 2028 part is proven in test_holidays_2028.py."""
     from domain.workdays import HOLIDAYS
-    assert set(HOLIDAYS) == K2_HOLIDAYS
+    assert {h for h in HOLIDAYS if h.year < 2028} == K2_HOLIDAYS
 
 
 def test_no_holiday_is_counted(svc):

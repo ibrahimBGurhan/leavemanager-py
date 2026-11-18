@@ -1,17 +1,19 @@
 # Izin gunu = is gunu (docs/domain.md BR-3, spec 0014). Cumartesi ve Pazar hafta tatili; resmi
-# tatiller asagidaki sabit listede (2026-2027, 2429 sayili Kanun; dini bayramlar Diyanet takvimi).
+# tatiller asagidaki sabit listede (2026-2028, 2429 sayili Kanun; dini bayramlar Diyanet takvimi).
 # Arife yarim gunleri tam is gunu sayilir (K-3, OD-9). Liste disindaki yillarda yalniz hafta sonu
-# dusulur (K-4, OD-10). Bu modul saati, Flask'i ve depoyu bilmez.
+# dusulur (2026 oncesi ve 2029 ve sonrasi; spec 0039 K-4, OD-10). Bu modul saati, Flask'i ve depoyu bilmez.
 from datetime import date
 
 _EVERY_YEAR = ((1, 1), (4, 23), (5, 1), (5, 19), (7, 15), (8, 30), (10, 29))
 
 HOLIDAYS = frozenset(
-    [date(year, month, day) for year in (2026, 2027) for month, day in _EVERY_YEAR]
+    [date(year, month, day) for year in (2026, 2027, 2028) for month, day in _EVERY_YEAR]
     + [date(2026, 3, d) for d in (20, 21, 22)]       # Ramazan Bayrami 2026
     + [date(2026, 5, d) for d in (27, 28, 29, 30)]   # Kurban Bayrami 2026
     + [date(2027, 3, d) for d in (9, 10, 11)]        # Ramazan Bayrami 2027
     + [date(2027, 5, d) for d in (16, 17, 18, 19)]   # Kurban Bayrami 2027 (19 Mayis ile cakisir)
+    + [date(2028, 2, d) for d in (26, 27, 28)]       # Ramazan Bayrami 2028 (spec 0039)
+    + [date(2028, 5, d) for d in (5, 6, 7, 8)]       # Kurban Bayrami 2028 (spec 0039)
 )
 
 
