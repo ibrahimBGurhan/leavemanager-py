@@ -1,6 +1,6 @@
 # Spec 0039 — tatil-listesi-2028 (mini)
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0039-plan.md`
 - Source: `docs/domain.md` OD-10 (istek: İbrahim Gürhan, 2026-11-18)
@@ -30,28 +30,28 @@ sonrası) açık karar olarak kalır.
   hesabı kullanır (0014/K-1; değişmez).
 
 ## Changed behavior
-- [ ] CB-1 — **2028 tatilleri sayılmaz:** K-1'deki 14 tarihin her biri tek başına 0 gün;
+- [x] CB-1 — **2028 tatilleri sayılmaz:** K-1'deki 14 tarihin her biri tek başına 0 gün;
   1–5 Mayıs 2028 → 3 (bugün 5); 28 Şubat–3 Mart 2028 → 4 (bugün 5); 28 Ağustos–1 Eylül 2028 → 4
   (bugün 5); 8 Mayıs 2028 → 0.
-- [ ] CB-2 — **2028 arifeleri tam gün:** 25 Şubat 2028 → 1; 4 Mayıs 2028 → 1; 28 Ekim 2028
+- [x] CB-2 — **2028 arifeleri tam gün:** 25 Şubat 2028 → 1; 4 Mayıs 2028 → 1; 28 Ekim 2028
   (Cumartesi) → 0.
-- [ ] CB-3 — **Liste dışı sınırı 2029:** 1 Ocak 2029 (Pzt) → 1 gün (liste dışı yıl, yalnız hafta
+- [x] CB-3 — **Liste dışı sınırı 2029:** 1 Ocak 2029 (Pzt) → 1 gün (liste dışı yıl, yalnız hafta
   sonu düşülür).
-- [ ] CB-4 — **Ekran ve bakiye aynı sayıyı kullanır:** 1–5 Mayıs 2028 için yeni talep kaydedilir
+- [x] CB-4 — **Ekran ve bakiye aynı sayıyı kullanır:** 1–5 Mayıs 2028 için yeni talep kaydedilir
   ve Talepler ekranında "Gun" 3 görünür. Bakiye kontrolü de 3 günle yapılır: kullanılabilir
   bakiyesi (Kalan − Bekleyen) tam 3 gün olan personelin bu talebi kaydedilir (bugün 5 gün
   sayıldığı için "yetersiz bakiye" ile reddediliyor), 2 gün olanınki reddedilir.
-- [ ] CB-5 — **Alan dokümanı:** `docs/domain.md` BR-3'te liste 2026–2028; OD-10 güncellenir
+- [x] CB-5 — **Alan dokümanı:** `docs/domain.md` BR-3'te liste 2026–2028; OD-10 güncellenir
   (liste 2028 sonuna kadar; 2029 için 2028 sonundan önce bakım, karar spec 0039).
 
 ## Preserved behavior
-- [ ] PB-1 — **2026–2027 listesi aynen:** 0014'ün 27 tarihi listede, her biri 0 gün; 2026–2027
+- [x] PB-1 — **2026–2027 listesi aynen:** 0014'ün 27 tarihi listede, her biri 0 gün; 2026–2027
   arifeleri tam gün (0014 testleri değişmeden yeşil).
-- [ ] PB-2 — **Liste öncesi yıllar:** 1 Ocak 2025 (Çar) → 1 gün; 2028'in tatil içermeyen
+- [x] PB-2 — **Liste öncesi yıllar:** 1 Ocak 2025 (Çar) → 1 gün; 2028'in tatil içermeyen
   haftası 3–7 Ocak 2028 → 5.
-- [ ] PB-3 — **Açılış verisi ve ekranlar aynı:** Talepler ekranındaki gün sayıları ve ana sayfa
+- [x] PB-3 — **Açılış verisi ve ekranlar aynı:** Talepler ekranındaki gün sayıları ve ana sayfa
   bakiyeleri değişmez (açılış talepleri 2026'da).
-- [ ] PB-4 — **Geri kalan her şey aynı:** iş günü yok kuralı ve mesajı, ters tarih, bakiye
+- [x] PB-4 — **Geri kalan her şey aynı:** iş günü yok kuralı ve mesajı, ters tarih, bakiye
   mesajları, uzun aralığın hızlı sayımı (0014 S-1), yetki ve ekran düzeni değişmez;
   `./scripts/check` yeşil.
 
@@ -61,8 +61,20 @@ sonrası) açık karar olarak kalır.
 - Hafta tatilinin değişmesi, köprü günleri / idari izinler (genelgeyle verilen ek tatiller kanunla
   resmî tatil değildir).
 
+## Verification (VERIFY, 2026-11-18, HEAD `d460114`)
+CB-1…CB-5 ve PB-1…PB-4 Pass (bağımsız QA alt ajanı); full `CHECK GREEN (full, 3 steps, 58 s)`
+(827 passed, 5 skipped, `ac99435`; sonrası yalnız spec/plan). Repo dışı kopyada (`git archive`)
+`domain/workdays.py`'ye 9 mutant: Ramazan 2028 yok 3, Kurban 2028 yok 6, yıllıklar 2028'siz 6,
+liste 2029'a uzar 2, 25 Şubat arifesi tatil 2, 28 Şubat yok 3, 8 Mayıs yok 3, fazladan 9 Mayıs 1
+test kırmızı; `main` kodu HEAD testleriyle 8 kırmızı. Üretim diff'i yalnız `domain/workdays.py`;
+`tests/`'te silinen satırlar yalnız supersede edilen liste testi ve bir yorum. Review round 1
+temiz: F-1 (Low, plan haritasında PB-2 test adı) real — kanıt tablosunda doğru adla kapatıldı;
+F-2 (Info, 107 karakterlik yorum) noise. UI düzeni değişmedi; 1–5 Mayıs 2028 talebinin Talepler
+ekranında "Gun 3" görüntüsü PR'da (plan Risk 3). Ayrıntı: `specs/plans/0039-plan.md` "Triage" ve
+"Verify".
+
 ## Definition of Done
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
-- [ ] Spec moved to `specs/done/` (immutable there)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Criterion ↔ evidence table complete for CB-* **and** PB-* (UI: before/after screenshots)
+- [x] Spec moved to `specs/done/` (immutable there)
