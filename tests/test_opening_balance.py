@@ -329,6 +329,22 @@ def test_pending_after_opening_keeps_br10(client):
     assert status_of(2) == "Beklemede"
 
 
+def test_pending_on_the_opening_date_is_not_exempt(client):
+    """Review F-2: a pending request starting exactly on the opening date is after the opening —
+    it is checked on approval (K-5 boundary) and not listed in the warning (K-4 boundary).
+    2026-10-01 is a Thursday; Kalan 0 < 1, so it stays pending."""
+    rid = add_request(2, D(2026, 10, 1), D(2026, 10, 1))
+    location = post(client, on="2026-10-01", days="0").headers["Location"]
+    text = visible_text(page(client.get(location)))
+    assert MSG_SAVED % (2, "2026-10-01", 0) in text
+    assert "bekleyen talepler" not in text
+    resp = client.post(f"/requests/{rid}/approve")
+    assert resp.status_code == 400
+    assert ("Personelin kalan izin bakiyesi yetersiz (kalan 0 gün, talep 1 gün)."
+            in visible_text(page(resp)))
+    assert status_of(rid) == "Beklemede"
+
+
 # --- AC-10: new request before the opening date -----------------------------------------------
 
 def test_new_request_before_opening_is_refused(client, svc):
