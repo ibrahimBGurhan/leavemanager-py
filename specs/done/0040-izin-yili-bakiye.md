@@ -1,6 +1,6 @@
 # Spec 0040 — izin-yili-bakiye
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0040-plan.md`
 - Source: `docs/domain.md` OD-11, OD-6 (karar: İbrahim Gürhan, IK adına, 2026-11-19)
@@ -110,55 +110,67 @@ IK kararları (İbrahim Gürhan, IK adına, 2026-11-19; öneriler aynen kabul):
 
 ## Acceptance criteria
 Bugün = 2026-10-23 (aksi yazılmadıkça). "P" = işe giriş 2023-06-01, açılış bakiyesi yok, talep yok.
-- [ ] AC-1 — **Yıl dönümünde hak doğar:** P için Devreden 28, Bu yılın hakkı 14, Kullanılan 0,
+- [x] AC-1 — **Yıl dönümünde hak doğar:** P için Devreden 28, Bu yılın hakkı 14, Kullanılan 0,
   Kalan 42, Sonraki hak tarihi 2027-06-01. Bugün 2026-05-31 iken Devreden 14, Bu yılın hakkı 14,
   Kalan 28, Sonraki 2026-06-01; bugün 2026-06-01 iken Kalan 42, Sonraki 2027-06-01.
-- [ ] AC-2 — **İlk yıl ve henüz başlamamış personel:** işe giriş 2026-06-01 → dört sayı 0,
+- [x] AC-2 — **İlk yıl ve henüz başlamamış personel:** işe giriş 2026-06-01 → dört sayı 0,
   Sonraki 2027-06-01. İşe giriş 2027-02-01 (gelecek) → dört sayı 0, Sonraki 2028-02-01.
-- [ ] AC-3 — **Kademe yalnız yeni hakka:** işe giriş 2020-11-01 → Devreden 56, Bu yılın hakkı 14,
+- [x] AC-3 — **Kademe yalnız yeni hakka:** işe giriş 2020-11-01 → Devreden 56, Bu yılın hakkı 14,
   Kalan 70. Bugün 2026-11-01 iken (6. yıl) Bu yılın hakkı 20, Devreden 70, Kalan 90.
-- [ ] AC-4 — **29 Şubat:** işe giriş 2020-02-29 → Bu yılın hakkı 20, Devreden 70, Sonraki
+- [x] AC-4 — **29 Şubat:** işe giriş 2020-02-29 → Bu yılın hakkı 20, Devreden 70, Sonraki
   2027-02-28; bugün 2028-02-28 iken Sonraki 2028-02-29.
-- [ ] AC-5 — **Yıl dönümünü kapsayan talep tek parça:** P'nin onaylı 2026-05-25–2026-06-05 talebi
+- [x] AC-5 — **Yıl dönümünü kapsayan talep tek parça:** P'nin onaylı 2026-05-25–2026-06-05 talebi
   (7 iş günü, Kurban Bayramı düşülür) önceki izin yılına yazılır: Kullanılan 0, Devreden 21,
   Kalan 35. Ayrıca onaylı 2026-06-08–2026-06-12 (5 gün) → Kullanılan 5, Kalan 30.
-- [ ] AC-6 — **İleri tarihli onaylı talep bugünden düşer:** P'nin onaylı 2027-07-05–2027-07-09
+- [x] AC-6 — **İleri tarihli onaylı talep bugünden düşer:** P'nin onaylı 2027-07-05–2027-07-09
   talebi (5 gün) → Kullanılan 5, Kalan 37, Devreden 28.
-- [ ] AC-7 — **Yeni talep kontrolü (avans yok):** işe giriş 2025-06-01 (Kalan 14, Bekleyen 0):
+- [x] AC-7 — **Yeni talep kontrolü (avans yok):** işe giriş 2025-06-01 (Kalan 14, Bekleyen 0):
   14 iş günlük talep kaydedilir; 2027-06-07–2027-06-25 talebi (15 iş günü, ikinci yıl dönümünden
   sonra) "Kalan izin bakiyeniz yetersiz (kalan 14 gün, bekleyen 0 gün, talep 15 gün)." ile
   reddedilir, kayıt oluşmaz. Ekran ve servis aynı sonucu verir.
-- [ ] AC-8 — **Onay kontrolü:** P'nin Kalan'ı 42 iken 42 iş günlük bekleyen talep onaylanır,
+- [x] AC-8 — **Onay kontrolü:** P'nin Kalan'ı 42 iken 42 iş günlük bekleyen talep onaylanır,
   Kalan 0; 43 iş günlük bekleyen talep onaylanmaz, `Beklemede` kalır (BR-10 mesajı).
-- [ ] AC-9 — **Açılış bakiyesi yıl dönümünden önce:** P'ye açılış (2026-01-01, 10): 2025-12-01
+- [x] AC-9 — **Açılış bakiyesi yıl dönümünden önce:** P'ye açılış (2026-01-01, 10): 2025-12-01
   başlangıçlı onaylı 5 günlük talep hesaba girmez; Bu yılın hakkı 14 (2026-06-01), Devreden 10,
   Kalan 24.
-- [ ] AC-10 — **Açılış bakiyesi yıl dönümünden sonra:** P'ye açılış (2026-07-01, 10): Bu yılın
+- [x] AC-10 — **Açılış bakiyesi yıl dönümünden sonra:** P'ye açılış (2026-07-01, 10): Bu yılın
   hakkı 0, Devreden 10, Kalan 10; 2026-06-15 başlangıçlı onaylı talep hesaba girmez,
   2026-08-03–2026-08-07 onaylı talep (5 gün) → Kullanılan 5, Kalan 5. Bugün 2027-06-01 iken
   Bu yılın hakkı 14.
-- [ ] AC-11 — **Eksi Kalan:** P'ye açılış (2026-07-01, 2) ve onaylı 2026-08-03–2026-08-07 (5 gün)
+- [x] AC-11 — **Eksi Kalan:** P'ye açılış (2026-07-01, 2) ve onaylı 2026-08-03–2026-08-07 (5 gün)
   → Kalan −3, Devreden 2, Kullanılan 5; tabloda "-3"; 1 günlük yeni talep "kalan -3 gün" mesajıyla
   reddedilir.
-- [ ] AC-12 — **Ekran (açılış verisi, IK):** başlıklar sırasıyla Ad, Birim, Devreden, Bu yılın
+- [x] AC-12 — **Ekran (açılış verisi, IK):** başlıklar sırasıyla Ad, Birim, Devreden, Bu yılın
   hakkı, Kullanılan, Bekleyen, Kalan, Sonraki hak tarihi; satırlar:
   Ayse Yilmaz IT 328 26 9 3 345 2027-03-15 · Mehmet Demir Muhasebe 90 20 0 3 110 2027-06-01 ·
   Zeynep Kaya IK 0 14 0 1 14 2026-11-10 · Ahmet Celik IT 70 20 0 5 90 2027-02-28 ·
   Elif Sahin Satis 0 0 0 0 0 2027-06-01. Yönetici yalnız biriminin, Personel yalnız kendi
   satırını aynı sütunlarla görür.
 
+## Verification (VERIFY, 2026-11-19, HEAD `7ca43cd`)
+AC-1…AC-12, R-2, R-6, depo (sözleşme + v1/v2 → v3 göçü) ve korunan BR-6/BR-10 sınırları Pass
+(bağımsız QA alt ajanı); full `CHECK GREEN (full, 3 steps, 74 s)` (860 passed, 5 skipped,
+`a6988f8`; sonrası yalnız plan). Repo dışı kopyada 15 mutant: 14'ü 1–23 test kırmızı, biri eşdeğer
+(davranış değişmez); `main`'in servis + görünüm + şablonu HEAD testleriyle 34 kırmızı. Review round
+1: F-1 (K-9 sınırları ve G-1/G-2 testsiz), F-2 (iki assert daralmış), F-4 (yorum girintisi) real →
+fix round 1; F-3 (açılış öncesi bekleyen talebin onay kontrolü) değişiklik yok, 0041 ANALYZE girdisi.
+Review round 2 temiz. Eski Kalan'a göre kurulmuş sınır testleri `legacy_balances` ile supersede
+edildi (anlam korunmuş; eski kodda da yeşil). Ana sayfa önce/sonra görüntüleri PR'da. Ayrıntı:
+`specs/plans/0040-plan.md` "Triage" ve "Verify". **Üretim kapısı:** 0041 ship edilmeden üretime
+alınmaz.
+
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed (R-6)
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed (R-6)
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 1 (öz-eleştiri G-1…G-5 onayda işlendi) |
+| Fix rounds | 1 |
+| Review findings: real / noise | 3 / 0 (F-3 bilgi: değişiklik yok, 0041'e devredildi) |
+| Regressions introduced | 0 |
+| Bugs escaped to production | — (0041'e kadar üretime alınmıyor) |
