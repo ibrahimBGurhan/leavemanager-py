@@ -14,6 +14,7 @@ class LeaveStorage(Protocol):
     - talep: {id: int, employee_id: int, start: date, end: date, reason: str, status: str}
     - hesap (spec 0018): {email: str, password_hash: str, role: str, employee_id: int | None,
       active: bool, failed_attempts: int, locked_until: datetime | None}
+    - acilis bakiyesi (spec 0040): {employee_id: int, date: date, days: int}
 
     Donen kayitlari cagiran degistirmez; degisiklik yalniz asagidaki metotlarla yapilir.
     Depo is kurali bilmez: gecis, bakiye ve dogrulama kararlari domain'dedir.
@@ -68,6 +69,15 @@ class LeaveStorage(Protocol):
         rol ve personel kurallari cagiranin (domain) sorumlulugudur. Bir depo, ayni anda
         eklenen cakisan bir kaydi (ayni e-posta ya da personel) reddedebilir; SqliteStorage bunu
         StorageUnavailable ile yapar (spec 0018 review F-1)."""
+        ...
+
+    def opening_balances(self) -> list:
+        """Tum acilis bakiyesi kayitlari (spec 0040); personel basina en fazla bir kayit."""
+        ...
+
+    def set_opening_balance(self, record: dict) -> None:
+        """Acilis bakiyesi kaydini yazar; ayni personelin kaydi varsa yerine gecer, baska kayda
+        dokunmaz. Sinirlar (gun, tarih) ve personelin var olmasi domain'in isidir (spec 0041)."""
         ...
 
     # Giris durumu (spec 0019). Dordu de bilinmeyen e-postada sessizce hicbir sey yapmaz; kacinci

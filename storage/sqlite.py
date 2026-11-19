@@ -41,7 +41,17 @@ CREATE TABLE accounts (
 );
 """
 
-_MIGRATIONS = {1: _SCHEMA_V1, 2: _SCHEMA_V2}
+# Acilis bakiyesi (spec 0040 K-9): personel basina tek kayit; kural (sinirlar) domain'de (0041)
+_SCHEMA_V3 = """
+CREATE TABLE opening_balances (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER NOT NULL UNIQUE,
+    date TEXT NOT NULL,
+    days INTEGER NOT NULL
+);
+"""
+
+_MIGRATIONS = {1: _SCHEMA_V1, 2: _SCHEMA_V2, 3: _SCHEMA_V3}
 SCHEMA_VERSION = max(_MIGRATIONS)
 
 
@@ -197,6 +207,21 @@ class SqliteStorage:
         with self._lock, self._db:
             self._db.execute("UPDATE accounts SET active = ? WHERE email = ?",
                              (1 if active else 0, email))
+
+    def opening_balances(self):
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT employee_id, date, days FROM opening_balances ORDER BY seq").fetchall()
+        return [{"employee_id": r[0], "date": date.fromisoformat(r[1]), "days": r[2]}
+                for r in rows]
+
+    def set_opening_balance(self, record):
+        # Ayni personelin kaydi varsa yerine gecer (spec 0040, contract)
+        with self._lock, self._db:
+            self._db.execute(
+                "INSERT INTO opening_balances (employee_id, date, days) VALUES (?, ?, ?) "
+                "ON CONFLICT(employee_id) DO UPDATE SET date = excluded.date, days = excluded.days",
+                (record["employee_id"], record["date"].isoformat(), record["days"]))
 
     def next_employee_id(self):
         with self._lock:  # spec 0022 R-2, G-5: next_request_id ile ayni kalip

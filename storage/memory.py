@@ -7,7 +7,8 @@ from storage.demo import demo_employees, demo_requests
 class MemoryStorage:
     # storage/contract.py LeaveStorage sozlesmesini uygular (spec 0016).
     # Kayitlar sozluk: personel {id, name, department, hire_date};
-    # talep {id, employee_id, start, end, reason, status}; hesap (spec 0018) contract.py'de
+    # talep {id, employee_id, start, end, reason, status}; hesap (spec 0018) ve acilis bakiyesi
+# (spec 0040) contract.py'de
     def __init__(self):
         self._lock = threading.Lock()  # sayac artirma atomik (spec 0019 G-4)
         self.reset()
@@ -44,6 +45,14 @@ class MemoryStorage:
 
     def accounts(self):
         return self._accounts
+
+    def opening_balances(self):
+        return self._opening_balances
+
+    def set_opening_balance(self, record):
+        # Ayni personelin kaydi varsa yerine gecer (spec 0040, contract)
+        self._opening_balances = [o for o in self._opening_balances
+                                  if o["employee_id"] != record["employee_id"]] + [dict(record)]
 
     def add_account(self, record):
         self._accounts.append(record)
@@ -84,5 +93,6 @@ class MemoryStorage:
         self._employees = demo_employees()
         self._requests = demo_requests()
         self._accounts = []
+        self._opening_balances = []  # acilis verisinde acilis bakiyesi yok (spec 0040)
         self._next_id = 9
         self._next_employee_id = max((e["id"] for e in self._employees), default=0) + 1

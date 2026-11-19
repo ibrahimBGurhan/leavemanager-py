@@ -114,7 +114,8 @@ def test_fields_and_types_round_trip(tmp_path):
         tables = sorted(r[0] for r in raw.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"))
     raw.close()
-    assert tables == ["accounts", "employees", "requests"]  # the quoted text did not touch the schema
+    # the quoted text did not touch the schema (spec 0040: schema 3 adds opening_balances)
+    assert tables == ["accounts", "employees", "opening_balances", "requests"]
 
 
 def test_lists_keep_insertion_order_not_id_order(tmp_path):
