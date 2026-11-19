@@ -259,6 +259,7 @@ def test_date_boundaries(client, on, message):
     ("٢", "2026-01-01", "10", MSG_EMPLOYEE_NOT_FOUND),
     ("", "bozuk", "abc", MSG_EMPLOYEE_MISSING),         # personel önce
     ("2", "bozuk", "abc", MSG_DATE_INVALID),            # tarih günden önce
+    ("99", "bozuk", "abc", MSG_EMPLOYEE_NOT_FOUND),     # olmayan personel de tarihten önce (QA Q-1)
 ])
 def test_employee_errors_and_order(client, employee_id, on, days, message):
     assert_refused(post(client, employee_id=employee_id, on=on, days=days), message)
