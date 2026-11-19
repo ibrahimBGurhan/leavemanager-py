@@ -95,7 +95,9 @@ def test_assets_load_from_own_server(client, as_account, acc):
 
 
 @pytest.mark.parametrize("acc, links", [
-    pytest.param(HR, MENU + [("Yeni Personel", "/personel/yeni")], id="IK"),
+    # spec 0041 (supersedes 0034's IK menu): Açılış Bakiyesi after Yeni Personel, IK only
+    pytest.param(HR, MENU + [("Yeni Personel", "/personel/yeni"),
+                             ("Açılış Bakiyesi", "/acilis-bakiyesi")], id="IK"),
     pytest.param(MANAGER, MENU, id="Yonetici"),
     pytest.param(STAFF, MENU, id="Personel"),
 ])
@@ -120,6 +122,8 @@ def test_menu_links_per_role(client, as_account, acc, links):
     ("post", "/new", ("Yeni Talep", "/new")),                          # 400 screen
     ("get", "/personel/yeni", ("Yeni Personel", "/personel/yeni")),
     ("post", "/personel/yeni", ("Yeni Personel", "/personel/yeni")),   # 400 screen
+    ("get", "/acilis-bakiyesi", ("Açılış Bakiyesi", "/acilis-bakiyesi")),   # spec 0041
+    ("post", "/acilis-bakiyesi", ("Açılış Bakiyesi", "/acilis-bakiyesi")),  # 400 screen
 ])
 def test_current_page_is_marked(client, as_account, method, path, current):
     """AC-3, G-4: the screen that is drawn marks its own menu item, error screens included —
