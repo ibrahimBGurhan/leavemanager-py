@@ -1,6 +1,6 @@
 # Spec 0041 — acilis-bakiyesi
 
-- Status: In progress
+- Status: Shipped
 - Mode: lite
 - Plan: `specs/plans/0041-plan.md`
 - Source: `docs/domain.md` OD-11; spec 0040 K-9, G-2, review F-3 (karar: İbrahim Gürhan, IK adına,
@@ -97,57 +97,67 @@ Bu spec'in netleştirmesi (İbrahim Gürhan, IK adına, 2026-11-19; öneriler ay
 
 ## Acceptance criteria
 Bugün = 2026-10-23, açılış verisi; giriş yapan IK (aksi yazılmadıkça).
-- [ ] AC-1 — **Yetki:** IK'nın menüsünde "Açılış Bakiyesi" var; Yönetici ve Personel'de yok.
+- [x] AC-1 — **Yetki:** IK'nın menüsünde "Açılış Bakiyesi" var; Yönetici ve Personel'de yok.
   Yönetici ya da Personel sayfayı açarsa (GET) ya da form gönderirse (POST) 403, "Bu işlem için
   yetkiniz yok.", form ve liste yok, kayıt oluşmaz, WARNING log.
-- [ ] AC-2 — **Liste:** başlıklar Ad, Birim, İşe giriş, Açılış tarihi, Gün; açılış verisinde 5
+- [x] AC-2 — **Liste:** başlıklar Ad, Birim, İşe giriş, Açılış tarihi, Gün; açılış verisinde 5
   personel sırayla, son iki hücre boş. Kayıttan sonra ilgili satırda tarih ve gün görünür.
-- [ ] AC-3 — **Kayıt:** Mehmet Demir (#2) için 2026-01-01, 10 gün → yönlendirme, ileti
+- [x] AC-3 — **Kayıt:** Mehmet Demir (#2) için 2026-01-01, 10 gün → yönlendirme, ileti
   "Personel #2 açılış bakiyesi kaydedildi: 2026-01-01, 10 gün.", boş form; Ana Sayfa'da Mehmet
   satırı Devreden 10, Bu yılın hakkı 20, Kullanılan 0, Bekleyen 3, Kalan 30, Sonraki 2027-06-01.
   Sayfa yenilenince ileti yine görünür, ikinci kayıt ya da log satırı oluşmaz.
-- [ ] AC-4 — **Düzeltme:** Mehmet için ardından 2026-07-01, 5 gün → listede tek satır
+- [x] AC-4 — **Düzeltme:** Mehmet için ardından 2026-07-01, 5 gün → listede tek satır
   2026-07-01 / 5; Ana Sayfa'da Devreden 5, Bu yılın hakkı 0, Kalan 5.
-- [ ] AC-5 — **Gün sınırları:** 0 ve 365 kaydedilir; -1, 366, 2.5, "abc" ve boş → "Gün 0 ile 365
+- [x] AC-5 — **Gün sınırları:** 0 ve 365 kaydedilir; -1, 366, 2.5, "abc" ve boş → "Gün 0 ile 365
   arasında bir tam sayı olmalı.", kayıt yok, personel ve tarih formda kalır.
-- [ ] AC-6 — **Tarih sınırları:** Mehmet (işe giriş 2019-06-01) için 2019-06-01 ve 2026-10-23
+- [x] AC-6 — **Tarih sınırları:** Mehmet (işe giriş 2019-06-01) için 2019-06-01 ve 2026-10-23
   kaydedilir; 2019-05-31 → "Açılış tarihi işe giriş tarihinden (2019-06-01) önce olamaz.";
   2026-10-24 → "Açılış tarihi bugünden sonra olamaz."; boş ya da bozuk → "Geçerli bir açılış
   tarihi girin."; kayıt yok.
-- [ ] AC-7 — **Personel ve ihlal sırası:** personel seçilmemiş → "Personel seçin."; olmayan numara
+- [x] AC-7 — **Personel ve ihlal sırası:** personel seçilmemiş → "Personel seçin."; olmayan numara
   (99) ya da sayı olmayan değer → "Personel bulunamadı."; personel, tarih ve gün birlikte bozuksa
   yalnız personel iletisi; tarih ve gün bozuksa yalnız tarih iletisi.
-- [ ] AC-8 — **G-2 uyarısı:** Mehmet'in 2026-09-07 başlangıçlı bekleyen talebi (#9) varken
+- [x] AC-8 — **G-2 uyarısı:** Mehmet'in 2026-09-07 başlangıçlı bekleyen talebi (#9) varken
   2026-10-01 tarihli açılış bakiyesi kaydedilir ve başarı iletisinin altında "Açılış tarihinden önce
   başlayan bekleyen talepler: #9. Bunlar onaylanırsa bakiyeden düşmez." görünür; açılış verisinin
   #2'si (2026-11-02) listelenmez. Böyle talep yoksa uyarı görünmez.
-- [ ] AC-9 — **Onay istisnası (F-3):** AC-8'deki #9, açılış bakiyesi 0 gün iken de onaylanır
+- [x] AC-9 — **Onay istisnası (F-3):** AC-8'deki #9, açılış bakiyesi 0 gün iken de onaylanır
   (`Onaylandi`), Kalan değişmez. Açılış tarihinden sonra başlayan bekleyen talep için BR-10 sınırı
   aynen (Kalan'ı aşan talep `Beklemede` kalır, ileti aynı).
-- [ ] AC-10 — **Açılış öncesi yeni talep:** Mehmet'e 2026-10-01 tarihli açılış bakiyesi varken
+- [x] AC-10 — **Açılış öncesi yeni talep:** Mehmet'e 2026-10-01 tarihli açılış bakiyesi varken
   2026-09-28–2026-10-02 talebi "Bu personelin açılış bakiyesi 2026-10-01 tarihli; daha önce
   başlayan izin açılış bakiyesine dahildir." ile reddedilir (ekran ve servis), kayıt oluşmaz;
   2026-10-01 başlangıçlı talep bu kurala takılmaz. Ters tarih aralığı bu iletiden önce; yalnız hafta
   sonu olan açılış öncesi talep (2026-09-26–27) bu iletiyi alır (iş günü iletisinden önce).
   Açılış bakiyesi olmayan personelde geçmiş tarihli talep bugünkü gibi kabul (BR-8).
-- [ ] AC-11 — **Log:** başarılı kayıtta tek INFO satırı: personel numarası ve giren hesap
+- [x] AC-11 — **Log:** başarılı kayıtta tek INFO satırı: personel numarası ve giren hesap
   (e-posta, rol); ad, tarih ve gün sayısı satırda yok. Hatalı girişte INFO yok.
-- [ ] AC-12 — **Docs:** `docs/domain.md` açılış bakiyesi kuralı (K-1, K-5, K-6), BR-9 ihlal sırası,
+- [x] AC-12 — **Docs:** `docs/domain.md` açılış bakiyesi kuralı (K-1, K-5, K-6), BR-9 ihlal sırası,
   OD-11'de üretim kapısının kalktığı; `docs/security.md` IK'ya özel işlemler listesinde açılış
   bakiyesi.
 
+## Verification (VERIFY, 2026-11-19)
+AC-1…AC-12, G-2…G-6 ve altı ekran durumu Pass (bağımsız QA alt ajanı, HEAD `8146381`); 26 mutantın
+25'i kırmızı, kalan M6 için Q-1 testi eklendi; "Personel yok" durumu için Q-2 testi eklendi. Son
+full `CHECK GREEN (full, 3 steps, 73 s)` (917 passed, 5 skipped, `060201f`; sonrası yalnız plan).
+Review round 1: F-1 ("Gün"de 4300+ rakam → 500), F-2 (açılış günündeki bekleyen talep sınırı
+testsiz), F-3 (BR-12 sırası) real → fix round 1; round 2 temiz; VERIFY bulguları Q-1, Q-2 real →
+fix round 2 (yalnız test); round 3 temiz. Ekran görüntüleri PR'da. Ayrıntı:
+`specs/plans/0041-plan.md` "Triage" ve "Verify". 0040'ın üretim kapısı bu spec'le kalktı; üretime
+alırken IK eski personelin açılış bakiyesini girer.
+
 ## Definition of Done
-- [ ] Every acceptance criterion mapped to proof (test or reproducible observation)
-- [ ] `scripts/check` green
-- [ ] Independent review done; real findings fixed, noise rejected with written rationale
-- [ ] Docs / ADRs updated if behavior or architecture changed
-- [ ] Spec moved to `specs/done/` (it becomes immutable there)
+- [x] Every acceptance criterion mapped to proof (test or reproducible observation)
+- [x] `scripts/check` green
+- [x] Independent review done; real findings fixed, noise rejected with written rationale
+- [x] Docs / ADRs updated if behavior or architecture changed
+- [x] Spec moved to `specs/done/` (it becomes immutable there)
 
 ## Scorecard (fill at ship — honest numbers make the process improvable)
 | Metric | Value |
 |---|---|
-| Spec revisions | |
-| Fix rounds | |
-| Review findings: real / noise | |
-| Regressions introduced | |
-| Bugs escaped to production | |
+| Spec revisions | 1 (öz-eleştiri G-1…G-6 onayda işlendi) |
+| Fix rounds | 2 (review round 1; VERIFY bulguları) |
+| Review findings: real / noise | 5 / 0 (F-1, F-2, F-3; QA Q-1, Q-2) |
+| Regressions introduced | 0 |
+| Bugs escaped to production | — |
