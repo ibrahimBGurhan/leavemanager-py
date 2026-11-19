@@ -67,6 +67,18 @@ MSG_BEFORE_OPENING = ("Bu personelin açılış bakiyesi %s tarihli; daha önce 
 # rakam, "_" ve "+" tam sayi sayilmaz (plan 0041 Risk 1)
 _DAYS = re.compile(r"-?[0-9]+")
 
+
+def parse_days(text):
+    # Gun metni -> tam sayi; ayrismazsa None. int()'in hane siniri (4300) asilirsa da None: ayni
+    # ileti, 500 yok (review 0041 F-1; review 0010 F-4 / parse_request_id emsali)
+    text = (text or "").strip()
+    if not _DAYS.fullmatch(text):
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        return None
+
 # Sayfalar web/templates/ altinda, otomatik kacisla (ADR-0003, spec 0032): burada HTML yok, yalniz
 # sablona verilen veri. Menu iskelette (base.html); "Yeni Personel" bayragi gorunumden (spec 0022
 # R-7, plan Risk 3).
@@ -394,7 +406,7 @@ def register_routes(app, svc):
         emp_id = None if raw_emp == "" else parse_request_id(raw_emp)
         if raw_emp != "" and emp_id is None:
             emp_id = raw_emp
-        days = int(raw_days.strip()) if _DAYS.fullmatch(raw_days.strip()) else None
+        days = parse_days(raw_days)
         try:
             record = v.set_opening_balance(emp_id, values["date"], days)
         except NotAuthorized:

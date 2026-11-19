@@ -219,7 +219,9 @@ def test_message_comes_from_the_record(client, message):
 @pytest.mark.parametrize("days, saved", [("0", True), ("365", True), (" 7 ", True), ("05", True),
                                          ("-1", False), ("366", False), ("2.5", False),
                                          ("abc", False), ("", False), ("٥", False),
-                                         ("1_0", False), ("+5", False)])
+                                         ("1_0", False), ("+5", False),
+                                         # review F-1: beyond int()'s 4300-digit limit, no 500
+                                         pytest.param("9" * 5000, False, id="5000-digits")])
 def test_days_boundaries(client, days, saved):
     resp = post(client, days=days)
     if saved:
