@@ -142,9 +142,9 @@ def test_screens_show_working_days(client):
     # are still working days (Ayse 9, Bekleyen 3 / 3 / 1 / 5 / 0)
     balances = table_rows(client.get("/").get_data(as_text=True))[1:]
     assert balances[0] == ["Ayse Yilmaz", "IT", "328", "26", "9", "3", "345", "2027-03-15"]
-    assert [row[2:7] for row in balances[1:]] == [
-        ["90", "20", "0", "3", "110"], ["0", "14", "0", "1", "14"], ["70", "20", "0", "5", "90"],
-        ["0", "0", "0", "0", "0"],
+    assert [row[2:] for row in balances[1:]] == [
+        ["90", "20", "0", "3", "110", "2027-06-01"], ["0", "14", "0", "1", "14", "2026-11-10"],
+        ["70", "20", "0", "5", "90", "2027-02-28"], ["0", "0", "0", "0", "0", "2027-06-01"],
     ]
 
 

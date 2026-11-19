@@ -124,12 +124,12 @@ def test_balance_table_shows_pending(client):
     """Spec 0040 (supersedes the 0013 columns): Bekleyen is its own column, next to Kalan."""
     rows = table_rows(client.get("/").get_data(as_text=True))
     assert rows[0] == BALANCE_HEADER
-    assert [(r[0], r[4], r[5], r[6]) for r in rows[1:]] == [
-        ("Ayse Yilmaz", "9", "3", "345"),
-        ("Mehmet Demir", "0", "3", "110"),
-        ("Zeynep Kaya", "0", "1", "14"),
-        ("Ahmet Celik", "0", "5", "90"),
-        ("Elif Sahin", "0", "0", "0"),
+    assert rows[1:] == [
+        ["Ayse Yilmaz", "IT", "328", "26", "9", "3", "345", "2027-03-15"],
+        ["Mehmet Demir", "Muhasebe", "90", "20", "0", "3", "110", "2027-06-01"],
+        ["Zeynep Kaya", "IK", "0", "14", "0", "1", "14", "2026-11-10"],
+        ["Ahmet Celik", "IT", "70", "20", "0", "5", "90", "2027-02-28"],
+        ["Elif Sahin", "Satis", "0", "0", "0", "0", "0", "2027-06-01"],
     ]
 
 
