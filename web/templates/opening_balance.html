@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% set current_menu = "opening" %}{# menu ogesi (spec 0034 G-4) #}
+{% from "_macros.html" import message_line, csrf_field with context %}
+{# Acilis Bakiyesi (spec 0041 K-3). Yalniz IK; yetkisiz hesaba form ve liste cizilmez, yalniz ileti (R-7). Ustte form, altta butun personel
+   (eklenme sirasiyla, G-2); acilis bakiyesi olmayanda son iki hucre bos. Tarih alani bos acilir (G-4); bozuk tarih geri basilmaz (spec 0015 K-3). #}
+{% block body %}
+{%- if message is not none %}{{ message_line(message, message_kind) }}{% endif %}
+{%- if warning is not none %}{{ message_line(warning, "warning") }}{% endif %}
+<h1 class="h4 mb-3">Açılış Bakiyesi</h1>
+{%- if forbidden %}{{ message_line(forbidden_text, "danger") }}{% else %}
+<form method="post" class="mb-4">{{ csrf_field() }}
+<div class="mb-3"><label for="personel" class="form-label">Personel</label>
+<select id="personel" name="employee_id" class="form-select"><option value="">— Seçin —</option>{% for e in employees %}<option value="{{ e.id }}"{% if e.id|string == selected %} selected{% endif %}>{{ e.name }}</option>{% endfor %}</select></div>
+<div class="mb-3"><label for="acilis-tarihi" class="form-label">Açılış tarihi</label><input type="date" class="form-control" id="acilis-tarihi" name="date" value="{{ on }}"></div>
+<div class="mb-3"><label for="gun" class="form-label">Gün</label><input type="number" class="form-control" id="gun" name="days" min="0" max="365" step="1" value="{{ days }}"></div>
+<input type="submit" value="Kaydet" class="btn btn-primary">
+</form>
+<div class="table-responsive"><table class="table table-sm table-bordered table-striped align-middle"><thead><tr><th>Ad</th><th>Birim</th><th>İşe giriş</th><th>Açılış tarihi</th><th>Gün</th></tr></thead><tbody>
+{%- for row in rows %}<tr><td>{{ row.name }}</td><td>{{ row.department }}</td><td>{{ row.hire_date }}</td><td>{{ row.opening_date }}</td><td>{{ row.opening_days }}</td></tr>{% endfor %}</tbody></table></div>
+{%- endif %}
+{% endblock %}

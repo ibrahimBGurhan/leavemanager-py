@@ -5,9 +5,9 @@ import logging
 from datetime import date
 
 from domain.access import AccountView
-from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
-                           InvalidEmployee, NoWorkingDays, RequestAlreadyDecided,
-                           RequestNotFound)
+from domain.errors import (BeforeOpeningBalance, EmployeeNotFound, InsufficientBalance,
+                           InvalidDateRange, InvalidEmployee, InvalidOpeningBalance,
+                           NoWorkingDays, RequestAlreadyDecided, RequestNotFound)
 from domain.leave_year import (last_anniversary, next_anniversary, rights_born, tier)
 from domain.workdays import count_workdays
 
@@ -22,6 +22,8 @@ REJECTED = "Reddedildi"
 MAX_NAME = 100
 MAX_UNIT = 50
 EARLIEST_HIRE_DATE = date(1950, 1, 1)
+# Acilis bakiyesi gun siniri (spec 0041 K-1)
+MAX_OPENING_DAYS = 365
 
 
 def _log_safe(text):
@@ -59,6 +61,45 @@ class LeaveService:
         # Acilis bakiyesi (K-9): personel basina en fazla bir kayit; yoksa None
         return next((o for o in self._storage.opening_balances()
                      if o["employee_id"] == emp_id), None)
+
+    def opening_balance(self, emp_id):
+        # Personelin acilis bakiyesi kaydi (spec 0041); yoksa None
+        return self._opening(emp_id)
+
+    def pending_before_opening(self, emp_id):
+        # Acilis tarihinden once baslayan bekleyen taleplerin numaralari (spec 0041 K-4, G-2)
+        opening = self._opening(emp_id)
+        if opening is None:
+            return []
+        return [r["id"] for r in self._storage.requests()
+                if r["employee_id"] == emp_id and r["status"] == PENDING
+                and r["start"] < opening["date"]]
+
+    def set_opening_balance(self, employee_id, on, days, set_by=None):
+        """Acilis bakiyesi (spec 0041 K-1, K-9). Ihlal sirasi personel -> tarih -> gun; ilk ihlal
+        InvalidOpeningBalance olur. employee_id None ise personel secilmemistir; bir personele
+        eslesmeyen her deger (bozuk metin dahil) "bulunamadi". on None ise tarih gecersizdir, days
+        None ise gun gecersizdir (web ayristiramadigini None gecer). Ayni personelde kayit
+        yerine gecer. Kaydi doner."""
+        if employee_id is None:
+            raise InvalidOpeningBalance("employee-missing")
+        emp = next((e for e in self._storage.employees() if e["id"] == employee_id), None)
+        if emp is None:
+            raise InvalidOpeningBalance("employee-not-found")
+        if not isinstance(on, date):
+            raise InvalidOpeningBalance("date-invalid")
+        if on < emp["hire_date"]:
+            raise InvalidOpeningBalance("date-before-hire", emp["hire_date"])
+        if on > self._clock.today():
+            raise InvalidOpeningBalance("date-in-future")
+        if (not isinstance(days, int) or isinstance(days, bool)
+                or not 0 <= days <= MAX_OPENING_DAYS):
+            raise InvalidOpeningBalance("days-invalid")
+        record = {"employee_id": emp["id"], "date": on, "days": days}
+        self._storage.set_opening_balance(record)
+        # Ad, tarih ve gun yazilmaz (spec 0041 K-8); giren "<e-posta> (<rol>)"
+        logger.info("acilis bakiyesi: #%d, giren: %s", emp["id"], set_by)
+        return record
 
     def _approved_days(self, emp_id, since):
         # Baslangici since ya da sonrasinda olan onayli taleplerin izin gunu (since None: hepsi)
@@ -126,7 +167,8 @@ class LeaveService:
                 - self._approved_days(emp["id"], opening["date"]))
 
     def create_request(self, emp_id, start, end, reason):
-        # Ihlal sirasi: personel -> tarih araligi -> is gunu yok -> bakiye (0008 S-4, 0014 K-5)
+        # Ihlal sirasi: personel -> tarih araligi -> acilis oncesi -> is gunu yok -> bakiye
+        # (0008 S-4, 0014 K-5, 0041 K-6)
         emp = None
         for e in self._storage.employees():
             if e["id"] == emp_id:
@@ -135,6 +177,10 @@ class LeaveService:
             raise EmployeeNotFound(emp_id)
         if end < start:
             raise InvalidDateRange(start, end)  # BR-9
+        opening = self._opening(emp_id)
+        if opening is not None and start < opening["date"]:
+            # Acilis oncesi donem acilis bakiyesinin icinde: yeni talep olmaz (spec 0041 K-6)
+            raise BeforeOpeningBalance(opening["date"])
         days = self.calc_days(start, end)
         if days == 0:
             raise NoWorkingDays(start, end)
@@ -173,7 +219,11 @@ class LeaveService:
     def approve_request(self, request_id, decided_by=None):
         r = self._pending_request(request_id)
         emp = next(e for e in self._storage.employees() if e["id"] == r["employee_id"])
-        self._check_balance(emp, self.calc_days(r["start"], r["end"]))
+        opening = self._opening(emp["id"])
+        if opening is None or r["start"] >= opening["date"]:
+            # Acilis tarihinden once baslayan talep bakiyeden dusmez; onayda kontrol yok
+            # (spec 0041 K-5). Digerleri BR-10.
+            self._check_balance(emp, self.calc_days(r["start"], r["end"]))
         self._decide(request_id, APPROVED, decided_by)
 
     def reject_request(self, request_id, decided_by=None):

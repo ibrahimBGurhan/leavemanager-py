@@ -3,7 +3,8 @@
 # birimindeki baskasinin bekleyen talebini sonuclandirir (0021 R-1…R-5); baska her rol (Personel,
 # bilinmeyen, birimi bos Yonetici) yalniz bagli oldugu personel kaydini gorur ve hicbir talebi
 # sonuclandiramaz (0020 R-1, R-5; bilinmeyen rol yetki kazanmaz, plan 0020 Risk 2). Herkes yalniz
-# kendi adina talep acar, IK haric. Yeni personeli yalniz IK ekler (0022 R-7). Yetki, talebin ya
+# kendi adina talep acar, IK haric. Yeni personeli yalniz IK ekler (0022 R-7); acilis bakiyesini
+# de yalniz IK girer (0041 K-2). Yetki, talebin ya
 # da personelin varligindan ve talebin durumundan once denetlenir (R-6). Bu katman Flask'i,
 # HTML'i ve depoyu bilmez; veriye LeaveService'in public fonksiyonlariyla ulasir.
 import logging
@@ -24,6 +25,7 @@ ACTION_REJECT = "red"
 ACTION_CREATE_FOR_OTHER = "baskasi adina talep"
 ACTION_BALANCE = "bakiye"
 ACTION_ADD_EMPLOYEE = "personel ekleme"
+ACTION_OPENING_BALANCE = "acilis bakiyesi"
 
 
 def parse_request_id(text):
@@ -54,6 +56,10 @@ class AccountView:
     def can_add_employees(self):
         # Yalniz rol IK; bagli personel kaydi aranmaz, Yonetici birimi ne olursa olsun ekleyemez
         # (spec 0022 R-7, G-7)
+        return self._account.get("role") == ROLE_HR
+
+    def can_set_opening_balances(self):
+        # Acilis bakiyesi yalniz IK (spec 0041 K-2)
         return self._account.get("role") == ROLE_HR
 
     def can_decide_request(self, r):
@@ -151,6 +157,23 @@ class AccountView:
         # Yetki girdiden once denetlenir (spec 0022 R-7): ret, gonderilen degerlere bakmaz
         if not self.can_add_employees():
             self._refuse(ACTION_ADD_EMPLOYEE, None)
+
+    def authorize_set_opening_balance(self):
+        # Yetki girdiden once denetlenir (spec 0041 K-2, R-7): ret, gonderilen degerlere bakmaz
+        if not self.can_set_opening_balances():
+            self._refuse(ACTION_OPENING_BALANCE, None)
+
+    def set_opening_balance(self, employee_id, on, days):
+        self.authorize_set_opening_balance()
+        return self._svc.set_opening_balance(employee_id, on, days, set_by=self._decider())
+
+    def opening_balance(self, emp_id):
+        self.authorize_set_opening_balance()
+        return self._svc.opening_balance(emp_id)
+
+    def pending_before_opening(self, emp_id):
+        self.authorize_set_opening_balance()
+        return self._svc.pending_before_opening(emp_id)
 
     def add_employee(self, name, department, hire_date):
         self.authorize_add_employee()

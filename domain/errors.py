@@ -58,6 +58,23 @@ class InvalidEmployee(LeaveRequestError):
         self.reason = reason
 
 
+class InvalidOpeningBalance(LeaveRequestError):
+    # Acilis bakiyesi kurala uymuyor (spec 0041 K-1, K-9). reason: employee-missing,
+    # employee-not-found, date-invalid, date-before-hire, date-in-future, days-invalid.
+    # hire_date yalniz date-before-hire'da dolu (ileti tarihi soyler).
+    def __init__(self, reason, hire_date=None):
+        super().__init__(reason, hire_date)
+        self.reason = reason
+        self.hire_date = hire_date
+
+
+class BeforeOpeningBalance(LeaveRequestError):
+    # Talep personelin acilis bakiyesi tarihinden once basliyor (spec 0041 K-6)
+    def __init__(self, opening_date):
+        super().__init__(opening_date)
+        self.opening_date = opening_date
+
+
 # --- Kullanici hesaplari (spec 0018) ---------------------------------------------------------
 # Turkce iletiyi komut satiri araci (app.py) kurar; burada yalniz ihlalin turu ve verisi.
 

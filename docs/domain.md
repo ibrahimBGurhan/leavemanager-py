@@ -20,7 +20,7 @@
 | Kullanılan (`used`) | Başlangıcı bu izin yılında (ya da sonra) olan `Onaylandi` taleplerin izin günü toplamı | Bekleyenler dahil değil (BR-4) |
 | Kalan / Bakiye (`remaining`) | Bugüne kadar doğmuş bütün haklar − bütün onaylı talepler (açılış bakiyesi varsa ondan başlar) | Tek bir yerde hesaplanır (invariant, BR-5) |
 | Devreden (`carried`) | Önceki izin yıllarından kalan gün: Kalan + Kullanılan − Bu yılın hakkı | Sınırsız devreder, yanmaz (BR-5, OD-6 kapandı) |
-| Açılış bakiyesi | IK'nın bir personel için belirli bir tarih itibarıyla girdiği kalan gün; hesap o tarihten başlar | Sistem öncesi kayıtlar eksik olduğu için (spec 0040 K-9); girişi spec 0041 |
+| Açılış bakiyesi | IK'nın bir personel için belirli bir tarih itibarıyla girdiği kalan gün; hesap o tarihten başlar | Sistem öncesi kayıtlar eksik olduğu için (spec 0040 K-9); girişi ve kuralları BR-12 (spec 0041) |
 
 ## Business rules
 
@@ -66,13 +66,15 @@
 - **BR-9** Bitiş tarihi ≥ başlangıç tarihi. Talep oluşturulurken uygulanır (spec 0008); ters
   tarihli talep oluşmaz ve kullanıcı mesaj görür. Gün sayısı hesabı ters aralıkta 0 döner, ama bu
   değer bir talebe ulaşmaz. **İş günü içermeyen talep** (yalnız hafta sonu ve/veya resmî tatil)
-  oluşmaz; kullanıcı "Seçilen tarihler arasında iş günü yok." mesajını görür (spec 0014). İhlal
-  sırası: bozuk girdi → personel → tarih aralığı → iş günü yok → bakiye.
+  oluşmaz; kullanıcı "Seçilen tarihler arasında iş günü yok." mesajını görür (spec 0014).
+  Personelin açılış bakiyesi tarihinden önce başlayan talep de oluşmaz (BR-12, spec 0041). İhlal
+  sırası: bozuk girdi → personel → tarih aralığı → açılış öncesi → iş günü yok → bakiye.
 - **BR-10 Durum geçişleri** (spec 0010): bir talep yalnızca `Beklemede` iken sonuçlandırılır:
   `Beklemede → Onaylandi` ya da `Beklemede → Reddedildi`. `Onaylandi` ve `Reddedildi` son
   durumlardır; geri alınmaz, birbirine çevrilmez. Onayda bakiye yeniden kontrol edilir: Kalan ≥ talebin
   izin günü (aynı karar fonksiyonu; diğer bekleyen talepler sayılmaz, spec 0013 K-4); yetmezse talep `Beklemede` kalır. Redde bakiye kontrolü
-  yoktur. Geçmiş tarihli bekleyen talep de sonuçlandırılabilir (BR-8). Sonuçlandıran IK (her
+  yoktur. Personelin açılış bakiyesi tarihinden önce başlayan talep onaylanırken de bakiye kontrolü
+  yoktur; onaylansa da bakiyeden düşmez (BR-12, spec 0041 K-5). Geçmiş tarihli bekleyen talep de sonuçlandırılabilir (BR-8). Sonuçlandıran IK (her
   talep, kendi talebi dahil) ya da birimin Yöneticisidir (birimindeki başka bir personelin talebi;
   spec 0021). Karar tek aşamalıdır; Personel sonuçlandıramaz (OD-7, `docs/security.md`).
 
@@ -92,6 +94,16 @@
   gelir; yalnız harf büyüklüğüyle ayrılan birimlerde eşitlikte karakter kodu küçük olan önce gelir
   (genelde büyük harf önce; İ/i'de i önce, çünkü İ'nin karakter kodu büyüktür). Sıra sunucunun dil
   ayarına bağlı değildir.
+- **BR-12 Açılış bakiyesi** (spec 0041; karar: İbrahim Gürhan, IK adına, 2026-11-19): IK, her
+  personel için bir tarih itibarıyla kalan izin gününü girer; hesap o tarihten başlar (BR-5).
+  Gün 0–365 arası tam sayıdır; açılış tarihi işe giriş tarihinden önce ve bugünden sonra olamaz
+  (işe giriş günü ve bugün kabul). Personel başına tek kayıt vardır; yeni giriş eskisinin yerine
+  geçer, silme yoktur. Yalnız IK girer ve görür (`docs/security.md`). Açılış tarihinden önce
+  başlayan onaylı talepler açılış sayısının içindedir, hesaba girmez. Açılış tarihinden önce
+  başlayan **yeni** talep oluşmaz ("Bu personelin açılış bakiyesi <tarih> tarihli; daha önce
+  başlayan izin açılış bakiyesine dahildir."); böyle bir **bekleyen** talep onaylanırken bakiye
+  kontrolü yapılmaz (BR-10). Kayıt sonrası IK, açılış tarihinden önce başlayan bekleyen
+  talepler için uyarılır (numaralarıyla). Açılış bakiyesi olmayan personelde bu kurallar yoktur.
 
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.
@@ -135,6 +147,7 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
   2029 listesi 2028 sonundan önce eklensin ya da IK girişi (OD-8 sonrası) yapılsın.
 - **OD-11** ~~İzin yılı / hakkın yenilenmesi~~ — **kapandı** (spec 0040, İbrahim Gürhan, IK adına,
   2026-11-19): izin yılı işe giriş yıl dönümüyle başlar, hak her yıl dönümünde doğar, kullanılmayan
-  izin devreder (BR-1, BR-4, BR-5). Açılış bakiyesinin IK tarafından girilmesi spec 0041'de;
-  **0041 ship edilmeden üretime alınmaz** (açılış bakiyesi girilmemiş eski personelin bakiyesi
-  işe girişten bu yana bütün haklarla hesaplanır).
+  izin devreder (BR-1, BR-4, BR-5). Açılış bakiyesinin IK tarafından girilmesi spec 0041'de
+  (BR-12); 0040'ın üretim kapısı 0041 ile kalktı. Üretime alırken IK, eski personelin açılış
+  bakiyesini girmelidir; girilmeyen personelin bakiyesi işe girişten bu yana bütün haklarla
+  hesaplanır.
