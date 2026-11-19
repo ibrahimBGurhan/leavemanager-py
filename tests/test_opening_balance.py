@@ -164,6 +164,18 @@ def test_list_shows_every_employee(client):
         "Mehmet Demir", "Muhasebe", "2019-06-01", "2026-01-01", "10"]
 
 
+def test_no_employees_shows_header_only(client, monkeypatch):
+    """UX state "Personel yok" (QA Q-2): the list is only its header, the choice only the empty
+    option, the page still opens."""
+    monkeypatch.setattr(leave_app.storage, "_employees", [])  # MemoryStorage detail
+    resp = client.get(PATH)
+    assert resp.status_code == 200
+    html = page(resp)
+    assert table_rows(html) == [LIST_HEADER]
+    f = form_of(html)
+    assert f.forms == 1 and f.options == [""]
+
+
 def test_form_fields_and_labels(client):
     """K-3, G-2, G-4: labelled fields; employees in insertion order; the date starts empty."""
     f = form_of(page(client.get(PATH)))
