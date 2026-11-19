@@ -102,12 +102,14 @@ class AccountView:
         return [r for r in self._svc.requests() if r["employee_id"] in visible]
 
     def balance(self, emp):
-        """(Hak, Kullanilan, Kalan, Bekleyen) — yalniz gorunur bir personel icin (R-2; plan 0020
-        R-07 eki). Hesap LeaveService'te kalir; burada yalniz kapsam denetlenir."""
+        """(Devreden, Bu yilin hakki, Kullanilan, Bekleyen, Kalan, Sonraki hak tarihi) — yalniz
+        gorunur bir personel icin (R-2; plan 0020 R-07 eki; spec 0040 K-8). Hesap
+        LeaveService'te kalir; burada yalniz kapsam denetlenir."""
         if not self.sees_everyone() and emp["id"] not in {e["id"] for e in self.employees()}:
             self._refuse(ACTION_BALANCE, emp["id"])
-        return (self._svc.get_entitlement(emp), self._svc.get_used_days(emp["id"]),
-                self._svc.get_remaining(emp), self._svc.get_pending_days(emp["id"]))
+        return (self._svc.get_carried(emp), self._svc.get_this_year_right(emp),
+                self._svc.get_used_days(emp["id"]), self._svc.get_pending_days(emp["id"]),
+                self._svc.get_remaining(emp), self._svc.get_next_right_date(emp))
 
     def calc_days(self, start, end):
         # Is gunu sayisi; kisiye bagli veri yok (BR-3)

@@ -84,10 +84,12 @@ def test_calc_days_counts_working_days(svc, start, end, days):
 @pytest.mark.parametrize(
     "name, entitlement, used, remaining",
     [
-        ("Ayse Yilmaz", 26, 9, 17),  # 0014 T4: #1 = 9 iş günü
-        ("Mehmet Demir", 20, 0, 20),
+        # Spec 0040 (supersedes AC-4's Kalan = Hak − Kullanılan): Kalan = all rights born by
+        # today − all approved (AC-12); Hak (the tier) and Kullanılan (this leave year) unchanged
+        ("Ayse Yilmaz", 26, 9, 345),  # 0014 T4: #1 = 9 iş günü
+        ("Mehmet Demir", 20, 0, 110),
         ("Zeynep Kaya", 14, 0, 14),
-        ("Ahmet Celik", 20, 0, 20),
+        ("Ahmet Celik", 20, 0, 90),
         ("Elif Sahin", 0, 0, 0),
     ],
 )
@@ -108,7 +110,7 @@ def test_only_approved_requests_count_as_used(svc):
             "end": dt.date(2026, 11, 20), "reason": "x", "status": status,
         })
     assert svc.get_used_days(ayse["id"]) == 9  # 0014 T4: iş günü
-    assert svc.get_remaining(ayse) == 17
+    assert svc.get_remaining(ayse) == 345  # spec 0040 AC-12 (supersedes 17)
 
 
 # --- AC-5 -----------------------------------------------------------------------------------

@@ -166,6 +166,21 @@ def race_window():
     return _RaceWindow
 
 
+# Spec 0040 plan Risk 1: the old Kalan of the opening data (Hak - all approved, before spec 0040).
+LEGACY_REMAINING = {1: 17, 2: 20, 3: 14, 4: 20, 5: 0}
+
+
+def legacy_balances():
+    """Spec 0040 plan Risk 1: gives the five opening-data employees an opening balance dated
+    today (2026-10-23) equal to their pre-0040 Kalan, so BR-6/BR-10 boundary tests keep their
+    numbers. Under spec 0040 K-9 the Kalan is then exactly the old one: approved requests before
+    today are inside the opening balance, later ones are subtracted. Called explicitly by those
+    tests, never autouse; the leave-year rule itself is proven in tests/test_leave_year.py."""
+    for employee_id, days in LEGACY_REMAINING.items():
+        leave_app.storage.set_opening_balance({"employee_id": employee_id, "date": TODAY,
+                                               "days": days})
+
+
 def end_after_workdays(start, n):
     """End date of a range starting at `start` that holds n weekdays (Mon-Fri), spec 0014. Skips
     only Saturday/Sunday and does not call production code: pick dates without public holidays

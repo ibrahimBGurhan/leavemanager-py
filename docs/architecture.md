@@ -65,8 +65,8 @@ geçer. Kalıcı depo SQLite olacak (ADR-0001).
 | Module | Single responsibility | Owns |
 |---|---|---|
 | `web` | HTTP: route'lar, form girdisinin ayrıştırılması/doğrulanması, Jinja şablonları ve statik dosyalar ([ADR-0003](decisions/0003-on-yuz-bootstrap.md)), kullanıcı mesajları | Sunum (HTML, durum rozeti ve ileti türleri, Türkçe UI metinleri) |
-| `domain` | İş kuralları: kıdem, hak, kullanılan, kalan, talep oluşturma ve durum geçişleri | Kural ve kavramlar (`docs/domain.md`); tipli domain istisnaları |
-| `storage` | Kalıcılık: repository arayüzü ve uygulamaları (bugün SQLite, [ADR-0001](decisions/0001-kalicilik-sqlite.md); bellek deposu yalnız test/geliştirme) | Personel, izin talebi ve kullanıcı hesabı kayıtları (şema sürümü 2, spec 0018) |
+| `domain` | İş kuralları: kıdem, hak, izin yılı (`domain/leave_year.py`, spec 0040), kullanılan, kalan, devreden, talep oluşturma ve durum geçişleri | Kural ve kavramlar (`docs/domain.md`); tipli domain istisnaları |
+| `storage` | Kalıcılık: repository arayüzü ve uygulamaları (bugün SQLite, [ADR-0001](decisions/0001-kalicilik-sqlite.md); bellek deposu yalnız test/geliştirme) | Personel, izin talebi, kullanıcı hesabı ve açılış bakiyesi kayıtları (şema sürümü 3, spec 0040) |
 
 ## Communication rules
 - `web` yalnızca `domain`'in public servis fonksiyonlarını çağırır.

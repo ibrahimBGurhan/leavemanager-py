@@ -13,7 +13,7 @@ import re
 import pytest
 
 import app as leave_app
-from conftest import table_rows, visible_text
+from conftest import legacy_balances, table_rows, visible_text
 from domain.auth import LoginService
 
 A, M, B = 1, 4, 2
@@ -72,10 +72,12 @@ def employee(emp_id):
 
 
 def balance_row(emp_id):
+    # Spec 0040 K-8 columns (supersedes Hak, Kullanılan, Kalan, Bekleyen)
     svc, emp = leave_app.svc, employee(emp_id)
-    return [emp["name"], emp["department"], str(svc.get_entitlement(emp)),
-            str(svc.get_used_days(emp_id)), str(svc.get_remaining(emp)),
-            str(svc.get_pending_days(emp_id))]
+    return [emp["name"], emp["department"], str(svc.get_carried(emp)),
+            str(svc.get_this_year_right(emp)), str(svc.get_used_days(emp_id)),
+            str(svc.get_pending_days(emp_id)), str(svc.get_remaining(emp)),
+            svc.get_next_right_date(emp).isoformat()]
 
 
 def counts(page_text):
@@ -128,6 +130,7 @@ def test_manager_approves_and_rejects_unit_request(client, as_account):
 
 
 def test_manager_approve_insufficient_balance_keeps_pending(client, as_account):
+    legacy_balances()  # spec 0040 plan Risk 1: Ayse's Kalan 17
     big = add_request(A, "Beklemede", "Uzun", dt.date(2027, 1, 4), dt.date(2027, 3, 26))
     as_account(MANAGER)
     resp = client.post("/requests/%d/approve" % big)

@@ -14,16 +14,22 @@
 | İzin Talebi (`LeaveRequest`) | Bir personelin başlangıç–bitiş tarihli yıllık izin isteği ve nedeni | Yalnızca yıllık ücretli izin; başka izin türü yok |
 | Durum (`status`) | Talebin durumu: `Beklemede` · `Onaylandi` · `Reddedildi` | Veri değeridir: ASCII yazılır, Türkçe karakterli hali (`Onaylandı`) **farklı** bir değerdir. Geçişler: BR-10 |
 | Kıdem (`seniority`) | Personelin tamamlanmış hizmet yılı | Yıl farkı değildir: yıl dönümü gelmeden artmaz (BR-2) |
-| Hak (`entitlement`) | Kıdeme göre bir yıl için hak edilen izin günü | "Kalan" ile karıştırılmamalı |
+| Hak (`entitlement`) | Kıdeme göre bir izin yılı için hak edilen izin günü; her yıl dönümünde doğar (BR-1) | "Kalan" ile karıştırılmamalı; tabloda "Bu yılın hakkı" |
+| İzin yılı | Personelin bir işe giriş yıl dönümünden bir sonrakine kadarki dönem (BR-2'deki yıl dönümü) | Takvim yılı değildir (spec 0040 K-1) |
 | İzin günü | Bir talebin bakiyeden düşen gün sayısı; tam sayı | İş günüdür: hafta sonu ve resmî tatil sayılmaz (BR-3) |
-| Kullanılan (`used`) | `Onaylandi` durumundaki taleplerin izin günü toplamı | Bekleyenler dahil değil |
-| Kalan / Bakiye (`remaining`) | Hak − Kullanılan | Tek bir yerde hesaplanır (invariant) |
-| Devreden izin (`carry`) | Yıl sonunda bir sonraki yıla aktarılan kalan izin | Bugün uygulanmıyor; kod yorum satırında (OD-6) |
+| Kullanılan (`used`) | Başlangıcı bu izin yılında (ya da sonra) olan `Onaylandi` taleplerin izin günü toplamı | Bekleyenler dahil değil (BR-4) |
+| Kalan / Bakiye (`remaining`) | Bugüne kadar doğmuş bütün haklar − bütün onaylı talepler (açılış bakiyesi varsa ondan başlar) | Tek bir yerde hesaplanır (invariant, BR-5) |
+| Devreden (`carried`) | Önceki izin yıllarından kalan gün: Kalan + Kullanılan − Bu yılın hakkı | Sınırsız devreder, yanmaz (BR-5, OD-6 kapandı) |
+| Açılış bakiyesi | IK'nın bir personel için belirli bir tarih itibarıyla girdiği kalan gün; hesap o tarihten başlar | Sistem öncesi kayıtlar eksik olduğu için (spec 0040 K-9); girişi spec 0041 |
 
 ## Business rules
 
 - **BR-1 Hak (md. 53):** kıdem < 1 yıl → 0 · 1–5 yıl (5 dahil) → 14 · 5'ten fazla ve 15'ten az
-  → 20 · 15 yıl ve üzeri (tam 15 dahil) → 26 gün (OD-1, spec 0038).
+  → 20 · 15 yıl ve üzeri (tam 15 dahil) → 26 gün (OD-1, spec 0038). Hak her işe giriş yıl
+  dönümünde, o gün tamamlanan kıdemin kademesi kadar doğar ve aynı gün kullanılabilir; yeni kademe
+  yalnız o yıl dönümünde doğan hakka uygulanır, önceki haklar değişmez (karar: İbrahim Gürhan, IK
+  adına, 2026-11-19; spec 0040 K-1, K-2, K-7). Avans izin yoktur: kontroller bugüne kadar doğmuş
+  haklarla yapılır (K-6).
 - **BR-2 Kıdem:** işe giriş tarihinden bugüne tamamlanmış hizmet yılıdır; yıl, işe giriş yıl
   dönümü **günü** tamamlanır. 29 Şubat'ta işe girenin yıl dönümü artık olmayan yıllarda 28
   Şubat'tır. İşe giriş tarihi bugünden sonraysa kıdem 0'dır (OD-2, spec 0038).
@@ -35,8 +41,18 @@
   günü sayılır (OD-9). Liste dışındaki yıllarda (2026 öncesi, 2029 ve sonrası) yalnız hafta sonu
   düşülür (OD-10). Bakiye, Kullanılan, Bekleyen, onay ve Talepler ekranının "Gun" sütunu aynı
   hesabı kullanır.
-- **BR-4 Kullanılan:** yalnızca `Onaylandi` durumundaki taleplerin izin günleri toplanır.
-- **BR-5 Kalan ve Bekleyen:** Kalan = Hak − Kullanılan. Bekleyen = personelin `Beklemede`
+- **BR-4 Kullanılan:** yalnızca `Onaylandi` durumundaki taleplerin izin günleri toplanır. Bir talep
+  başlangıç tarihinin düştüğü izin yılına tek parça yazılır, yıl dönümünü kapsasa da bölünmez;
+  bakiye tablosundaki Kullanılan, başlangıcı son yıl dönümü ya da sonrasında olan onaylı
+  talepleri sayar (ileri tarihliler dahil; spec 0040 K-5, K-8).
+- **BR-5 Kalan, Devreden ve Bekleyen:** Kalan = bugüne kadar doğmuş bütün haklar − bütün onaylı
+  talepler; kullanılmayan izin sınırsız devreder, yanmaz (K-3); düşüm önce en eski haktan (K-4,
+  toplamı değiştirmez). Devreden = Kalan + Kullanılan − Bu yılın hakkı. **Açılış bakiyesi** (tarih
+  D, gün V) varsa: Kalan = V + D'den sonraki yıl dönümlerinde doğanlar − başlangıcı D ya da sonra
+  olan onaylı talepler; D'den önce başlayan onaylı talep hesaba girmez; son yıl dönümü D ya da
+  öncesindeyse Bu yılın hakkı 0'dır (spec 0040 K-9). Kalan eksi olabilir ve öyle gösterilir
+  (K-10). Bakiye tablosu: Devreden · Bu yılın hakkı · Kullanılan · Bekleyen · Kalan · Sonraki hak
+  tarihi (K-8; karar: İbrahim Gürhan, IK adına, 2026-11-19; spec 0040). Bekleyen = personelin `Beklemede`
   durumundaki taleplerinin izin günleri toplamı, tarihe bakılmaz (geçmiş tarihli de sayılır).
   `Reddedildi` hiçbir hesaba girmez. Bakiye tablosu Kalan'ı ve Bekleyen'i ayrı sütunlarda
   gösterir (karar: İbrahim Gürhan, IK adına, 2026-11-05; spec 0013, OD-3).
@@ -101,8 +117,10 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
   sabit liste (BR-3). IK'nın tatil girdiği ekran kalıcılık (OD-8) sonrası ayrı iş.
 - **OD-5** 18 yaş ve altı ile 50 yaş ve üstü için en az 20 gün kuralı (md. 53) — doğum tarihi
   tutulmuyor. Öneri: kapsama alınsın, ayrı spec.
-- **OD-6** Devreden izin (yorum satırındaki "en fazla 5 gün" taslağı) — öneri: IK yazılı kural
-  verene kadar kapsam dışı; ölü kod refactor ile silinsin.
+- **OD-6** ~~Devreden izin (yorum satırındaki "en fazla 5 gün" taslağı)~~ — **kapandı** (spec 0040,
+  İbrahim Gürhan, IK adına, 2026-11-19): kullanılmayan izin sınırsız devreder, yanmaz (BR-5);
+  taslak geçersiz, yorum bloğu silindi. Hukuki teyit önerildi (md. 53, md. 59); farklı çıkarsa
+  spec değişikliği.
 - **OD-7** ~~Onay/red akışı yok~~ — **kapandı** (spec 0010, İbrahim Gürhan, 2026-11-04): bu
   sürümde IK onaylar (BR-10). "Yalnızca IK" kısıtı spec 0020'de uygulandı; spec 0021 ile birimin
   Yöneticisi de birimindeki talepleri tek aşamada sonuçlandırır.
@@ -115,6 +133,8 @@ Her biri IK/ürün sahibinin kararını bekler. Karar verilince `/change` (davra
 - **OD-10** Resmî tatil listesi 2028 sonuna kadar kapsıyor (2028 eklendi: İbrahim Gürhan,
   2026-11-18; spec 0039); 2029 ve sonrasında yalnız hafta sonu düşülür (spec 0039 K-4). Öneri:
   2029 listesi 2028 sonundan önce eklensin ya da IK girişi (OD-8 sonrası) yapılsın.
-- **OD-11** İzin yılı / hakkın yenilenmesi: Kullanılan tüm zamanların onaylı taleplerini sayıyor,
-  Hak tek bir yıllık değer ve yıl dönümünde yenilenmiyor (spec 0038 S-3). IK kararı bekler: izin
-  yılı neye göre başlar, kullanılmayan hak ne olur (OD-6 ile bağlantılı).
+- **OD-11** ~~İzin yılı / hakkın yenilenmesi~~ — **kapandı** (spec 0040, İbrahim Gürhan, IK adına,
+  2026-11-19): izin yılı işe giriş yıl dönümüyle başlar, hak her yıl dönümünde doğar, kullanılmayan
+  izin devreder (BR-1, BR-4, BR-5). Açılış bakiyesinin IK tarafından girilmesi spec 0041'de;
+  **0041 ship edilmeden üretime alınmaz** (açılış bakiyesi girilmemiş eski personelin bakiyesi
+  işe girişten bu yana bütün haklarla hesaplanır).

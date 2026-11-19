@@ -84,7 +84,7 @@ def test_linked_staff_sees_only_own_data_after_real_login(browser):
     assert STAFF in text                                   # the session's account is shown
     assert counts(text) == [1, 1, 0]                       # A: 5 pending, 1 approved
     rows = table_rows(home)
-    assert rows[1:] == [[A_NAME, "IT", "26", "9", "17", "3"]]
+    assert rows[1:] == [[A_NAME, "IT", "328", "26", "9", "3", "345", "2027-03-15"]]  # spec 0040
     assert B_NAME not in text and B_DEPT not in text
 
     listing = html(browser.get("/requests"))

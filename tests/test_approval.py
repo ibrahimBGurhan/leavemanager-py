@@ -11,7 +11,7 @@ from html.parser import HTMLParser
 import pytest
 
 import app as leave_app
-from conftest import end_after_workdays, table_rows, visible_text
+from conftest import end_after_workdays, legacy_balances, table_rows, visible_text
 from domain.errors import InsufficientBalance, RequestAlreadyDecided, RequestNotFound
 
 
@@ -38,7 +38,9 @@ def intervening_approval(svc):
     """AC-3 setup: Ayse (Kalan 17) gets a 15-day request approved → Kalan 2; #5 (3 days) pending.
     Spec 0014 T5: working days — Ayse's Kalan is 17 (her #1 is 9 working days).
     Spec 0013 K-6 (T1): the 15-working-day request goes straight into storage — with #5 pending,
-    a new request may use only 14 days, so this state now only arises from pre-0013 data."""
+    a new request may use only 14 days, so this state now only arises from pre-0013 data.
+    Spec 0040 (plan Risk 1): Ayse's Kalan 17 comes from legacy_balances()."""
+    legacy_balances()
     assert add_pending(1, dt.date(2026, 11, 16), 15) == 9
     svc.approve_request(9)
     assert svc.get_remaining(by_name("Ayse Yilmaz")) == 2
@@ -47,11 +49,12 @@ def intervening_approval(svc):
 # --- service: happy paths (AC-1, AC-2) ------------------------------------------------------
 
 def test_approve_pending_request_updates_status_and_balance(svc):
+    """Spec 0040 (supersedes 0010's Kalan 17): Mehmet's Kalan is 110 (spec 0040 AC-12) → 107."""
     mehmet = by_name("Mehmet Demir")
     assert svc.approve_request(2) is None
     assert status_of(2) == "Onaylandi"
     assert svc.get_used_days(mehmet["id"]) == 3
-    assert svc.get_remaining(mehmet) == 17
+    assert svc.get_remaining(mehmet) == 107
 
 
 def test_reject_pending_request_keeps_balance(svc):
@@ -76,6 +79,8 @@ def test_approve_after_intervening_approval_is_refused(svc):
 @pytest.mark.parametrize("days, approved", [(16, True), (17, True), (18, False)],
                          ids=["K-1", "K", "K+1"])
 def test_approve_balance_boundary(svc, days, approved):
+    """Spec 0040 (plan Risk 1): Ayse's Kalan 17 comes from legacy_balances()."""
+    legacy_balances()
     ayse = by_name("Ayse Yilmaz")
     assert svc.get_remaining(ayse) == 17  # 0014 T5
     request_id = add_pending(ayse["id"], dt.date(2026, 11, 2), days)
@@ -166,8 +171,9 @@ def dashboard(client):
     text = visible_text(html)
     counts = tuple(int(text.split(label + ": ")[1].split()[0])
                    for label in ("Bekleyen", "Onaylanan", "Reddedilen"))
-    # Birim, Hak, Kullanilan, Kalan; Bekleyen sutunu tests/test_pending_balance.py'de (0013 T7)
-    return counts, {row[0]: row[1:5] for row in table_rows(html)[1:]}
+    # Birim, Devreden, Bu yılın hakkı, Kullanılan, Kalan (spec 0040; supersedes Birim, Hak,
+    # Kullanilan, Kalan). Bekleyen sutunu tests/test_pending_balance.py'de (0013 T7)
+    return counts, {row[0]: row[1:5] + [row[6]] for row in table_rows(html)[1:]}
 
 
 def assert_message_above_list(resp, status, message):
@@ -187,14 +193,14 @@ def test_screen_approve_redirects_with_message_and_updates_dashboard(client):
     assert html.index("Talep #2 onaylandı.") < html.index("<table")
     counts, balances = dashboard(client)
     assert counts == (3, 2, 3)
-    assert balances["Mehmet Demir"] == ["Muhasebe", "20", "3", "17"]
+    assert balances["Mehmet Demir"] == ["Muhasebe", "90", "20", "3", "107"]  # spec 0040
 
 
 def test_screen_reload_after_success_does_not_repeat(client):
     location = client.post("/requests/2/approve").headers["Location"]
     for _ in range(2):
         assert "Talep #2 onaylandı." in visible_text(client.get(location).get_data(as_text=True))
-    assert dashboard(client)[1]["Mehmet Demir"] == ["Muhasebe", "20", "3", "17"]
+    assert dashboard(client)[1]["Mehmet Demir"] == ["Muhasebe", "90", "20", "3", "107"]  # 0040
     assert statuses().count("Onaylandi") == 2
 
 
@@ -223,6 +229,7 @@ def test_screen_approve_insufficient_shows_message(client, svc):
 @pytest.mark.parametrize("days, approved", [(16, True), (17, True), (18, False)],
                          ids=["K-1", "K", "K+1"])  # 0014 T5: Ayse Kalan 17
 def test_screen_and_service_agree_on_approval(client, days, approved):
+    legacy_balances()  # spec 0040 plan Risk 1
     request_id = add_pending(1, dt.date(2026, 11, 2), days)
     resp = client.post(f"/requests/{request_id}/approve")
     assert resp.status_code == (302 if approved else 400)

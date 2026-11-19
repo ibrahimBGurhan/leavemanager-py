@@ -160,6 +160,7 @@ def test_linked_staff_without_requests_sees_empty_talepler(client, as_account):
     text = visible_text(home)
     counts = [int(n) for n in re.findall(r"(?:Bekleyen|Onaylanan|Reddedilen): (\d+)", text)]
     assert counts == [0, 0, 0]
-    assert table_rows(home)[1:] == [[C_NAME, C_DEPT, "20", "0", "20", "0"]]  # 6 years -> 20
+    # 6 years -> 20; spec 0040: 70 days carried from the first five years, Kalan 90
+    assert table_rows(home)[1:] == [[C_NAME, C_DEPT, "70", "20", "0", "0", "90", "2027-01-06"]]
     for name in OTHERS:
         assert name not in text

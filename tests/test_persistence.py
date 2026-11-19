@@ -114,7 +114,8 @@ def test_fields_and_types_round_trip(tmp_path):
         tables = sorted(r[0] for r in raw.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"))
     raw.close()
-    assert tables == ["accounts", "employees", "requests"]  # the quoted text did not touch the schema
+    # the quoted text did not touch the schema (spec 0040: schema 3 adds opening_balances)
+    assert tables == ["accounts", "employees", "opening_balances", "requests"]
 
 
 def test_lists_keep_insertion_order_not_id_order(tmp_path):
@@ -140,7 +141,8 @@ def test_empty_database_screens(tmp_path):
     text = visible_text(home[1])
     for counter in ("Bekleyen: 0", "Onaylanan: 0", "Reddedilen: 0"):
         assert counter in text
-    assert rows(home[1]) == [["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"]]
+    assert rows(home[1]) == [["Ad", "Birim", "Devreden", "Bu yılın hakkı", "Kullanılan",
+                              "Bekleyen", "Kalan", "Sonraki hak tarihi"]]  # spec 0040
     assert rows(requests[1]) == [["Personel", "Başlangıç", "Bitiş", "Gün", "Neden", "Durum"]]
     assert form[0] == 200 and "<option" not in form[1] and "Kaydet" in form[1]
     assert post[0] == 400 and MSG_EMPLOYEE_NOT_FOUND in visible_text(post[1])
@@ -242,7 +244,7 @@ def test_newer_schema_stops_the_app(tmp_path):
     assert proc.returncode != 0
     errors = [line for line in proc.stderr.splitlines() if " ERROR app.storage: " in line]
     assert len(errors) == 1
-    assert "şema sürümü 99" in errors[0] and "bu uygulama 2" in errors[0]  # review F-4
+    assert "şema sürümü 99" in errors[0] and "bu uygulama 3" in errors[0]  # review F-4; v3: spec 0040
     assert hashlib.sha256(db.read_bytes()).hexdigest() == before
 
 
@@ -291,10 +293,65 @@ def test_version_1_database_is_upgraded(tmp_path):
                        "employee_id": None, "active": True, "failed_attempts": 0,
                        "locked_until": None})
     store.close()
-    assert schema_state(db) == (2, ["accounts", "employees", "requests"])
+    # Spec 0040: a version 1 database goes all the way to version 3 (opening balances)
+    assert schema_state(db) == (3, ["accounts", "employees", "opening_balances", "requests"])
     reopened = SqliteStorage(db)
     assert [a["email"] for a in reopened.accounts()] == ["ik@firma.com"]
+    assert reopened.opening_balances() == []
     reopened.close()
+
+
+# --- spec 0040: schema version 3 (opening balances) -----------------------------------------
+
+V2_ACCOUNTS = """
+CREATE TABLE accounts (seq INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL, role TEXT NOT NULL, employee_id INTEGER UNIQUE,
+    active INTEGER NOT NULL, failed_attempts INTEGER NOT NULL, locked_until TEXT);
+INSERT INTO accounts (email, password_hash, role, employee_id, active, failed_attempts, locked_until)
+    VALUES ('ik@firma.com', 'h', 'IK', NULL, 1, 0, NULL);
+PRAGMA user_version = 2;
+"""
+
+
+def make_version_2_database(db):
+    """A database exactly as spec 0018 (schema version 2) left it, with one record of each."""
+    make_version_1_database(db)
+    raw = sqlite3.connect(db)
+    raw.executescript(V2_ACCOUNTS)
+    raw.close()
+
+
+def test_version_2_database_is_upgraded(tmp_path):
+    db = tmp_path / "leave.db"
+    make_version_2_database(db)
+    store = SqliteStorage(db)
+    assert [e["id"] for e in store.employees()] == [7]
+    assert [r["id"] for r in store.requests()] == [3]
+    assert [a["email"] for a in store.accounts()] == ["ik@firma.com"]
+    assert store.opening_balances() == []
+    store.set_opening_balance({"employee_id": 7, "date": D(2026, 1, 1), "days": 12})
+    store.close()
+    assert schema_state(db) == (3, ["accounts", "employees", "opening_balances", "requests"])
+    reopened = SqliteStorage(db)
+    assert reopened.opening_balances() == [{"employee_id": 7, "date": D(2026, 1, 1), "days": 12}]
+    reopened.close()
+
+
+def test_failed_upgrade_leaves_version_2(tmp_path, monkeypatch):
+    """Spec 0018 G-5 for step 3: a failed upgrade leaves the database at version 2, data intact."""
+    import storage.sqlite as sqlite_module
+    db = tmp_path / "leave.db"
+    make_version_2_database(db)
+    before = schema_state(db)
+    broken = sqlite_module._MIGRATIONS[3] + "INSERT INTO no_such_table VALUES (1);"
+    monkeypatch.setitem(sqlite_module._MIGRATIONS, 3, broken)
+    with pytest.raises(sqlite_module.StorageUnavailable):
+        SqliteStorage(db)
+    assert schema_state(db) == before == (2, ["accounts", "employees", "requests"])
+    monkeypatch.undo()
+    store = SqliteStorage(db)
+    assert [a["email"] for a in store.accounts()] == ["ik@firma.com"]
+    store.close()
 
 
 def test_failed_upgrade_leaves_version_1(tmp_path, monkeypatch):

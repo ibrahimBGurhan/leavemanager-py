@@ -60,7 +60,8 @@ def test_dashboard_counters_in_boxes(client):
     assert [visible_text(b) for b in boxes] == ["Bekleyen: 4", "Onaylanan: 1", "Reddedilen: 3"]
     assert '<div class="row row-cols-1 row-cols-sm-3 g-3 mb-4">' in html
     assert headings(html) == ["Personel Bakiyeleri"]
-    assert table_rows(html)[0] == ["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"]
+    assert table_rows(html)[0] == ["Ad", "Birim", "Devreden", "Bu yılın hakkı", "Kullanılan",
+                                   "Bekleyen", "Kalan", "Sonraki hak tarihi"]  # spec 0040
 
 
 # --- AC-2 ---------------------------------------------------------------------------------------

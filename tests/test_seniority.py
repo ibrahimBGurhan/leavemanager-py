@@ -88,9 +88,11 @@ def test_feb_29_anniversary(svc, monkeypatch, today, years):
 # --- CB-4 -----------------------------------------------------------------------------------
 
 def test_15_years_shows_26_on_dashboard(client, svc):
-    """CB-4: tam 15 yıl kıdemli personel bakiye tablosunda Hak 26, Kalan 26."""
+    """CB-4: tam 15 yıl kıdemli personel bakiye tablosunda Bu yılın hakkı 26. Spec 0040
+    (supersedes "Hak 26, Kalan 26"): önceki 14 yıldan 250 gün devreder (14×5 + 20×9), Kalan 276."""
     add(svc, D(2011, 10, 23))
-    assert balance_row(client, "Kidem Test") == ["Kidem Test", "IT", "26", "0", "26", "0"]
+    assert balance_row(client, "Kidem Test") == [
+        "Kidem Test", "IT", "250", "26", "0", "0", "276", "2027-10-23"]
 
 
 @pytest.mark.parametrize("end, workdays, saved", [(D(2026, 12, 7), 26, True),
@@ -98,8 +100,12 @@ def test_15_years_shows_26_on_dashboard(client, svc):
                          ids=["26-accepted", "27-refused"])
 def test_15_years_request_boundary(client, svc, end, workdays, saved):
     """CB-4: tam 15 yıl → 26 günlük talep kabul (eskiden ret), 27 ret. 2–30 Kasım ve 1–8 Aralık
-    2026 arasında resmî tatil yok (plan 0038 Risk 3); gün sayısı sabit beklenir."""
+    2026 arasında resmî tatil yok (plan 0038 Risk 3); gün sayısı sabit beklenir.
+    Spec 0040 (plan 0040 Risk 2): birikmiş haklar dışarıda kalsın diye dün tarihli 0 günlük açılış
+    bakiyesi; tek kalan bugün (15. yıl dönümü) doğan 26 gün."""
     emp = add(svc, D(2011, 10, 23))
+    leave_app.storage.set_opening_balance({"employee_id": emp["id"], "date": D(2026, 10, 22),
+                                           "days": 0})
     start = D(2026, 11, 2)
     assert svc.calc_days(start, end) == workdays
     before = len(leave_app.storage.requests())
@@ -128,15 +134,16 @@ def test_before_first_anniversary_request_refused(client, svc):
 # --- PB-1 -----------------------------------------------------------------------------------
 
 def test_opening_balances_on_2026_11_17(client, monkeypatch):
-    """PB-1 (S-4): Zeynep'in 10 Kasım yıl dönümünden sonra da açılış sayıları aynı."""
+    """PB-1 (S-4) — spec 0040 (supersedes "sayılar aynı"): Zeynep'in 10 Kasım 2026 yıl dönümünde
+    ikinci 14 gün doğar, ilki devreder (Kalan 28); diğer satırlar 2026-10-23'teki gibi."""
     set_today(monkeypatch, D(2026, 11, 17))
     rows = table_rows(client.get("/").get_data(as_text=True))
-    assert [r[:5] for r in rows[1:]] == [
-        ["Ayse Yilmaz", "IT", "26", "9", "17"],
-        ["Mehmet Demir", "Muhasebe", "20", "0", "20"],
-        ["Zeynep Kaya", "IK", "14", "0", "14"],
-        ["Ahmet Celik", "IT", "20", "0", "20"],
-        ["Elif Sahin", "Satis", "0", "0", "0"],
+    assert rows[1:] == [
+        ["Ayse Yilmaz", "IT", "328", "26", "9", "3", "345", "2027-03-15"],
+        ["Mehmet Demir", "Muhasebe", "90", "20", "0", "3", "110", "2027-06-01"],
+        ["Zeynep Kaya", "IK", "14", "14", "0", "1", "28", "2027-11-10"],
+        ["Ahmet Celik", "IT", "70", "20", "0", "5", "90", "2027-02-28"],
+        ["Elif Sahin", "Satis", "0", "0", "0", "0", "0", "2027-06-01"],
     ]
 
 

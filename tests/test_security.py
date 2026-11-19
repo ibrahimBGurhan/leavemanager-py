@@ -48,7 +48,9 @@ def test_employee_text_is_shown_as_text_not_html_on_every_screen(client, path):
     assert NAME in visible_text(html)
     if path == "/":
         assert DEPARTMENT not in html
-        assert [NAME, DEPARTMENT, "20", "0", "20", "1"] in table_rows(html)  # 0013 T8: Bekleyen 1
+        # 0013 T8: Bekleyen 1; spec 0040 columns (hired 2020-01-06: 70 carried, 20 this year)
+        assert ([NAME, DEPARTMENT, "70", "20", "0", "1", "90", "2027-01-06"]
+                in table_rows(html))
 
 
 def test_running_app_py_does_not_force_debug_mode(monkeypatch):
