@@ -8,6 +8,7 @@ from domain.access import AccountView
 from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
                            InvalidEmployee, NoWorkingDays, RequestAlreadyDecided,
                            RequestNotFound)
+from domain.leave_year import (last_anniversary, next_anniversary, rights_born, tier)
 from domain.workdays import count_workdays
 
 logger = logging.getLogger(__name__)
@@ -38,14 +39,7 @@ class LeaveService:
     # Kidem -> hak edilen izin (BR-1, Is Kanunu md. 53): 0 -> 0, 1-5 -> 14, 6-14 -> 20,
     # 15 ve uzeri -> 26 gun (OD-1, spec 0038)
     def get_entitlement(self, emp):
-        years = self.get_seniority_years(emp)
-        if years < 1:
-            return 0
-        if years <= 5:
-            return 14
-        if years < 15:
-            return 20
-        return 26
+        return tier(self.get_seniority_years(emp))
 
     def get_seniority_years(self, emp):
         # Kidem = tamamlanmis hizmet yili; yil donumu gunu yili tamamlar. 29 Subat'ta ise girenin
@@ -59,21 +53,53 @@ class LeaveService:
         years = today.year - hire.year - ((today.month, today.day) < anniversary)
         return max(years, 0)
 
-    # def recalculate_year_end(self):
-    #     # yil sonunda devreden izinleri yeniden hesapla
-    #     # for e in storage.employees():
-    #     #     carry = self.get_remaining(e)
-    #     #     if carry > 5: carry = 5
-    #     #     e["carry"] = carry
-    #     # SILME - belki lazim olur (Ahmet) - 2017
-    #     pass
+    # --- Izin yili ve bakiye (spec 0040 K-8, K-9; OD-11). Kullanilmayan izin yanmaz (K-3) ------
 
-    def get_used_days(self, emp_id):
+    def _opening(self, emp_id):
+        # Acilis bakiyesi (K-9): personel basina en fazla bir kayit; yoksa None
+        return next((o for o in self._storage.opening_balances()
+                     if o["employee_id"] == emp_id), None)
+
+    def _approved_days(self, emp_id, since):
+        # Baslangici since ya da sonrasinda olan onayli taleplerin izin gunu (since None: hepsi)
         total = 0
         for r in self._storage.requests():
-            if r["employee_id"] == emp_id and r["status"] == APPROVED:
+            if (r["employee_id"] == emp_id and r["status"] == APPROVED
+                    and (since is None or r["start"] >= since)):
                 total += self.calc_days(r["start"], r["end"])
         return total
+
+    def _used_since(self, emp):
+        # Kullanilan'in baslangici: son yil donumu; acilis tarihi daha sonraysa o (K-8, K-9)
+        last = last_anniversary(emp["hire_date"], self._clock.today())
+        opening = self._opening(emp["id"])
+        if opening is None:
+            return last
+        return opening["date"] if last is None else max(last, opening["date"])
+
+    def get_this_year_right(self, emp):
+        # Son yil donumunde dogan hak; ilk yil dolmadiysa ya da acilis bakiyesinin icindeyse 0
+        hire = emp["hire_date"]
+        last = last_anniversary(hire, self._clock.today())
+        opening = self._opening(emp["id"])
+        if last is None or (opening is not None and last <= opening["date"]):
+            return 0
+        return tier(last.year - hire.year)
+
+    def get_used_days(self, emp_id):
+        # Kullanilan: baslangici bu izin yilinda (ya da sonra) olan onayli talepler (K-5, K-8)
+        emp = next((e for e in self._storage.employees() if e["id"] == emp_id), None)
+        if emp is None:
+            return 0
+        return self._approved_days(emp_id, self._used_since(emp))
+
+    def get_carried(self, emp):
+        # Devreden: onceki izin yillarindan kalan = Kalan + Kullanilan - Bu yilin hakki (K-8)
+        return (self.get_remaining(emp) + self.get_used_days(emp["id"])
+                - self.get_this_year_right(emp))
+
+    def get_next_right_date(self, emp):
+        return next_anniversary(emp["hire_date"], self._clock.today())
 
     def get_pending_days(self, emp_id):
         # Bekleyen: Beklemede taleplerin gunleri, tarihe bakilmaz (BR-5, spec 0013 K-1)
@@ -88,8 +114,16 @@ class LeaveService:
         return count_workdays(start, end)
 
     def get_remaining(self, emp):
-        # Kalan = Hak - Kullanilan; bekleyenler burada dusulmez, yeni talepte sayilir (OD-3, 0013)
-        return self.get_entitlement(emp) - self.get_used_days(emp["id"])
+        # Kalan = bugune kadar dogmus haklar - onayli talepler (K-8). Acilis bakiyesi varsa (K-9):
+        # bakiye + acilistan sonraki yil donumlerinde doganlar - acilistan itibaren baslayanlar.
+        # Bekleyenler burada dusulmez, yeni talepte sayilir (OD-3, 0013); tek hesap (R-2).
+        today = self._clock.today()
+        opening = self._opening(emp["id"])
+        if opening is None:
+            return (rights_born(emp["hire_date"], None, today)
+                    - self._approved_days(emp["id"], None))
+        return (opening["days"] + rights_born(emp["hire_date"], opening["date"], today)
+                - self._approved_days(emp["id"], opening["date"]))
 
     def create_request(self, emp_id, start, end, reason):
         # Ihlal sirasi: personel -> tarih araligi -> is gunu yok -> bakiye (0008 S-4, 0014 K-5)
