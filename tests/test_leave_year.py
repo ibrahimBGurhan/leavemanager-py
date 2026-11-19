@@ -205,6 +205,35 @@ def test_opening_balance_after_anniversary(svc, monkeypatch):
     assert balance(svc, emp) == (5, 14, 0, 0, 19, D(2028, 6, 1))
 
 
+# --- K-9 boundaries, G-1/G-2 (review 0040 F-1) ---------------------------------------------
+
+def test_opening_on_anniversary_day(svc):
+    """K-9: the right born on the opening date is inside the opening balance."""
+    emp = add(svc)
+    opening(emp, D(2026, 6, 1), 10)
+    assert balance(svc, emp) == (10, 0, 0, 0, 10, D(2027, 6, 1))
+
+
+def test_request_starting_on_opening_date_counts(svc):
+    """K-9: a request starting exactly on the opening date is counted (2026-07-01, Wednesday)."""
+    emp = add(svc)
+    opening(emp, D(2026, 7, 1), 10)
+    add_request(emp, D(2026, 7, 1), D(2026, 7, 1))
+    assert balance(svc, emp) == (10, 0, 1, 0, 9, D(2027, 6, 1))
+
+
+def test_pending_before_opening_date(svc):
+    """G-1: a pending request starting before the opening date counts as Bekleyen. G-2: once
+    approved it does not reduce Kalan (it is inside the opening balance). 2026-06-15 is a Monday."""
+    emp = add(svc)
+    opening(emp, D(2026, 7, 1), 10)
+    rid = add_request(emp, D(2026, 6, 15), D(2026, 6, 15), status="Beklemede")
+    assert balance(svc, emp) == (10, 0, 0, 1, 10, D(2027, 6, 1))
+    svc.approve_request(rid)
+    assert status_of(rid) == "Onaylandi"
+    assert balance(svc, emp) == (10, 0, 0, 0, 10, D(2027, 6, 1))
+
+
 # --- AC-11 ----------------------------------------------------------------------------------
 
 def test_negative_remaining_is_shown_and_refuses(client, svc):
