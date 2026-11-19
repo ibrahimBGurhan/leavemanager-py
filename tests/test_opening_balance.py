@@ -181,6 +181,7 @@ def test_save_redirects_with_message_and_updates_home(client, caplog):
     assert resp.status_code == 302
     assert resp.headers["Location"].endswith(PATH + "?kaydedildi=2")
     assert opening_of(2) == {"employee_id": 2, "date": D(2026, 1, 1), "days": 10}
+    caplog.clear()  # only what the refreshes log is checked below
     with caplog.at_level(logging.INFO, logger="domain"):
         for _ in range(2):  # a refresh repeats nothing
             html = page(client.get(resp.headers["Location"]))
