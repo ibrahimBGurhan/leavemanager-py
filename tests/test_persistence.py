@@ -141,7 +141,8 @@ def test_empty_database_screens(tmp_path):
     text = visible_text(home[1])
     for counter in ("Bekleyen: 0", "Onaylanan: 0", "Reddedilen: 0"):
         assert counter in text
-    assert rows(home[1]) == [["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"]]
+    assert rows(home[1]) == [["Ad", "Birim", "Devreden", "Bu yılın hakkı", "Kullanılan",
+                              "Bekleyen", "Kalan", "Sonraki hak tarihi"]]  # spec 0040
     assert rows(requests[1]) == [["Personel", "Başlangıç", "Bitiş", "Gün", "Neden", "Durum"]]
     assert form[0] == 200 and "<option" not in form[1] and "Kaydet" in form[1]
     assert post[0] == 400 and MSG_EMPLOYEE_NOT_FOUND in visible_text(post[1])

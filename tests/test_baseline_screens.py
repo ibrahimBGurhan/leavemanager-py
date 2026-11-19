@@ -42,19 +42,21 @@ def assert_redirects_to_requests(resp):
 # --- AC-7 -----------------------------------------------------------------------------------
 
 def test_dashboard_counts_and_balances(client):
-    """AC-7: sayaçlar ve personel bakiyeleri. Spec 0013 CB-3 (T2): en sağda Bekleyen sütunu."""
+    """AC-7: sayaçlar ve personel bakiyeleri. Spec 0040 K-8 (supersedes 0013 CB-3 sütunları):
+    Devreden, Bu yılın hakkı, Kullanılan, Bekleyen, Kalan, Sonraki hak tarihi (AC-12)."""
     html = client.get("/").get_data(as_text=True)
     text = visible_text(html)
     assert "Bekleyen: 4" in text
     assert "Onaylanan: 1" in text
     assert "Reddedilen: 3" in text
     assert table_rows(html) == [
-        ["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"],
-        ["Ayse Yilmaz", "IT", "26", "9", "17", "3"],  # 0014 T2: iş günü
-        ["Mehmet Demir", "Muhasebe", "20", "0", "20", "3"],
-        ["Zeynep Kaya", "IK", "14", "0", "14", "1"],
-        ["Ahmet Celik", "IT", "20", "0", "20", "5"],
-        ["Elif Sahin", "Satis", "0", "0", "0", "0"],
+        ["Ad", "Birim", "Devreden", "Bu yılın hakkı", "Kullanılan", "Bekleyen", "Kalan",
+         "Sonraki hak tarihi"],
+        ["Ayse Yilmaz", "IT", "328", "26", "9", "3", "345", "2027-03-15"],  # 0014 T2: iş günü
+        ["Mehmet Demir", "Muhasebe", "90", "20", "0", "3", "110", "2027-06-01"],
+        ["Zeynep Kaya", "IK", "0", "14", "0", "1", "14", "2026-11-10"],
+        ["Ahmet Celik", "IT", "70", "20", "0", "5", "90", "2027-02-28"],
+        ["Elif Sahin", "Satis", "0", "0", "0", "0", "0", "2027-06-01"],
     ]
 
 

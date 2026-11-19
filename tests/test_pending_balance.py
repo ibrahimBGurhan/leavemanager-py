@@ -10,11 +10,13 @@ import datetime as dt
 import pytest
 
 import app as leave_app
-from conftest import end_after_workdays, table_rows, visible_text
+from conftest import end_after_workdays, legacy_balances, table_rows, visible_text
 from domain.errors import InsufficientBalance
 
 START = dt.date(2026, 12, 1)
-BALANCE_HEADER = ["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"]
+# Spec 0040 K-8 (supersedes 0013's "Hak, Kullanılan, Kalan, Bekleyen")
+BALANCE_HEADER = ["Ad", "Birim", "Devreden", "Bu yılın hakkı", "Kullanılan", "Bekleyen", "Kalan",
+                  "Sonraki hak tarihi"]
 
 
 def by_name(name):
@@ -76,7 +78,9 @@ def test_new_request_counts_pending(client, svc, days, saved):
 
 @pytest.mark.parametrize("days, saved", [(20, True), (21, False)])
 def test_no_pending_boundary_unchanged(client, svc, days, saved):
-    """Mehmet, after #2 is rejected: Kalan 20, Bekleyen 0 → the boundary is Kalan, as before."""
+    """Mehmet, after #2 is rejected: Kalan 20, Bekleyen 0 → the boundary is Kalan, as before.
+    Spec 0040 (plan Risk 1): Mehmet's Kalan 20 comes from legacy_balances()."""
+    legacy_balances()
     svc.reject_request(2)
     resp = client.post("/new", data=form(2, days))
     assert (resp.status_code == 302) is saved
@@ -117,23 +121,26 @@ def test_negative_available_has_no_special_case(client):
 # --- CB-3 -----------------------------------------------------------------------------------
 
 def test_balance_table_shows_pending(client):
+    """Spec 0040 (supersedes the 0013 columns): Bekleyen is its own column, next to Kalan."""
     rows = table_rows(client.get("/").get_data(as_text=True))
     assert rows[0] == BALANCE_HEADER
-    assert [(r[0], r[2], r[3], r[4], r[5]) for r in rows[1:]] == [
-        ("Ayse Yilmaz", "26", "9", "17", "3"),
-        ("Mehmet Demir", "20", "0", "20", "3"),
-        ("Zeynep Kaya", "14", "0", "14", "1"),
-        ("Ahmet Celik", "20", "0", "20", "5"),
-        ("Elif Sahin", "0", "0", "0", "0"),
+    assert [(r[0], r[4], r[5], r[6]) for r in rows[1:]] == [
+        ("Ayse Yilmaz", "9", "3", "345"),
+        ("Mehmet Demir", "0", "3", "110"),
+        ("Zeynep Kaya", "0", "1", "14"),
+        ("Ahmet Celik", "0", "5", "90"),
+        ("Elif Sahin", "0", "0", "0"),
     ]
 
 
 # --- CB-4 -----------------------------------------------------------------------------------
 
 @pytest.mark.parametrize("action, name, expected", [
-    ("approve #2", "Mehmet Demir", ["Mehmet Demir", "Muhasebe", "20", "3", "17", "0"]),
-    ("reject #4", "Ahmet Celik", ["Ahmet Celik", "IT", "20", "0", "20", "0"]),
-    ("new 2 days", "Zeynep Kaya", ["Zeynep Kaya", "IK", "14", "0", "14", "3"]),
+    # spec 0040 columns: Devreden, Bu yılın hakkı, Kullanılan, Bekleyen, Kalan, Sonraki hak tarihi
+    ("approve #2", "Mehmet Demir",
+     ["Mehmet Demir", "Muhasebe", "90", "20", "3", "0", "107", "2027-06-01"]),
+    ("reject #4", "Ahmet Celik", ["Ahmet Celik", "IT", "70", "20", "0", "0", "90", "2027-02-28"]),
+    ("new 2 days", "Zeynep Kaya", ["Zeynep Kaya", "IK", "0", "14", "0", "3", "14", "2026-11-10"]),
 ], ids=["approve", "reject", "new"])
 def test_transitions_move_days(client, svc, action, name, expected):
     if action == "approve #2":
@@ -149,7 +156,9 @@ def test_transitions_move_days(client, svc, action, name, expected):
 
 def test_other_pending_do_not_block_approval(svc):
     """K-4: approval checks Kalan alone. Ayse: Kalan 17, #5 (3 days) pending; a 17-day pending
-    request is approved anyway, and #5 then hits the approval check as in 0010."""
+    request is approved anyway, and #5 then hits the approval check as in 0010.
+    Spec 0040 (plan Risk 1): Ayse's Kalan 17 comes from legacy_balances()."""
+    legacy_balances()
     ayse = by_name("Ayse Yilmaz")
     request_id = add_pending(ayse["id"], dt.date(2026, 11, 16), 17)
     svc.approve_request(request_id)

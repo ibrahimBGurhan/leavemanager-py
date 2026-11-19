@@ -13,7 +13,7 @@ import re
 import pytest
 
 import app as leave_app
-from conftest import controls, table_rows, visible_text
+from conftest import controls, legacy_balances, table_rows, visible_text
 from domain.auth import LoginService
 
 A, B = 1, 2
@@ -70,10 +70,12 @@ def employee(emp_id):
 
 
 def balance_row(emp_id):
+    # Spec 0040 K-8 columns (supersedes Hak, Kullanılan, Kalan, Bekleyen)
     svc, emp = leave_app.svc, employee(emp_id)
-    return [emp["name"], emp["department"], str(svc.get_entitlement(emp)),
-            str(svc.get_used_days(emp_id)), str(svc.get_remaining(emp)),
-            str(svc.get_pending_days(emp_id))]
+    return [emp["name"], emp["department"], str(svc.get_carried(emp)),
+            str(svc.get_this_year_right(emp)), str(svc.get_used_days(emp_id)),
+            str(svc.get_pending_days(emp_id)), str(svc.get_remaining(emp)),
+            svc.get_next_right_date(emp).isoformat()]
 
 
 def counts(page_text):
@@ -129,7 +131,8 @@ def test_unlinked_staff_sees_empty_screens(client, as_account, employee_id):
     as_account(account("Personel", employee_id))
     home = client.get("/").get_data(as_text=True)
     assert counts(visible_text(home)) == (0, 0, 0)
-    assert table_rows(home) == [["Ad", "Birim", "Hak", "Kullanılan", "Kalan", "Bekleyen"]]
+    assert table_rows(home) == [["Ad", "Birim", "Devreden", "Bu yılın hakkı", "Kullanılan",
+                                 "Bekleyen", "Kalan", "Sonraki hak tarihi"]]  # spec 0040
     assert len(table_rows(client.get("/requests").get_data(as_text=True))) == 1
 
 
@@ -203,6 +206,7 @@ def test_staff_creates_own_request(client, as_account):
      "Lütfen personeli ve geçerli başlangıç ve bitiş tarihlerini girin."),
 ], ids=["balance", "range", "no-workdays", "bad-input"])
 def test_staff_rule_errors_keep_fixed_name(client, as_account, data, message):
+    legacy_balances()  # spec 0040 plan Risk 1: Ayse's Kalan 17, so the "balance" case is refused
     as_account(STAFF)
     before = snapshot()
     resp = client.post("/new", data=dict(data, reason="x"))

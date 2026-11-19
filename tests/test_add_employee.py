@@ -280,7 +280,8 @@ def test_hr_adds_employee_with_next_number(client):
 def test_new_employee_appears_on_home_and_new_request(client):
     post(client)
     rows = table_rows(page(client.get("/")))
-    assert ["Deniz Ak", "IT", "14", "0", "14", "0"] in rows  # 3 years -> 14 days (BR-1)
+    # 3 years -> 14 days (BR-1); spec 0040: two earlier rights (28) carried, Kalan 42
+    assert ["Deniz Ak", "IT", "28", "14", "0", "0", "42", "2027-03-01"] in rows
     f = form_of(page(client.get("/new")))
     assert "6" in f.options
 
@@ -374,7 +375,9 @@ def test_html_in_name_is_shown_as_text(client):
 def test_future_hire_date_is_accepted_with_zero_entitlement(client):
     resp = post(client, hire_date="2027-02-01")
     assert resp.status_code == 302
-    assert ["Deniz Ak", "IT", "0", "0", "0", "0"] in table_rows(page(client.get("/")))
+    # spec 0040: no right yet; the first one is born on 2028-02-01
+    assert (["Deniz Ak", "IT", "0", "0", "0", "0", "0", "2028-02-01"]
+            in table_rows(page(client.get("/"))))
 
 
 def test_same_name_and_unit_twice_on_screen(client):

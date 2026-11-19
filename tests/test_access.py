@@ -66,11 +66,14 @@ def employee(emp_id):
 
 
 def test_balance_is_the_service_calculation():
+    """Spec 0040 R-2 (supersedes the Hak/Kullanılan/Kalan/Bekleyen quadruple): the six table
+    values come from the service, the view only checks scope."""
     svc, emp = leave_app.svc, employee(A)
-    expected = (svc.get_entitlement(emp), svc.get_used_days(A), svc.get_remaining(emp),
-                svc.get_pending_days(A))
+    expected = (svc.get_carried(emp), svc.get_this_year_right(emp), svc.get_used_days(A),
+                svc.get_pending_days(A), svc.get_remaining(emp), svc.get_next_right_date(emp))
     assert view(account("Personel")).balance(emp) == expected
-    assert view(account("IK")).balance(employee(B))[0] == svc.get_entitlement(employee(B))
+    assert expected == (328, 26, 9, 3, 345, dt.date(2027, 3, 15))  # spec 0040 AC-12
+    assert view(account("IK")).balance(employee(B))[4] == svc.get_remaining(employee(B))
 
 
 @pytest.mark.parametrize("employee_id", [A, None])

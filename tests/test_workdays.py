@@ -10,7 +10,7 @@ import time
 import pytest
 
 import app as leave_app
-from conftest import end_after_workdays, table_rows, visible_text
+from conftest import end_after_workdays, legacy_balances, table_rows, visible_text
 from domain.errors import EmployeeNotFound, InsufficientBalance, InvalidDateRange, NoWorkingDays
 
 D = dt.date
@@ -138,10 +138,13 @@ def test_no_working_days_before_balance(client, svc):
 def test_screens_show_working_days(client):
     requests = table_rows(client.get("/requests").get_data(as_text=True))[1:]
     assert [row[3] for row in requests] == ["9", "3", "1", "5", "3", "3", "10", "1"]
+    # Spec 0040 columns (supersedes Hak, Kullanılan, Kalan, Bekleyen): Kullanılan and Bekleyen
+    # are still working days (Ayse 9, Bekleyen 3 / 3 / 1 / 5 / 0)
     balances = table_rows(client.get("/").get_data(as_text=True))[1:]
-    assert balances[0] == ["Ayse Yilmaz", "IT", "26", "9", "17", "3"]
-    assert [row[2:] for row in balances[1:]] == [
-        ["20", "0", "20", "3"], ["14", "0", "14", "1"], ["20", "0", "20", "5"], ["0", "0", "0", "0"],
+    assert balances[0] == ["Ayse Yilmaz", "IT", "328", "26", "9", "3", "345", "2027-03-15"]
+    assert [row[2:7] for row in balances[1:]] == [
+        ["90", "20", "0", "3", "110"], ["0", "14", "0", "1", "14"], ["70", "20", "0", "5", "90"],
+        ["0", "0", "0", "0", "0"],
     ]
 
 
@@ -166,7 +169,9 @@ def test_balance_counts_working_days(client, svc, end, saved):
 
 def test_approval_counts_working_days(svc):
     """A pending request over a weekend uses only its working days on approval: Mehmet (Kalan 20)
-    approves a 21-calendar-day / 15-working-day request, Kalan 20 → 5."""
+    approves a 21-calendar-day / 15-working-day request, Kalan 20 → 5.
+    Spec 0040 (plan Risk 1): Mehmet's Kalan 20 comes from legacy_balances()."""
+    legacy_balances()
     mehmet = next(e for e in leave_app.storage.employees() if e["name"] == "Mehmet Demir")
     request_id = leave_app.storage.next_request_id()
     leave_app.storage.add_request({"id": request_id, "employee_id": mehmet["id"],
