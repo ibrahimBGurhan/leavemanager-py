@@ -1,6 +1,6 @@
 {# Sayfa iskeleti (spec 0034, ADR-0003; menu spec 0019, 0022). Bootstrap projeden, satir ici stil/betik yok (AC-9).
    Ekran sablonu kendi menu ogesini `{% set current_menu = "…" %}` ile bildirir; burada yalniz karsilastirilir (G-4, plan Risk 6).
-   "Yeni Personel" yalniz personel ekleyebilen hesaba (spec 0022 R-7). Cikis formu sayfanin sonunda, isaretlemesi aynen; dugmesi menude
+   "Yeni Personel" yalniz personel ekleyebilen hesaba (spec 0022 R-7); "Açılış Bakiyesi" yalniz IK'ya (spec 0041 R-7). Cikis formu sayfanin sonunda, isaretlemesi aynen; dugmesi menude
    (form= ozniteligi), boylece ekranlardaki formlarin sirasi degismez (plan 0019 Risk 2, plan 0034 Risk 5). #}
 <!doctype html>
 <html lang="tr">
@@ -16,6 +16,7 @@
 {%- if g.account %}
 {%- set items = [("home", "/", "Ana Sayfa"), ("requests", "/requests", "Talepler"), ("new", "/new", "Yeni Talep")] %}
 {%- if can_add_employees %}{% set items = items + [("employee", "/personel/yeni", "Yeni Personel")] %}{% endif %}
+{%- if can_set_opening_balances %}{% set items = items + [("opening", "/acilis-bakiyesi", "Açılış Bakiyesi")] %}{% endif %}
 <nav class="navbar navbar-expand-md bg-body-tertiary border-bottom mb-4" aria-label="Ana menü">
 <div class="container">
 <span class="navbar-brand">LeaveManager</span>

@@ -1,13 +1,14 @@
 # HTTP: route'lar, form girdisi, sablona verilen veri. Veriye yalniz servis uzerinden erisir.
 import logging
+import re
 from datetime import datetime
 
 from flask import g, request, redirect, render_template
 from flask_wtf.csrf import CSRFError
 
-from domain.errors import (EmployeeNotFound, InsufficientBalance, InvalidDateRange,
-                           InvalidEmployee, NoWorkingDays, NotAuthorized, RequestAlreadyDecided,
-                           RequestNotFound)
+from domain.errors import (BeforeOpeningBalance, EmployeeNotFound, InsufficientBalance,
+                           InvalidDateRange, InvalidEmployee, InvalidOpeningBalance, NoWorkingDays,
+                           NotAuthorized, RequestAlreadyDecided, RequestNotFound)
 from domain.access import parse_request_id
 from domain.collation import turkish_sort_key
 from domain.leave_service import APPROVED, PENDING, REJECTED
@@ -46,6 +47,25 @@ EMPLOYEE_ERRORS = {
 }
 MSG_EMPLOYEE_UNEXPECTED = "Personel kaydedilemedi. Lütfen daha sonra tekrar deneyin."
 NEW_EMPLOYEE_PATH = "/personel/yeni"
+# Acilis Bakiyesi (spec 0041 K-3, K-4, K-6, K-9). Anahtar: InvalidOpeningBalance.reason
+OPENING_PATH = "/acilis-bakiyesi"
+MSG_OPENING_SAVED = "Personel #%d açılış bakiyesi kaydedildi: %s, %d gün."
+MSG_OPENING_WARNING = ("Açılış tarihinden önce başlayan bekleyen talepler: %s. Bunlar onaylanırsa "
+                       "bakiyeden düşmez.")
+OPENING_ERRORS = {
+    "employee-missing": "Personel seçin.",
+    "employee-not-found": "Personel bulunamadı.",
+    "date-invalid": "Geçerli bir açılış tarihi girin.",
+    "date-before-hire": "Açılış tarihi işe giriş tarihinden (%s) önce olamaz.",
+    "date-in-future": "Açılış tarihi bugünden sonra olamaz.",
+    "days-invalid": "Gün 0 ile 365 arasında bir tam sayı olmalı.",
+}
+MSG_OPENING_UNEXPECTED = "Açılış bakiyesi kaydedilemedi. Lütfen daha sonra tekrar deneyin."
+MSG_BEFORE_OPENING = ("Bu personelin açılış bakiyesi %s tarihli; daha önce başlayan izin açılış "
+                      "bakiyesine dahildir.")
+# Gun: bosluklar atilir, yalniz ASCII rakam (basta istege bagli "-"); int()'in kabul ettigi Unicode
+# rakam, "_" ve "+" tam sayi sayilmaz (plan 0041 Risk 1)
+_DAYS = re.compile(r"-?[0-9]+")
 
 # Sayfalar web/templates/ altinda, otomatik kacisla (ADR-0003, spec 0032): burada HTML yok, yalniz
 # sablona verilen veri. Menu iskelette (base.html); "Yeni Personel" bayragi gorunumden (spec 0022
@@ -97,7 +117,9 @@ def register_routes(app, svc):
     def menu_flags():
         # Giris ekraninda hesap yok: bayrak yok, baglanti yok
         account = g.get("account")
-        return {"can_add_employees": account is not None and view().can_add_employees()}
+        return {"can_add_employees": account is not None and view().can_add_employees(),
+                "can_set_opening_balances": (account is not None
+                                             and view().can_set_opening_balances())}
 
     @app.route("/")
     def dashboard():
@@ -224,8 +246,8 @@ def register_routes(app, svc):
                     acc.authorize_create(emp_id)  # kural domain'de, tek yerde (review F-1)
                 except NotAuthorized:
                     return new_request_form(MSG_FORBIDDEN, values), 403
-            # Ihlal sirasi: bozuk girdi -> personel -> tarih araligi -> is gunu yok -> bakiye
-            # (spec 0008 S-4, spec 0014 K-5)
+            # Ihlal sirasi: bozuk girdi -> personel -> tarih araligi -> acilis oncesi -> is gunu
+            # yok -> bakiye (spec 0008 S-4, spec 0014 K-5, spec 0041 K-6)
             try:
                 emp_id = int(request.form["employee_id"]) if acc.sees_everyone() else emp_id
                 start = datetime.strptime(request.form["start"], "%Y-%m-%d").date()
@@ -240,6 +262,9 @@ def register_routes(app, svc):
                 return new_request_form(MSG_EMPLOYEE_NOT_FOUND, values), 400
             except InvalidDateRange:
                 return new_request_form(MSG_INVALID_DATE_RANGE, values), 400
+            except BeforeOpeningBalance as e:
+                # Acilis oncesi donem acilis bakiyesinin icinde (spec 0041 K-6)
+                return new_request_form(MSG_BEFORE_OPENING % e.opening_date.isoformat(), values), 400
             except NoWorkingDays:
                 return new_request_form(MSG_NO_WORKING_DAYS, values), 400
             except InsufficientBalance as e:
@@ -310,6 +335,81 @@ def register_routes(app, svc):
         # PRG: yenileme kaydi tekrarlamaz, form bos acilir (G-3)
         return redirect("%s?eklendi=%d" % (NEW_EMPLOYEE_PATH, record["id"]))
 
+    def opening_form(message=None, values=None, message_kind="danger", warning=None):
+        # Acilis Bakiyesi ekrani (spec 0041 K-3). Yetkisiz hesaba form ve liste cizilmez, yalniz
+        # ileti (R-7). Personel secimi ve gun ham metinle geri basilir (kacisla); bozuk tarih
+        # geri basilmaz (spec 0015 K-3).
+        v = view()
+        if not v.can_set_opening_balances():
+            return render_template(
+                "opening_balance.html", forbidden=True, forbidden_text=MSG_FORBIDDEN,
+                message=message if message != MSG_FORBIDDEN else None, message_kind="danger",
+                warning=None)
+        values = values or {}
+        rows = []
+        for e in v.employees():
+            o = v.opening_balance(e["id"])
+            rows.append({"name": e["name"], "department": e["department"],
+                         "hire_date": e["hire_date"].isoformat(),
+                         "opening_date": o["date"].isoformat() if o else "",
+                         "opening_days": o["days"] if o else ""})
+        on = values.get("date")
+        return render_template(
+            "opening_balance.html", forbidden=False, message=message, message_kind=message_kind,
+            warning=warning, employees=v.employees(), rows=rows,
+            selected=values.get("employee_id", ""), on=on.isoformat() if on else "",
+            days=values.get("days", ""))
+
+    def opening_saved():
+        # Ileti ve uyari URL'deki numaradan degil kayittan kurulur; uyari her acilista yeniden
+        # hesaplanir (plan 0041 Risk 6, G-3). Eslesmeyen numara: ileti yok.
+        v = view()
+        emp_id = parse_request_id(request.args.get("kaydedildi", ""))
+        if emp_id is None or not any(e["id"] == emp_id for e in v.employees()):
+            return None, None
+        o = v.opening_balance(emp_id)
+        if o is None:
+            return None, None
+        pending = v.pending_before_opening(emp_id)
+        warning = (MSG_OPENING_WARNING % ", ".join("#%d" % rid for rid in pending)
+                   if pending else None)
+        return MSG_OPENING_SAVED % (emp_id, o["date"].isoformat(), o["days"]), warning
+
+    @app.route(OPENING_PATH, methods=["GET", "POST"])
+    def opening_balance():
+        v = view()
+        try:
+            v.authorize_set_opening_balance()  # yetki girdiden once (R-7); ret log'a WARNING
+        except NotAuthorized:
+            return opening_form(), 403
+        if request.method == "GET":
+            message, warning = opening_saved()
+            return opening_form(message, message_kind="success", warning=warning)
+        raw_emp = request.form.get("employee_id", "").strip()
+        raw_days = request.form.get("days", "")
+        values = {"employee_id": raw_emp, "date": parse_date(request.form.get("date")),
+                  "days": raw_days}
+        # Ayristirilamayan deger domain'e None (tarih, gun) ya da eslesmeyen metin (personel)
+        # olarak gider; ihlal sirasini domain verir (plan 0041 Risk 2, 3)
+        emp_id = None if raw_emp == "" else parse_request_id(raw_emp)
+        if raw_emp != "" and emp_id is None:
+            emp_id = raw_emp
+        days = int(raw_days.strip()) if _DAYS.fullmatch(raw_days.strip()) else None
+        try:
+            record = v.set_opening_balance(emp_id, values["date"], days)
+        except NotAuthorized:
+            return opening_form(), 403
+        except InvalidOpeningBalance as e:
+            message = OPENING_ERRORS[e.reason]
+            if e.reason == "date-before-hire":
+                message = message % e.hire_date.isoformat()
+            return opening_form(message, values), 400
+        except Exception:
+            logger.exception("acilis bakiyesi kaydedilemedi")
+            return opening_form(MSG_OPENING_UNEXPECTED, values), 500
+        # PRG: yenileme kaydi tekrarlamaz, form bos acilir
+        return redirect("%s?kaydedildi=%d" % (OPENING_PATH, record["employee_id"]))
+
     @app.errorhandler(CSRFError)
     def csrf_failed(e):
         # Token yok / bozuk / baska oturumun: hicbir sey degismez, 400 + Turkce mesaj (spec 0011
@@ -319,6 +419,8 @@ def register_routes(app, svc):
             return new_request_form(MSG_CSRF), 400  # degerler geri basilmaz (0015 K-2)
         if request.path == NEW_EMPLOYEE_PATH:
             return employee_form(MSG_CSRF), 400  # degerler geri basilmaz; yetkisize form yok
+        if request.path == OPENING_PATH:
+            return opening_form(MSG_CSRF), 400  # degerler geri basilmaz; yetkisize form yok
         if request.path == "/giris":
             return login_page(MSG_CSRF, error=True), 400  # kimse girmez (spec 0019 R-10)
         return requests_page(MSG_CSRF), 400
