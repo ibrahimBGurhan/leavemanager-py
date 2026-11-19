@@ -285,6 +285,52 @@ def test_concurrent_login_failures_are_all_counted(store, race_window):
     assert sorted(seen) == list(range(1, 201))
 
 
+# --- opening balances (spec 0040) --------------------------------------------------------------
+
+def opening(employee_id, on=D(2026, 1, 1), days=10):
+    return {"employee_id": employee_id, "date": on, "days": days}
+
+
+def test_opening_balance_is_stored_and_read(store):
+    before = list(store.opening_balances())
+    store.set_opening_balance(opening(100))
+    store.set_opening_balance(opening(101, D(2025, 7, 1), 0))
+    after = store.opening_balances()
+    assert len(after) == len(before) + 2
+    assert opening(100) in after and opening(101, D(2025, 7, 1), 0) in after
+    record = next(o for o in after if o["employee_id"] == 100)
+    assert isinstance(record["date"], dt.date) and isinstance(record["days"], int)
+
+
+def test_opening_balance_replaces_the_same_employees_record(store):
+    store.set_opening_balance(opening(100))
+    store.set_opening_balance(opening(101))
+    store.set_opening_balance(opening(100, D(2026, 7, 1), 3))
+    mine = [o for o in store.opening_balances() if o["employee_id"] == 100]
+    assert mine == [opening(100, D(2026, 7, 1), 3)]
+    assert opening(101) in store.opening_balances()
+
+
+def test_opening_balance_does_not_touch_other_records(store):
+    employees = [dict(e) for e in store.employees()]
+    requests = [dict(r) for r in store.requests()]
+    accounts = [dict(a) for a in store.accounts()]
+    store.set_opening_balance(opening(100))
+    assert [dict(e) for e in store.employees()] == employees
+    assert [dict(r) for r in store.requests()] == requests
+    assert [dict(a) for a in store.accounts()] == accounts
+
+
+def test_opening_balance_survives_reopen(tmp_path):
+    db = tmp_path / "leave.db"
+    store = SqliteStorage(db)
+    store.set_opening_balance(opening(100, D(2026, 3, 2), 7))
+    store.close()
+    reopened = SqliteStorage(db)
+    assert reopened.opening_balances() == [opening(100, D(2026, 3, 2), 7)]
+    reopened.close()
+
+
 # --- the written contract ---------------------------------------------------------------------
 
 def test_storage_implements_the_contract(store):
