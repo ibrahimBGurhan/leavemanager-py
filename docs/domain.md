@@ -78,16 +78,6 @@
   talep, kendi talebi dahil) ya da birimin Yöneticisidir (birimindeki başka bir personelin talebi;
   spec 0021). Karar tek aşamalıdır; Personel sonuçlandıramaz (OD-7, `docs/security.md`).
 
-- **BR-12 Açılış bakiyesi** (spec 0041; karar: İbrahim Gürhan, IK adına, 2026-11-19): IK, her
-  personel için bir tarih itibarıyla kalan izin gününü girer; hesap o tarihten başlar (BR-5).
-  Gün 0–365 arası tam sayıdır; açılış tarihi işe giriş tarihinden önce ve bugünden sonra olamaz
-  (işe giriş günü ve bugün kabul). Personel başına tek kayıt vardır; yeni giriş eskisinin yerine
-  geçer, silme yoktur. Yalnız IK girer ve görür (`docs/security.md`). Açılış tarihinden önce
-  başlayan onaylı talepler açılış sayısının içindedir, hesaba girmez. Açılış tarihinden önce
-  başlayan **yeni** talep oluşmaz ("Bu personelin açılış bakiyesi <tarih> tarihli; daha önce
-  başlayan izin açılış bakiyesine dahildir."); böyle bir **bekleyen** talep onaylanırken bakiye
-  kontrolü yapılmaz (BR-10). Kayıt sonrası IK, açılış tarihinden önce başlayan bekleyen
-  talepler için uyarılır (numaralarıyla). Açılış bakiyesi olmayan personelde bu kurallar yoktur.
 - **BR-11 Personel kaydı** (spec 0022): yeni personeli yalnız IK ekler (`docs/security.md`).
   Ad (en fazla 100 karakter) ve birim (en fazla 50) zorunludur; baştaki ve sondaki boşluk atılır,
   kırpılınca boş kalan değer eksiktir; birimin harf büyüklüğü korunur (Yönetici birimi tam
@@ -104,6 +94,16 @@
   gelir; yalnız harf büyüklüğüyle ayrılan birimlerde eşitlikte karakter kodu küçük olan önce gelir
   (genelde büyük harf önce; İ/i'de i önce, çünkü İ'nin karakter kodu büyüktür). Sıra sunucunun dil
   ayarına bağlı değildir.
+- **BR-12 Açılış bakiyesi** (spec 0041; karar: İbrahim Gürhan, IK adına, 2026-11-19): IK, her
+  personel için bir tarih itibarıyla kalan izin gününü girer; hesap o tarihten başlar (BR-5).
+  Gün 0–365 arası tam sayıdır; açılış tarihi işe giriş tarihinden önce ve bugünden sonra olamaz
+  (işe giriş günü ve bugün kabul). Personel başına tek kayıt vardır; yeni giriş eskisinin yerine
+  geçer, silme yoktur. Yalnız IK girer ve görür (`docs/security.md`). Açılış tarihinden önce
+  başlayan onaylı talepler açılış sayısının içindedir, hesaba girmez. Açılış tarihinden önce
+  başlayan **yeni** talep oluşmaz ("Bu personelin açılış bakiyesi <tarih> tarihli; daha önce
+  başlayan izin açılış bakiyesine dahildir."); böyle bir **bekleyen** talep onaylanırken bakiye
+  kontrolü yapılmaz (BR-10). Kayıt sonrası IK, açılış tarihinden önce başlayan bekleyen
+  talepler için uyarılır (numaralarıyla). Açılış bakiyesi olmayan personelde bu kurallar yoktur.
 
 ## Key domain invariants
 - Kalan bakiye tek bir domain fonksiyonunda hesaplanır; web katmanı kendi hesabını yapmaz.
