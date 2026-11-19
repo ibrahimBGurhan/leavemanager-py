@@ -74,6 +74,12 @@
   `personel eklendi: #<N> (<birim>), ekleyen: <e-posta> (<rol>)` — ad ve işe giriş tarihi yok
   (KVKK). Ad ve birim olduğu gibi saklanır, her ekranda kaçışlanarak gösterilir; form CSRF
   token'lıdır.
+- Açılış bakiyesi (spec 0041): yalnız rol **IK**; Yönetici, Personel ve bilinmeyen rol ekranı
+  açamaz, kayıt yapamaz. Menüdeki "Açılış Bakiyesi" bağlantısı yalnız İK'ya çizilir, asıl engel
+  `AccountView.authorize_set_opening_balance`: girdiye bakılmadan önce denetlenir; yetkisiz deneme
+  403, kayıt yok, log'a WARNING (`yetkisiz islem: <e-posta>, acilis bakiyesi, hedef None`). Her
+  kayıt INFO: `acilis bakiyesi: #<N>, giren: <e-posta> (<rol>)` — ad, tarih ve gün yok (KVKK).
+  Form CSRF token'lıdır.
 - Yetki kontrolü sunucu tarafında, tek yerde: `domain/access.py` (`AccountView`) hesabı parametre
   olarak alır; web her ekranı ve işlemi `svc.for_account(g.account)` üzerinden yapar ve ekranı
   (düğmeler, personel seçimi) ona göre çizer (plan 0020 Risk 1). Yetki, talebin ya da personelin
